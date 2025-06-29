@@ -1,142 +1,308 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { Appearance, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ThemeContext = createContext();
+const THEME_STORAGE_KEY = 'userThemePreference';
+const VALID_THEMES = ['light', 'dark', 'system'];
 
-// Storage keys for all theme settings
-const STORAGE_KEYS = {
-    DARK_MODE: 'isDarkMode',
-    FONT_SCALE: 'fontSizeScale',
-    CORNER_RADIUS: 'cornerRadius',
-    ZOOM_SCALE: 'zoomScale',
-    VIBRATION: 'vibrationEnabled',
-    HAPTIC: 'hapticFeedback',
-    ANIMATION_SPEED: 'animationSpeed'
+const palettes = {
+    light: {
+        background: '#eeeeee',
+        card: '#d0d0d0',
+        cardLighter: '#e6e6e6',
+        cardBorder: '#28282828',
+        settingBlock: '#dedede',
+        text: '#333333',
+        textSecondary: '#444444',
+        textTitle: '#222222',
+        textDesc: '#888888',
+        snackbarBg: '#f0f0f0',
+        snackbarText: '#222222',
+        modalBg: '#ffffff',
+        modalText: '#222222',
+        modalBtnBg: '#eeeeee',
+        modalBtnText: '#333',
+        modalBtnOkBg: 'rgba(239, 68, 68, 0.18)',
+        modalBtnOkText: '#ef4444',
+        switchTrack: '#767577',
+        switchTrackActive: '#282828',
+        switchThumb: '#f0f0f0',
+        switchThumbActive: '#fefefe',
+        border: '#dddddd',
+        divider: '#e0e0e0',
+        highlight: '#282828',
+        addButtonBg: 'rgba(34, 197, 94, 0.18)',
+        addButtonBorder: '#22c55e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.18)',
+        cancelButtonBorder: '#ef4444',
+    },
+    dark: {
+        background: '#121212',
+        card: '#181818',
+        cardLighter: '#242424',
+        cardBorder: '#55555555',
+        settingBlock: '#202020',
+        text: '#fefefe',
+        textSecondary: '#bbbbbb',
+        textTitle: '#ffffff',
+        textDesc: '#b0b0b0',
+        snackbarBg: '#181818',
+        snackbarText: '#ffffff',
+        modalBg: '#181818',
+        modalText: '#fefefe',
+        modalBtnBg: '#333333',
+        modalBtnText: '#bbbbbb',
+        modalBtnOkBg: 'rgba(239, 68, 68, 0.18)',
+        modalBtnOkText: '#ef4444',
+        switchTrack: '#444',
+        switchTrackActive: '#888',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#bbbbbb',
+        border: '#55555555',
+        divider: '#232323',
+        highlight: '#fefefe',
+        addButtonBg: 'rgba(34, 197, 94, 0.18)',
+        addButtonBorder: '#22c55e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.18)',
+        cancelButtonBorder: '#ef4444',
+    },
 };
 
-// Default values for all settings
-const DEFAULT_VALUES = {
-    DARK_MODE: true,
-    FONT_SCALE: 1.0,
-    CORNER_RADIUS: 8,
-    ZOOM_SCALE: 1.0,
-    VIBRATION: true,
-    HAPTIC: true,
-    ANIMATION_SPEED: 1.0
+const variables = {
+    spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
+    radius: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, circle: 999 },
+    borderWidth: { thin: 0.5, regular: 1, thick: 2 },
+    shadow: {
+        sm: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 1,
+        },
+        md: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 6,
+            elevation: 3,
+        },
+    },
+    fontSizes: { xs: 12, sm: 14, md: 16, lg: 20, xl: 24, xxl: 32 },
 };
 
-export function ThemeProvider({ children }) {
-    // State for all theme settings
-    const [isDarkMode, setIsDarkMode] = useState(DEFAULT_VALUES.DARK_MODE);
-    const [fontSizeScale, setFontSizeScale] = useState(DEFAULT_VALUES.FONT_SCALE);
-    const [cornerRadius, setCornerRadius] = useState(DEFAULT_VALUES.CORNER_RADIUS);
-    const [zoomScale, setZoomScale] = useState(DEFAULT_VALUES.ZOOM_SCALE);
-    const [vibrationEnabled, setVibrationEnabled] = useState(DEFAULT_VALUES.VIBRATION);
-    const [hapticFeedback, setHapticFeedback] = useState(DEFAULT_VALUES.HAPTIC);
-    const [animationSpeed, setAnimationSpeed] = useState(DEFAULT_VALUES.ANIMATION_SPEED);
+const ThemeContext = createContext(null);
 
-    // Load all settings from storage on mount
+const createStyles = (colors) => StyleSheet.create({
+    container: {
+        backgroundColor: colors.background,
+        flex: 1,
+        padding: variables.spacing.md,
+    },
+    card: {
+        backgroundColor: colors.card,
+        borderRadius: variables.radius.md,
+        padding: variables.spacing.md,
+        borderWidth: variables.borderWidth.regular,
+        borderColor: colors.border,
+    },
+    buttonPrimary: {
+        backgroundColor: colors.highlight,
+        padding: variables.spacing.md,
+        borderRadius: variables.radius.sm,
+    },
+    input: {
+        borderWidth: variables.borderWidth.regular,
+        borderColor: colors.border,
+        borderRadius: variables.radius.sm,
+        padding: variables.spacing.sm,
+        backgroundColor: colors.card,
+        color: colors.text,
+    },
+    divider: {
+        height: variables.borderWidth.regular,
+        backgroundColor: colors.divider,
+        marginVertical: variables.spacing.md,
+    },
+    textHeader: {
+        fontSize: variables.fontSizes.xl,
+        color: colors.text,
+        fontWeight: 'bold',
+        marginBottom: variables.spacing.sm,
+    },
+    textSubheader: {
+        fontSize: variables.fontSizes.lg,
+        color: colors.textSecondary,
+        marginBottom: variables.spacing.xs,
+    },
+});
+
+const normalizeTheme = (theme) => {
+    if (typeof theme === 'string' && VALID_THEMES.includes(theme)) {
+        return theme;
+    }
+    return 'system';
+};
+
+const getSystemTheme = () => {
+    try {
+        const systemTheme = Appearance.getColorScheme();
+        //console.log('Current system theme:', systemTheme); // Debug log
+        return systemTheme === 'dark' ? 'dark' : 'light';
+    } catch (error) {
+        console.warn('Failed to get system color scheme:', error);
+        return 'light'; // Changed default to light for better UX
+    }
+};
+
+export const ThemeProvider = ({ children }) => {
+    const [themeMode, setThemeModeState] = useState('system');
+    const [theme, setTheme] = useState(() => getSystemTheme()); // Initialize immediately
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load themeMode from AsyncStorage on mount
     useEffect(() => {
-        const loadSettings = async () => {
-            try {
-                const [
-                    darkMode,
-                    fontScale,
-                    radius,
-                    zoom,
-                    vibration,
-                    haptic,
-                    animation
-                ] = await Promise.all([
-                    AsyncStorage.getItem(STORAGE_KEYS.DARK_MODE),
-                    AsyncStorage.getItem(STORAGE_KEYS.FONT_SCALE),
-                    AsyncStorage.getItem(STORAGE_KEYS.CORNER_RADIUS),
-                    AsyncStorage.getItem(STORAGE_KEYS.ZOOM_SCALE),
-                    AsyncStorage.getItem(STORAGE_KEYS.VIBRATION),
-                    AsyncStorage.getItem(STORAGE_KEYS.HAPTIC),
-                    AsyncStorage.getItem(STORAGE_KEYS.ANIMATION_SPEED)
-                ]);
+        let isMounted = true;
 
-                if (darkMode !== null) setIsDarkMode(darkMode === 'true');
-                if (fontScale !== null) setFontSizeScale(parseFloat(fontScale));
-                if (radius !== null) setCornerRadius(parseInt(radius));
-                if (zoom !== null) setZoomScale(parseFloat(zoom));
-                if (vibration !== null) setVibrationEnabled(vibration === 'true');
-                if (haptic !== null) setHapticFeedback(haptic === 'true');
-                if (animation !== null) setAnimationSpeed(parseFloat(animation));
+        const loadTheme = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+                if (isMounted) {
+                    const loadedTheme = stored && VALID_THEMES.includes(stored) ? stored : 'system';
+                    setThemeModeState(loadedTheme);
+
+                    // Set initial theme based on loaded preference
+                    if (loadedTheme === 'system') {
+                        setTheme(getSystemTheme());
+                    } else {
+                        setTheme(loadedTheme);
+                    }
+
+                    setIsLoading(false);
+                }
             } catch (e) {
-                console.error('Failed to load theme settings', e);
+                console.warn('Failed to load theme mode from storage:', e);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
-        loadSettings();
+        loadTheme();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    // Save settings to storage when they change
+    // Save themeMode to AsyncStorage when it changes
     useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.DARK_MODE, isDarkMode.toString());
-    }, [isDarkMode]);
+        if (!isLoading) {
+            AsyncStorage.setItem(THEME_STORAGE_KEY, themeMode).catch(e =>
+                console.warn('Failed to save theme mode to storage:', e)
+            );
+        }
+    }, [themeMode, isLoading]);
 
+    // Handle system theme changes and manual theme changes
     useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.FONT_SCALE, fontSizeScale.toString());
-    }, [fontSizeScale]);
+        let subscription = null;
 
-    useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.CORNER_RADIUS, cornerRadius.toString());
-    }, [cornerRadius]);
+        if (themeMode === 'system') {
+            // Set up system theme listener
+            subscription = Appearance.addChangeListener(({ colorScheme }) => {
+                console.log('System theme changed to:', colorScheme); // Debug log
+                const newTheme = colorScheme === 'dark' ? 'dark' : 'light';
+                setTheme(newTheme);
+            });
 
-    useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.ZOOM_SCALE, zoomScale.toString());
-    }, [zoomScale]);
+            // Ensure we have the current system theme
+            const currentSystemTheme = getSystemTheme();
+            setTheme(currentSystemTheme);
+        } else {
+            // Manual theme mode
+            setTheme(themeMode);
+        }
 
-    useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.VIBRATION, vibrationEnabled.toString());
-    }, [vibrationEnabled]);
+        return () => {
+            if (subscription?.remove) {
+                subscription.remove();
+            }
+        };
+    }, [themeMode]);
 
-    useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.HAPTIC, hapticFeedback.toString());
-    }, [hapticFeedback]);
+    const setThemeMode = useCallback((mode) => {
+        const normalizedMode = normalizeTheme(mode);
+        console.log('Setting theme mode to:', normalizedMode); // Debug log
+        setThemeModeState(normalizedMode);
+    }, []);
 
-    useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEYS.ANIMATION_SPEED, animationSpeed.toString());
-    }, [animationSpeed]);
+    const colors = palettes[theme] || palettes.light;
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
 
-    // Toggle functions
-    const toggleDarkMode = () => setIsDarkMode(prev => !prev);
-    const toggleVibration = () => setVibrationEnabled(prev => !prev);
-    const toggleHapticFeedback = () => setHapticFeedback(prev => !prev);
+    const value = React.useMemo(() => ({
+        theme,
+        themeMode,
+        setThemeMode,
+        colors,
+        variables,
+        styles,
+        isLoading, // Expose loading state
+    }), [theme, themeMode, setThemeMode, colors, styles, isLoading]);
 
     return (
-        <ThemeContext.Provider
-            value={{
-                // State values
-                isDarkMode,
-                fontSizeScale,
-                cornerRadius,
-                zoomScale,
-                vibrationEnabled,
-                hapticFeedback,
-                animationSpeed,
-
-                // Setter functions
-                toggleDarkMode,
-                setFontSizeScale,
-                setCornerRadius,
-                setZoomScale,
-                toggleVibration,
-                toggleHapticFeedback,
-                setAnimationSpeed
-            }}
-        >
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );
-}
-export { ThemeContext };
-export function useTheme() {
+};
+
+export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (!context) {
         throw new Error('useTheme must be used within a ThemeProvider');
     }
     return context;
-}
+};
+
+// ========================
+// 4. UTILITY FUNCTIONS
+// ========================
+export const createThemedStyles = (styleFactory) => {
+    return (colors, variables) => {
+        try {
+            const styles = styleFactory(colors, variables);
+            if (typeof styles !== 'object' || styles === null) {
+                console.warn('Style factory must return an object');
+                return {};
+            }
+            return StyleSheet.create(styles);
+        } catch (error) {
+            console.error('Error creating themed styles:', error);
+            return {};
+        }
+    };
+};
+
+export const useThemedStyles = (styleFactory) => {
+    const { colors, variables } = useTheme();
+
+    return React.useMemo(() => {
+        try {
+            const styles = styleFactory(colors, variables);
+            if (typeof styles !== 'object' || styles === null) {
+                console.warn('Style factory must return an object');
+                return {};
+            }
+            return StyleSheet.create(styles);
+        } catch (error) {
+            console.error('Error creating themed styles:', error);
+            return {};
+        }
+    }, [colors, variables, styleFactory]);
+};
+
+export const makeStyles = (styleFactory) => {
+    console.warn('makeStyles is deprecated. Use useThemedStyles hook instead.');
+    return useThemedStyles(styleFactory);
+};

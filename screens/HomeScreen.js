@@ -1,31 +1,65 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useTimers } from '../utils/TimerContext';
-import { useTheme } from '../utils/variables';
+import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import AddTimerModal from '../components/AddTimerModal';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 
 export default function HomeScreen({ navigation }) {
-
     const { timers, addTimer } = useTimers();
-    const [quickAddVisible, setQuickAddVisible] = React.useState(false);
+    const [quickAddVisible, setQuickAddVisible] = useState(false);
+    const { variables, colors } = useTheme();
 
-    const {
-        theme,         // current theme ('light' or 'dark')
-        colors,        // color palette for current theme
-        variables,     // design tokens (spacing, radius, etc.)
-        newStyles,     // pre-defined styles
-        toggleTheme,   // function to toggle between light/dark
-        setTheme       // function to set specific theme
-    } = useTheme();
+    // Animation refs
+    const totalTranslate = useRef(new Animated.Value(-100)).current;
+    const rightTranslate = useRef(new Animated.Value(100)).current;
+    const quickActionsTranslate = useRef(new Animated.Value(30)).current;
+    const quickActionsOpacity = useRef(new Animated.Value(0)).current;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        // Delay one frame to avoid flash
+        const value = setTimeout(() => {
+            setMounted(true);
+
+            Animated.stagger(150, [
+                Animated.spring(totalTranslate, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(rightTranslate, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                }),
+                Animated.parallel([
+                    Animated.spring(quickActionsTranslate, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(quickActionsOpacity, {
+                        toValue: 1,
+                        duration: 300,
+                        useNativeDriver: true,
+                    }),
+                ]),
+            ]).start();
+        }, 50);
+
+        return () => clearTimeout(value);
+    }, []);
+
+    const { totalTimers, countdownTimers, countupTimers } = useMemo(() => {
+        const total = timers?.length || 0;
+        const countdown = timers?.filter(timer => timer.isCountdown).length || 0;
+        const countup = timers?.filter(timer => !timer.isCountdown).length || 0;
+        return { totalTimers: total, countdownTimers: countdown, countupTimers: countup };
+    }, [timers]);
 
     const styles = StyleSheet.create({
         grid: {
             flexDirection: 'row',
-            flexWrap: 'nowrap',
             justifyContent: 'space-between',
-            alignItems: 'stretch',
             marginBottom: 16,
         },
         leftColumn: {
@@ -37,18 +71,14 @@ export default function HomeScreen({ navigation }) {
             justifyContent: 'space-between',
         },
         gridItem: {
-            borderRadius: 20,
+            borderRadius: variables.radius.md,
             padding: 15,
             backgroundColor: colors.settingBlock,
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
         },
         totalTimers: {
-            height: '100%',
-            flex: 1,
+            minHeight: 160,
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: 160,
         },
         countdownTimers: {
             marginBottom: 10,
@@ -68,10 +98,22 @@ export default function HomeScreen({ navigation }) {
         quickActionsCard: {
             marginTop: 10,
             backgroundColor: colors.settingBlock,
-            borderRadius: 20,
+            borderRadius: variables.radius.md,
             padding: 14,
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
+        },
+        actionButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 12,
+            borderRadius: variables.radius.sm,
+            backgroundColor: colors.card,
+            justifyContent: 'center',
+            marginBottom: 10,
+        },
+        actionText: {
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: '600',
         },
         quickActionsTitle: {
             color: colors.textDesc,
@@ -82,28 +124,6 @@ export default function HomeScreen({ navigation }) {
             letterSpacing: 0.5,
             paddingLeft: 8,
         },
-        quickActionsRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-        },
-        actionButton: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: 12,
-            borderRadius: 16,
-            marginTop: 6,
-            backgroundColor: colors.card,
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
-            justifyContent: 'center',
-            marginHorizontal: 4,
-        },
-        actionText: {
-            color: colors.text,
-            fontSize: 16,
-            fontWeight: '600',
-        },
         quickActionsGrid: {
             flexDirection: 'row',
             flexWrap: 'wrap',
@@ -111,120 +131,126 @@ export default function HomeScreen({ navigation }) {
         },
         quickActionItem: {
             width: '48%',
-            marginBottom: 10,
         },
         fullAction: {
             width: '100%',
         },
     });
 
-    const { totalTimers, countdownTimers, countupTimers } = useMemo(() => {
-        const total = timers?.length || 0;
-        const countdown = timers?.filter(timer => timer.isCountdown).length || 0;
-        const countup = timers?.filter(timer => !timer.isCountdown).length || 0;
-        return { totalTimers: total, countdownTimers: countdown, countupTimers: countup };
-    }, [timers]);
-
     return (
-
         <ScreenWithHeader
             headerIcon={<Icons.Ion name="timer" color={colors.highlight} />}
             headerTitle="Timers"
-            borderRadius={20}
-            style={styles}
+            borderRadius={variables.radius.md}
             paddingMargin={15}
         >
+            {mounted && (
+                <>
+                    {/* Grid Row */}
+                    <View style={styles.grid}>
+                        <Animated.View
+                            style={[
+                                styles.gridItem,
+                                styles.leftColumn,
+                                styles.totalTimers,
+                                { transform: [{ translateX: totalTranslate }] }
+                            ]}
+                        >
+                            <Text style={styles.gridTitle}>Total Timers</Text>
+                            <Text style={styles.gridValue}>{totalTimers}</Text>
+                        </Animated.View>
 
-            {/* New Horizontal Grid Layout */}
-            <View style={styles.grid}>
-                {/* Left: Total Timers (takes 2 rows) */}
-                <View style={[styles.gridItem, styles.leftColumn, styles.totalTimers]}>
-                    <Text style={styles.gridTitle}>Total Timers</Text>
-                    <Text style={styles.gridValue}>{totalTimers}</Text>
-                </View>
-                {/* Right: Countdown and Countup stacked */}
-                <View style={styles.rightColumn}>
-                    <View style={[styles.gridItem, styles.countdownTimers]}>
-                        <Text style={styles.gridTitle}>Countdowns</Text>
-                        <Text style={styles.gridValue}>{countdownTimers}</Text>
-                    </View>
-                    <View style={[styles.gridItem, styles.countupTimers]}>
-                        <Text style={styles.gridTitle}>Countups</Text>
-                        <Text style={styles.gridValue}>{countupTimers}</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* Quick Actions Card */}
-            <View style={styles.quickActionsCard}>
-                <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-                <View style={styles.quickActionsGrid}>
-                    <View style={styles.quickActionItem}>
-                        <TouchableOpacity
-                            style={[styles.actionButton]}
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('CountDowns')}
+                        <Animated.View
+                            style={[
+                                styles.rightColumn,
+                                { transform: [{ translateX: rightTranslate }] }
+                            ]}
                         >
-                            <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                            <Text style={styles.actionText}>Countdowns</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.quickActionItem}>
-                        <TouchableOpacity
-                            style={[styles.actionButton]}
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('CountUps')}
-                        >
-                            <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                            <Text style={styles.actionText}>Countups</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.quickActionItem}>
-                        <TouchableOpacity
-                            style={[styles.actionButton]}
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('Settings')}
-                        >
-                            <Icons.Material name="settings" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                            <Text style={styles.actionText}>Settings</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.quickActionItem}>
-                        <TouchableOpacity
-                            style={[styles.actionButton]}
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('About', { addNew: true })}
-                        >
-                            <Icons.Ion name="information-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                            <Text style={styles.actionText}>About</Text>
-                        </TouchableOpacity>
+                            <View style={[styles.gridItem, styles.countdownTimers]}>
+                                <Text style={styles.gridTitle}>Countdowns</Text>
+                                <Text style={styles.gridValue}>{countdownTimers}</Text>
+                            </View>
+                            <View style={[styles.gridItem]}>
+                                <Text style={styles.gridTitle}>Countups</Text>
+                                <Text style={styles.gridValue}>{countupTimers}</Text>
+                            </View>
+                        </Animated.View>
                     </View>
 
-                    <View style={[styles.quickActionItem, styles.fullAction]}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.actionButton]}
-                            activeOpacity={0.85}
-                            onPress={() => setQuickAddVisible(true)}
-                        >
-                            <Icons.Material name="add-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                            <Text style={styles.actionText}>Quick Add Timer</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                <AddTimerModal
-                    visible={quickAddVisible}
-                    onClose={() => setQuickAddVisible(false)}
-                    onAdd={(timer) => {
-                        // Determine mode based on date
-                        const now = new Date();
-                        const timerDate = new Date(timer.date);
-                        timer.isCountdown = timerDate > now;
-                        addTimer(timer);
-                        setQuickAddVisible(false);
-                    }}
-                    mode={null}
-                />
-            </View>
+                    {/* Quick Actions Card */}
+                    <Animated.View
+                        style={[
+                            styles.quickActionsCard,
+                            {
+                                opacity: quickActionsOpacity,
+                                transform: [{ translateY: quickActionsTranslate }]
+                            }
+                        ]}
+                    >
+                        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+                        <View style={styles.quickActionsGrid}>
+                            <View style={styles.quickActionItem}>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => navigation.navigate('CountDowns')}
+                                >
+                                    <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
+                                    <Text style={styles.actionText}>Countdowns</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.quickActionItem}>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => navigation.navigate('CountUps')}
+                                >
+                                    <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
+                                    <Text style={styles.actionText}>Countups</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.quickActionItem}>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => navigation.navigate('Settings')}
+                                >
+                                    <Icons.Material name="settings" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
+                                    <Text style={styles.actionText}>Settings</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.quickActionItem}>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => navigation.navigate('About', { addNew: true })}
+                                >
+                                    <Icons.Ion name="information-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
+                                    <Text style={styles.actionText}>About</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={[styles.quickActionItem, styles.fullAction]}>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => setQuickAddVisible(true)}
+                                >
+                                    <Icons.Material name="add-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
+                                    <Text style={styles.actionText}>Quick Add Timer</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <AddTimerModal
+                            visible={quickAddVisible}
+                            onClose={() => setQuickAddVisible(false)}
+                            onAdd={(timer) => {
+                                const now = new Date();
+                                const timerDate = new Date(timer.date);
+                                timer.isCountdown = timerDate > now;
+                                addTimer(timer);
+                                setQuickAddVisible(false);
+                            }}
+                            mode={null}
+                        />
+                    </Animated.View>
+                </>
+            )}
         </ScreenWithHeader>
     );
 }

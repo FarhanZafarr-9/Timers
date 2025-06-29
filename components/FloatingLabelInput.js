@@ -30,11 +30,11 @@ const FloatingLabelInput = ({
 
     const labelTop = anim.interpolate({
         inputRange: [0, 1],
-        outputRange: [14, 2], // from center to top inside input
+        outputRange: [14, 4], // from center to top inside input
     });
     const labelRight = anim.interpolate({
         inputRange: [0, 1],
-        outputRange: [12, 4], // stays at 12px from right
+        outputRange: [12, 6], // stays at 12px from right
     });
 
     const labelStyle = {
@@ -52,6 +52,7 @@ const FloatingLabelInput = ({
         zIndex: 1,
         fontWeight: 'bold',
         textAlign: 'right',
+        height: 30
     };
 
     return (
@@ -61,7 +62,7 @@ const FloatingLabelInput = ({
                 style={[
                     style,
                     {
-                        borderColor: focus[focusKey] ? colors.text : 'transparent',
+                        borderColor: focus[focusKey] ? colors.textDesc : 'transparent',
                         fontWeight: '600',
                         paddingTop: 18,
                     },

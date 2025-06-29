@@ -10,11 +10,9 @@ export default function CollapsibleHeader({
     pageLength = null,
     borderRadius = 12,
 }) {
-    // If pageLength is not provided, default to 0 (force collapsed)
-
 
     const forceCollapsed = shouldForceCollapsed(pageLength);
-    const snapThreshold = 55;
+    const snapThreshold = 45;
 
     const snappedCollapseAnim = forceCollapsed
         ? new Animated.Value(1)
@@ -64,7 +62,7 @@ export default function CollapsibleHeader({
     // Animate borderWidth: 0 when expanded, 0.75 when collapsed
     const animatedBorderWidth = snappedCollapseAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, 0.75],
+        outputRange: [0, 0],
     });
 
     const bgColor = snappedCollapseAnim.interpolate({

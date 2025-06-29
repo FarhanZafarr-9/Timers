@@ -23,7 +23,7 @@ export async function loadTimers() {
             return [];
         }
         const timers = JSON.parse(jsonValue);
-        console.log('Loaded Timers from AsyncStorage:', timers.length);
+        //console.log('Loaded Timers from AsyncStorage:', timers.length);
         return timers;
     } catch (e) {
         console.error('Error loading timers from storage:', e);

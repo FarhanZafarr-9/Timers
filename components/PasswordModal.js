@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 // If you use Expo, you can use @expo/vector-icons
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../utils/variables';
+import { useTheme } from '../utils/ThemeContext';
 
 const getStrength = (password) => {
     if (!password) return { label: '', color: 'gray' };
@@ -24,6 +24,7 @@ export default function PasswordModal({
     onSave,
     currentPassword,
     mode = 'set',
+    variables,
 }) {
 
     const { colors } = useTheme();
@@ -67,15 +68,13 @@ export default function PasswordModal({
         inputRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderWidth: 1,
-            borderRadius: 12,
+            borderWidth: 0.75,
+            borderRadius: variables.radius.sm,
             borderColor: colors.border,
             backgroundColor: colors.settingBlock,
             paddingHorizontal: 8,
         },
         input: {
-            borderWidth: 1,
-            borderRadius: 12,
             padding: 10,
             fontSize: 15,
             borderWidth: 0,
@@ -98,7 +97,7 @@ export default function PasswordModal({
             borderWidth: 0.5,
             borderColor: '#ef4444',
             padding: 10,
-            borderRadius: 15,
+            borderRadius: variables.radius.sm,
         },
         actions: {
             flexDirection: 'row',
@@ -109,7 +108,7 @@ export default function PasswordModal({
             paddingTop: 20,
         },
         btn: {
-            borderRadius: 16,
+            borderRadius: variables.radius.sm,
             paddingVertical: 8,
             paddingHorizontal: 18,
             marginHorizontal: 4,
@@ -193,6 +192,8 @@ export default function PasswordModal({
                             secureTextEntry={!showNew}
                             value={newPassword}
                             onChangeText={setNewPassword}
+                            textContentType="password"
+                            autoComplete="password"
                         />
                         <TouchableOpacity onPress={() => setShowNew(v => !v)} style={styles.eyeBtn}>
                             <Ionicons name={showNew ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
@@ -213,6 +214,8 @@ export default function PasswordModal({
                             secureTextEntry={!showConfirm}
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
+                            textContentType="password"
+                            autoComplete="password"
                         />
                         <TouchableOpacity onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn}>
                             <Ionicons name={showConfirm ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
@@ -221,11 +224,11 @@ export default function PasswordModal({
 
                     {error ? <Text style={styles.error}>{error}</Text> : null}
                     <View style={styles.actions}>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.modalBtnBg + 'f5' }]} onPress={handleClose}>
-                            <Text style={[styles.btnText, { color: colors.modalBtnText }]}>Cancel</Text>
+                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.highlight + '10' }]} onPress={handleClose}>
+                            <Text style={[styles.btnText, { color: colors.text + 'f0' }]}>Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.modalBtnBg + 'f5' }]} onPress={handleSave}>
-                            <Text style={[styles.btnText, { color: colors.modalBtnText }]}>Save</Text>
+                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.highlight, width: '60%', justifyContent: 'center', alignItems: 'center' }]} onPress={handleSave}>
+                            <Text style={[styles.btnText, { color: colors.background }]}>Save</Text>
                         </TouchableOpacity>
                     </View>
 

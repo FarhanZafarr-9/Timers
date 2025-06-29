@@ -1,13 +1,11 @@
-// ...existing imports...
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+// Optimized TimerCard.js
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
-import ShimmerPlaceHolder from 'react-native-shimmer-placeholder';
+import { jumbleText, maskText } from '../utils/functions';
 
-
-// ...existing TimerCard props...
-const TimerCard = ({
+const TimerCard = React.memo(({
     timer,
     elapsedTime = '',
     remainingTime = '',
@@ -16,6 +14,7 @@ const TimerCard = ({
     isExpanded = false,
     onClick,
     colors,
+    variables,
     selectable,
     selected = false,
     searchText = '',
@@ -25,106 +24,85 @@ const TimerCard = ({
     const [contentHeight, setContentHeight] = useState(0);
     const [hasMeasured, setHasMeasured] = useState(false);
 
-    // Animation values
-    const animatedHeight = useRef(new Animated.Value(0)).current;
-    const iconRotation = useRef(new Animated.Value(0)).current;
-    const buttonsOpacity = useRef(new Animated.Value(0)).current;
-    const buttonsScale = useRef(new Animated.Value(0.8)).current;
-    const animatedBorderBottomWidth = useRef(new Animated.Value(isExpanded ? 2 : 0)).current;
-    const animatedPaddingBottom = useRef(new Animated.Value(isExpanded ? 16 : 0)).current;
-    const animatedMarginBottom = useRef(new Animated.Value(isExpanded ? 12 : 0)).current;
-    const actionsHeight = useRef(new Animated.Value(0)).current;
+    const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
+    const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
 
-    useEffect(() => {
-        if (!isExpanded && showActions) {
-            setShowActions(false);
+    const jumbledTitle = useMemo(
+        () => jumbleText(titleText),
+        [titleText] // Only re-jumble if the title changes
+    );
+
+    const jumbledName = useMemo(
+        () => jumbleText(nameText),
+        [nameText] // Only re-jumble if the name changes
+    );
+
+    const maskedName = useMemo(
+        () => maskText(nameText),
+        [nameText] // Only re-mask if the name changes
+    );
+
+    const maskedTitle = useMemo(
+        () => maskText(titleText),
+        [titleText] // Only re-mask if the title changes
+    );
+
+
+
+    // Use single animated value for performance
+    const animatedValues = useRef({
+        height: new Animated.Value(0),
+        iconRotation: new Animated.Value(0),
+        buttonsOpacity: new Animated.Value(0),
+        buttonsScale: new Animated.Value(0.8),
+        borderBottomWidth: new Animated.Value(isExpanded ? 2 : 0),
+        paddingBottom: new Animated.Value(isExpanded ? 16 : 0),
+        marginBottom: new Animated.Value(isExpanded ? 12 : 0),
+        actionsHeight: new Animated.Value(0),
+    }).current;
+
+    // Memoize time parsing to avoid recalculation
+    const timeParts = useMemo(() => {
+        const timeStr = timer.isCountdown
+            ? (remainingTime || '0y 0mo 0d 0h 0m 0s')
+            : (elapsedTime || '0y 0mo 0d 0h 0m 0s');
+
+        const parts = { y: 0, mo: 0, d: 0, h: 0, m: 0, s: 0 };
+        const regex = /(\d+)\s*y|(\d+)\s*mo|(\d+)\s*d|(\d+)\s*h|(\d+)\s*m(?!o)|(\d+)\s*s/g;
+        let match;
+        while ((match = regex.exec(timeStr)) !== null) {
+            if (match[1]) parts.y = parseInt(match[1]);
+            if (match[2]) parts.mo = parseInt(match[2]);
+            if (match[3]) parts.d = parseInt(match[3]);
+            if (match[4]) parts.h = parseInt(match[4]);
+            if (match[5]) parts.m = parseInt(match[5]);
+            if (match[6]) parts.s = parseInt(match[6]);
         }
-    }, [isExpanded]);
 
-    // Smooth expand/collapse animation
-    useEffect(() => {
-        if (hasMeasured) {
-            Animated.timing(animatedHeight, {
-                toValue: isExpanded ? contentHeight : 0,
-                duration: 250,
-                useNativeDriver: false,
-            }).start();
+        return [parts.y, parts.mo, parts.d, parts.h, parts.m, parts.s];
+    }, [timer.isCountdown, remainingTime, elapsedTime]);
 
-            Animated.timing(iconRotation, {
-                toValue: isExpanded ? 1 : 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start();
+    // Memoize formatted date to avoid recalculation
+    const formattedDate = useMemo(() => {
+        return new Date(timer.isRecurring && timer.nextDate ? timer.nextDate : timer.date).toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }, [timer.date, timer.nextDate, timer.isRecurring]);
 
-            Animated.timing(animatedBorderBottomWidth, {
-                toValue: isExpanded ? 2 : 0,
-                duration: 250,
-                useNativeDriver: false,
-            }).start();
-
-            Animated.timing(animatedPaddingBottom, {
-                toValue: isExpanded ? 16 : 0,
-                duration: 250,
-                useNativeDriver: false,
-            }).start();
-
-            Animated.timing(animatedMarginBottom, {
-                toValue: isExpanded ? 12 : 0,
-                duration: 250,
-                useNativeDriver: false,
-            }).start();
-        }
-    }, [isExpanded, contentHeight, hasMeasured]);
-
-    useEffect(() => {
-        if (showActions) {
-            Animated.parallel([
-                Animated.timing(buttonsOpacity, {
-                    toValue: 1,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(buttonsScale, {
-                    toValue: 1,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(actionsHeight, {
-                    toValue: 28,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(buttonsOpacity, {
-                    toValue: 0,
-                    duration: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(buttonsScale, {
-                    toValue: 0.8,
-                    duration: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(actionsHeight, {
-                    toValue: 0,
-                    duration: 150,
-                    useNativeDriver: false,
-                }),
-            ]).start();
-        }
-    }, [showActions
-    ]);
-
-    const styles = StyleSheet.create({
+    // Memoize styles to prevent recreation
+    const styles = useMemo(() => StyleSheet.create({
         timerItem: {
             backgroundColor: colors.cardLighter,
             padding: 12,
-            borderRadius: 20,
+            borderRadius: variables.radius.md,
             marginBottom: 10,
             borderWidth: 0.75,
-            borderColor: searchText === '' || privacyMode !== 'off' ? colors.cardBorder : colors.highlight + '3a',
+            borderColor: searchText === '' || privacyMode !== 'off' ? 'transparent' : colors.highlight + '3a',
         },
         header: {
             flexDirection: 'row',
@@ -135,7 +113,7 @@ const TimerCard = ({
         iconButton: {
             backgroundColor: colors.card + '77',
             padding: 6,
-            borderRadius: 15,
+            borderRadius: variables.radius.circle,
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 0.75,
@@ -154,7 +132,7 @@ const TimerCard = ({
         priorityDot: {
             width: 10,
             height: 10,
-            borderRadius: 13,
+            borderRadius: variables.radius.circle,
             borderWidth: 0.75,
         },
         timerQuickInfo: {
@@ -163,23 +141,17 @@ const TimerCard = ({
             fontWeight: 'bold',
             letterSpacing: 1,
             backgroundColor: colors.highlight + '10',
-            borderWidth: 0.75,
+            borderWidth: 0,
             borderColor: colors.border,
             justifyContent: 'center',
             alignItems: 'center',
             textAlign: 'center',
             height: 40,
             padding: 8,
-            borderRadius: 14,
+            borderRadius: variables.radius.sm,
         },
         expandableSection: {
             overflow: 'hidden',
-        },
-        expandableContent: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
         },
         timerDetails: {
             color: colors.textDesc,
@@ -187,33 +159,23 @@ const TimerCard = ({
             marginBottom: 8,
             marginLeft: 4,
         },
-        recurringIndicator: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 8,
-        },
-        recurringText: {
-            color: colors.textDesc,
-            fontSize: 12,
-            marginLeft: 4,
-        },
         namePill: {
-            backgroundColor: colors.settingBlock + '77',
-            paddingVertical: 8,
+            backgroundColor: colors.highlight + '10',
+            paddingVertical: 6,
             paddingHorizontal: 12,
-            borderRadius: 16,
+            marginHorizontal: 8,
+            borderRadius: variables.radius.sm,
             alignSelf: 'flex-start',
-            borderWidth: 0.75,
+            borderWidth: 0,
             borderColor: colors.cardBorder,
+            color: colors.text,
+            fontSize: 12,
+            fontWeight: 'bold',
         },
         nameText: {
             color: colors.text,
             fontSize: 12,
             fontWeight: 'bold',
-        },
-        actions: {
-            flexDirection: 'row',
-            marginTop: 8,
         },
         editButton: {
             backgroundColor: colors.highlight + '33',
@@ -221,7 +183,7 @@ const TimerCard = ({
             borderColor: colors.highlight,
             paddingVertical: 6,
             paddingHorizontal: 12,
-            borderRadius: 15,
+            borderRadius: variables.radius.sm,
             alignSelf: 'flex-end',
         },
         deleteButton: {
@@ -230,7 +192,7 @@ const TimerCard = ({
             borderColor: '#ef4444',
             paddingVertical: 6,
             paddingHorizontal: 12,
-            borderRadius: 15,
+            borderRadius: variables.radius.sm,
         },
         buttonText: {
             color: colors.text,
@@ -248,51 +210,123 @@ const TimerCard = ({
         },
         measurementContainer: {
             position: 'absolute',
-            top: -1000,
+            top: -10,
             left: 0,
             right: 0,
             opacity: 0,
             zIndex: -1,
         }
-    });
+    }), [colors, searchText, privacyMode]);
 
-    // Memoized expandable content to prevent blinking
+    // Optimized callbacks
+    const handleEdit = useCallback(() => {
+        setShowActions(false);
+        onEdit(timer);
+    }, [onEdit, timer]);
+
+    const handleDelete = useCallback(() => {
+        setShowActions(false);
+        onDelete(timer.id);
+    }, [onDelete, timer.id]);
+
+    const toggleActions = useCallback(() => {
+        setShowActions(prev => !prev);
+    }, []);
+
+    // Reset actions when collapsed
+    useEffect(() => {
+        if (!isExpanded && showActions) {
+            setShowActions(false);
+        }
+    }, [isExpanded]);
+
+    // Optimized expand/collapse animation using parallel animations
+    useEffect(() => {
+        if (hasMeasured) {
+            const animations = [
+                Animated.timing(animatedValues.height, {
+                    toValue: isExpanded ? contentHeight : 0,
+                    duration: 200, // Reduced duration for snappier feel
+                    useNativeDriver: false,
+                }),
+                Animated.timing(animatedValues.iconRotation, {
+                    toValue: isExpanded ? 1 : 0,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(animatedValues.borderBottomWidth, {
+                    toValue: isExpanded ? 2 : 0,
+                    duration: 200,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(animatedValues.paddingBottom, {
+                    toValue: isExpanded ? 16 : 0,
+                    duration: 200,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(animatedValues.marginBottom, {
+                    toValue: isExpanded ? 12 : 0,
+                    duration: 200,
+                    useNativeDriver: false,
+                }),
+            ];
+
+            Animated.parallel(animations).start();
+        }
+    }, [isExpanded, contentHeight, hasMeasured]);
+
+    // Optimized actions animation
+    useEffect(() => {
+        const animations = showActions ? [
+            Animated.timing(animatedValues.buttonsOpacity, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(animatedValues.buttonsScale, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(animatedValues.actionsHeight, {
+                toValue: 28,
+                duration: 150,
+                useNativeDriver: false,
+            }),
+        ] : [
+            Animated.timing(animatedValues.buttonsOpacity, {
+                toValue: 0,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.timing(animatedValues.buttonsScale, {
+                toValue: 0.8,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.timing(animatedValues.actionsHeight, {
+                toValue: 0,
+                duration: 100,
+                useNativeDriver: false,
+            }),
+        ];
+
+        Animated.parallel(animations).start();
+    }, [showActions]);
+
+    // Memoized expandable content
     const ExpandableContent = useMemo(() => (
         <View style={styles.contentContainer}>
-            {/* End/Start Time */}
-            <Text style={styles.timerDetails}>
-                {timer.isCountdown ? 'End:  ' : 'Start:  '}
-                {new Date(timer.isRecurring && timer.nextDate ? timer.nextDate : timer.date).toLocaleString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                })}
-            </Text>
-
-            {/* Name Pill and Pencil Icon in one row */}
-
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                {timer.personName ? (
-                    <View style={styles.namePill}>
-                        <HighlightMatchText
-                            text={timer.personName && timer.personName.length > 15
-                                ? timer.personName.slice(0, 15) + '...'
-                                : timer.personName}
-                            textStyle={styles.nameText}
-                            privacyMode={privacyMode}
-                            search={searchText}
-                            colors={colors}
-                        />
-                    </View>
-                ) : <View />}
+                <Text style={styles.timerDetails}>
+                    {timer.isCountdown ? 'End:  ' : 'Start:  '}
+                    {formattedDate}
+                </Text>
+
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
-                    {/* Action buttons to the left of the pencil icon */}
                     <Animated.View
                         style={{
-                            height: actionsHeight,
+                            height: animatedValues.actionsHeight,
                             overflow: 'hidden',
                             marginRight: 8,
                             justifyContent: 'center',
@@ -302,27 +336,27 @@ const TimerCard = ({
                         <Animated.View
                             style={{
                                 flexDirection: 'row',
-                                opacity: buttonsOpacity,
-                                transform: [{ scale: buttonsScale }],
+                                opacity: animatedValues.buttonsOpacity,
+                                transform: [{ scale: animatedValues.buttonsScale }],
                             }}
                         >
                             <TouchableOpacity
-                                onPress={() => { setShowActions(false); onEdit(timer); }}
+                                onPress={handleEdit}
                                 style={[styles.editButton, { marginRight: 10 }]}
                             >
                                 <Text style={styles.buttonText}>Edit</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => { setShowActions(false); onDelete(timer.id); }}
+                                onPress={handleDelete}
                                 style={styles.deleteButton}
                             >
                                 <Text style={styles.buttonText}>Delete</Text>
                             </TouchableOpacity>
                         </Animated.View>
                     </Animated.View>
-                    {/* Pencil icon to the right */}
+
                     <TouchableOpacity
-                        onPress={() => setShowActions(!showActions)}
+                        onPress={toggleActions}
                         style={styles.iconButton}
                         activeOpacity={0.7}
                     >
@@ -330,73 +364,123 @@ const TimerCard = ({
                     </TouchableOpacity>
                 </View>
             </View>
-
         </View>
-    ), [
-        timer,
-        showActions,
-        buttonsOpacity,
-        buttonsScale,
-        onEdit,
-        onDelete,
-    ]);
+    ), [timer, formattedDate, showActions, handleEdit, handleDelete, toggleActions, styles]);
 
-    // Helper for time parts
-    const getTimeParts = (timeString) => {
-        // Expects format: "Xy Xmo Xd Xh Xm Xs"
-        const parts = { y: 0, mo: 0, d: 0, h: 0, m: 0, s: 0 };
-        const regex = /(\d+)\s*y|(\d+)\s*mo|(\d+)\s*d|(\d+)\s*h|(\d+)\s*m(?!o)|(\d+)\s*s/g;
-        let match;
-        while ((match = regex.exec(timeString)) !== null) {
-            if (match[1]) parts.y = parseInt(match[1]);
-            if (match[2]) parts.mo = parseInt(match[2]);
-            if (match[3]) parts.d = parseInt(match[3]);
-            if (match[4]) parts.h = parseInt(match[4]);
-            if (match[5]) parts.m = parseInt(match[5]);
-            if (match[6]) parts.s = parseInt(match[6]);
+    // Memoized time display
+    const timeDisplay = useMemo(() => {
+        const [years, months, days, hours, minutes, seconds] = timeParts;
+
+        const timePartsArray = [
+            { value: years, label: 'y', id: 'years' },
+            { value: months, label: 'mo', id: 'months' },
+            { value: days, label: 'd', id: 'days' },
+            { value: hours, label: 'h', id: 'hours' },
+            { value: minutes, label: 'm', id: 'minutes' },
+            { value: seconds, label: 's', id: 'seconds' },
+        ];
+
+        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+
+        let prefix = '';
+        if (timer.isCountdown && !timer.isRecurring && remainingTime === '0s') {
+            prefix = 'Completed';
+        } else if (timer.isCountdown) {
+            prefix = 'Left: ';
+        } else {
+            prefix = 'Elapsed: ';
         }
-        return [parts.y, parts.mo, parts.d, parts.h, parts.m, parts.s];
-    };
 
-    const handleContentLayout = (event) => {
+        return (
+            <>
+                <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
+                {prefix === 'Completed' ? null : (
+                    nonZeroParts.length > 0
+                        ? nonZeroParts.map((part, idx) => (
+                            <Text style={{ fontSize: 14 }} key={part.id}>
+                                {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
+                            </Text>
+                        ))
+                        : <Text style={{ fontSize: 14 }}>0s</Text>
+                )}
+            </>
+        );
+    }, [timeParts, timer.isCountdown, timer.isRecurring, remainingTime]);
+
+    const handleContentLayout = useCallback((event) => {
         if (!hasMeasured) {
             const { height } = event.nativeEvent.layout;
             setContentHeight(height);
             setHasMeasured(true);
-            animatedHeight.setValue(isExpanded ? height : 0);
-            iconRotation.setValue(isExpanded ? 1 : 0);
-            animatedBorderBottomWidth.setValue(isExpanded ? 2 : 0);
-            animatedPaddingBottom.setValue(isExpanded ? 16 : 0);
-            animatedMarginBottom.setValue(isExpanded ? 12 : 0);
-            buttonsOpacity.setValue(0);
-            buttonsScale.setValue(0.8);
+
+            // Set initial values without animation
+            animatedValues.height.setValue(isExpanded ? height : 0);
+            animatedValues.iconRotation.setValue(isExpanded ? 1 : 0);
+            animatedValues.borderBottomWidth.setValue(isExpanded ? 2 : 0);
+            animatedValues.paddingBottom.setValue(isExpanded ? 16 : 0);
+            animatedValues.marginBottom.setValue(isExpanded ? 12 : 0);
+            animatedValues.buttonsOpacity.setValue(0);
+            animatedValues.buttonsScale.setValue(0.8);
         }
-    };
+    }, [hasMeasured, isExpanded]);
+
+    // Memoized card style
+    const cardStyle = useMemo(() => ({
+        ...styles.timerItem,
+        ...(selected && {
+            borderColor: 'hsla(0, 84.20%, 60.20%, 0.60)',
+            backgroundColor: 'hsla(0, 84.20%, 60.20%, 0.10)'
+        }),
+        ...(selectable && !selected && {
+            borderColor: 'hsla(0, 0.00%, 38.00%, 0.60)'
+        })
+    }), [styles.timerItem, selected, selectable]);
+
+
 
     return (
-        <View style={{
-            ...styles.timerItem,
-            ...(selected && { borderColor: 'hsla(0, 84.20%, 60.20%, 0.60)', backgroundColor: 'hsla(0, 84.20%, 60.20%, 0.10)' }),
-            ...(selectable && !selected && { borderColor: 'hsla(0, 0.00%, 38.00%, 0.60)' })
-        }}>
-            {/* Header - Only this is touchable for expand/collapse */}
+        <View style={cardStyle}>
             <TouchableOpacity onPress={onClick} activeOpacity={0.9}>
                 <View style={styles.header}>
-                    <HighlightMatchText
-                        text={timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title}
-                        textStyle={styles.timerTitle}
-                        privacyMode={privacyMode}
-                        search={searchText}
-                        colors={colors}
-                    />
+                    {privacyMode === 'off' ? (
+                        <HighlightMatchText
+                            text={titleText}
+                            textStyle={styles.timerTitle}
+                            search={searchText}
+                            colors={colors}
+                        />
+                    ) :
+                        <Text style={styles.timerTitle}>{privacyMode === 'jumble' ? jumbledTitle : maskedTitle}</Text>
+                    }
                     <View style={styles.priorityIndicator}>
                         {timer.isRecurring && (
-                            <Icons.Material
-                                name="autorenew"
-                                size={14}
-                                color={colors.highlight}
-                                style={{ marginHorizontal: 6 }}
-                            />
+                            <View style={{
+                                backgroundColor: colors.highlight + '10',
+                                padding: 6,
+                                borderRadius: 8,
+                                borderWidth: 0.75,
+                                borderColor: colors.border,
+                            }}>
+                                <Icons.Material
+                                    name="autorenew"
+                                    size={14}
+                                    color={colors.highlight}
+
+                                />
+                            </View>
+                        )}
+                        {timer.personName && (
+                            privacyMode === 'off' ? (
+
+                                <HighlightMatchText
+                                    text={nameText}
+                                    textStyle={styles.namePill}
+                                    search={searchText}
+                                    colors={colors}
+                                />
+
+                            ) :
+                                <Text style={styles.namePill}>{privacyMode === 'jumble' ? jumbledName : maskedName}</Text>
                         )}
                         <View
                             style={[
@@ -420,62 +504,21 @@ const TimerCard = ({
                     </View>
                 </View>
 
-                {/* Quick Info */}
                 <Animated.View style={[
                     styles.midSection,
                     {
-                        borderBottomWidth: animatedBorderBottomWidth,
-                        paddingBottom: animatedPaddingBottom,
+                        borderBottomWidth: animatedValues.borderBottomWidth,
+                        paddingBottom: animatedValues.paddingBottom,
                         borderColor: colors.cardBorder,
-                        marginBottom: animatedMarginBottom,
+                        marginBottom: animatedValues.marginBottom,
                     }
                 ]}>
                     <Text style={styles.timerQuickInfo}>
-                        {(() => {
-                            const timeStr = timer.isCountdown
-                                ? (remainingTime || '0y 0mo 0d 0h 0m 0s')
-                                : (elapsedTime || '0y 0mo 0d 0h 0m 0s');
-                            const [years, months, days, hours, minutes, seconds] = getTimeParts(timeStr);
-
-                            const timeParts = [
-                                { value: years, label: 'y', id: 'years' },
-                                { value: months, label: 'mo', id: 'months' },
-                                { value: days, label: 'd', id: 'days' },
-                                { value: hours, label: 'h', id: 'hours' },
-                                { value: minutes, label: 'm', id: 'minutes' },
-                                { value: seconds, label: 's', id: 'seconds' },
-                            ];
-
-                            const nonZeroParts = timeParts.filter(part => part.value !== 0);
-
-                            let prefix = '';
-                            if (timer.isCountdown && !timer.isRecurring && remainingTime === '0s') {
-                                prefix = 'Completed';
-                            } else if (timer.isCountdown) {
-                                prefix = 'Left: ';
-                            } else {
-                                prefix = 'Elapsed: ';
-                            }
-
-                            return (
-                                <>
-                                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
-                                    {prefix === 'Completed' ? null : (
-                                        nonZeroParts.length > 0
-                                            ? nonZeroParts.map((part, idx) => (
-                                                <Text style={{ fontSize: 14 }} key={part.id}>
-                                                    {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
-                                                </Text>
-                                            ))
-                                            : <Text style={{ fontSize: 14 }}>0s</Text>
-                                    )}
-                                </>
-                            );
-                        })()}
+                        {timeDisplay}
                     </Text>
                     <Animated.View style={{
                         transform: [{
-                            rotate: iconRotation.interpolate({
+                            rotate: animatedValues.iconRotation.interpolate({
                                 inputRange: [0, 1],
                                 outputRange: ['0deg', '-90deg']
                             })
@@ -491,20 +534,18 @@ const TimerCard = ({
                 </Animated.View>
             </TouchableOpacity>
 
-            {/* Measurement container - hidden off-screen */}
             {!hasMeasured && (
                 <View style={styles.measurementContainer} onLayout={handleContentLayout} pointerEvents="none">
                     {ExpandableContent}
                 </View>
             )}
 
-            {/* Animated Expandable Section */}
             {hasMeasured && (
                 <Animated.View
                     style={[
                         styles.expandableSection,
                         {
-                            height: animatedHeight,
+                            height: animatedValues.height,
                         },
                     ]}
                 >
@@ -513,6 +554,6 @@ const TimerCard = ({
             )}
         </View>
     );
-};
+});
 
-export default React.memo(TimerCard);
+export default TimerCard;

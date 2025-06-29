@@ -7,10 +7,11 @@ import {
     StyleSheet,
     TouchableWithoutFeedback,
     Keyboard,
+    Switch,
 } from 'react-native';
 import { Icons } from '../assets/icons';
 import FloatingLabelInput from './FloatingLabelInput';
-import { useTheme } from '../utils/variables';
+import { useTheme } from '../utils/ThemeContext';
 
 const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     const priorities = ['low', 'normal', 'high'];
@@ -24,7 +25,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         isCountdown: mode === 'countdown',
     });
 
-    const {colors} = useTheme();
+    const { variables, colors } = useTheme();
 
     const [currentIndex, setCurrentIndex] = useState(1);
     const [yearInput, setYearInput] = useState('');
@@ -227,7 +228,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             borderWidth: 0.5,
             borderColor: '#ef4444',
             padding: 10,
-            borderRadius: 5,
+            borderRadius: variables.radius.sm,
         },
         modalContainer: {
             flex: 1,
@@ -238,8 +239,8 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             borderWidth: 0.75,
             borderColor: colors.cardBorder,
             backgroundColor: colors.cardLighter,
-            padding: 20,
-            borderRadius: 10,
+            padding: 25,
+            borderRadius: variables.radius.md,
             width: '90%',
         },
         modePill: {
@@ -249,7 +250,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             backgroundColor: colors.snackbarBg,
             paddingVertical: 4,
             paddingHorizontal: 8,
-            borderRadius: 8,
+            borderRadius: variables.radius.xs,
             borderWidth: 0.75,
             borderColor: colors.border,
         },
@@ -268,7 +269,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             backgroundColor: colors.highlight + '22',
             color: colors.text,
             padding: 10,
-            borderRadius: 6,
+            borderRadius: variables.radius.sm,
             marginBottom: 0,
             borderWidth: 0.75,
             borderColor: 'transparent',
@@ -282,18 +283,19 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             marginBottom: 12,
             backgroundColor: colors.highlight + '22',
             padding: 2,
-            borderRadius: 6,
+            borderRadius: variables.radius.sm,
             borderWidth: 0.75,
             borderColor: colors.border,
         },
         arrowButton: {
             backgroundColor: colors.snackbarBg,
             padding: 8,
-            borderRadius: 6,
+            borderRadius: variables.radius.sm,
         },
         priorityText: {
             color: colors.text,
             fontSize: 14,
+            fontWeight: 'bold',
         },
         recurringContainer: {
             flexDirection: 'row',
@@ -304,57 +306,36 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         label: {
             color: colors.text,
             fontSize: 14,
-        },
-        toggleContainer: {
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            flex: 1,
-            gap: 15,
-        },
-        toggleButton: {
-            flex: 1,
-            padding: 10,
-            borderWidth: 0.75,
-            borderColor: colors.border,
-            borderRadius: 6,
-            backgroundColor: colors.highlight + '22',
-        },
-        activeToggleButton: {
-            backgroundColor: colors.snackbarBg,
-        },
-        toggleText: {
-            color: colors.text,
-            textAlign: 'center',
+            height: 20,
+            fontWeight: 'bold',
         },
         buttonContainer: {
             flexDirection: 'row',
-            justifyContent: 'space-between',
             marginTop: 10,
             borderTopColor: colors.border,
             borderTopWidth: 0.75,
             paddingTop: 20,
+            gap: 10,
         },
         addButton: {
-            backgroundColor: 'rgba(34, 197, 94, 0.18)',
+            backgroundColor: colors.highlight,
             borderWidth: 0.5,
-            borderColor: '#22c55e',
+            borderColor: colors.border,
             padding: 10,
-            borderRadius: 5,
-            flex: 1,
-            marginRight: 8,
+            borderRadius: variables.radius.sm,
         },
         cancelButton: {
-            backgroundColor: 'rgba(239, 68, 68, 0.18)',
+            backgroundColor: colors.highlight + '22',
             borderWidth: 0.5,
-            borderColor: '#ef4444',
+            borderColor: colors.border,
             padding: 10,
-            borderRadius: 5,
-            flex: 1,
+            borderRadius: variables.radius.sm,
         },
         buttonText: {
             color: colors.text,
             fontSize: 14,
             textAlign: 'center',
+            fontWeight: 'bold',
         },
         inputRow: {
             flexDirection: 'row',
@@ -524,27 +505,23 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
                             {mode === 'countdown' && (
                                 <View style={styles.recurringContainer}>
                                     <Text style={styles.label}>Is Recurring?</Text>
-                                    <View style={styles.toggleContainer}>
-                                        <TouchableOpacity
-                                            onPress={() => setTimerData({ ...timerData, isRecurring: true })}
-                                            style={[
-                                                styles.toggleButton,
-                                                timerData.isRecurring && styles.activeToggleButton,
-                                                { maxWidth: '30%' },
-                                            ]}
-                                        >
-                                            <Text style={styles.toggleText}>Yes</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={() => setTimerData({ ...timerData, isRecurring: false, recurrenceInterval: '' })}
-                                            style={[
-                                                styles.toggleButton,
-                                                !timerData.isRecurring && styles.activeToggleButton,
-                                                { maxWidth: '35%' },
-                                            ]}
-                                        >
-                                            <Text style={styles.toggleText}>No</Text>
-                                        </TouchableOpacity>
+                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                        <Switch
+                                            value={timerData.isRecurring}
+                                            onValueChange={val =>
+                                                setTimerData({
+                                                    ...timerData,
+                                                    isRecurring: val,
+                                                    recurrenceInterval: val ? timerData.recurrenceInterval : '',
+                                                })
+                                            }
+                                            trackColor={{
+                                                false: colors.switchTrack,
+                                                true: colors.switchTrackActive,
+                                            }}
+                                            thumbColor={timerData.isRecurring ? colors.switchThumbActive : colors.switchThumb}
+                                            style={{ transform: [{ scale: 0.95 }] }}
+                                        />
                                     </View>
                                 </View>
                             )}
@@ -563,11 +540,11 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
 
                             {error ? <Text style={styles.error}>{error}</Text> : null}
                             <View style={styles.buttonContainer}>
-                                <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
-                                    <Text style={styles.buttonText}>{initialData ? 'Save Changes' : 'Add Timer'}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+                                <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { width: '40%' }]}>
                                     <Text style={styles.buttonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleAdd} style={[styles.addButton, { opacity: error ? 0.25 : 1, width: '60%' }]} disabled={!!error}>
+                                    <Text style={[styles.buttonText, { color: colors.card }]}>{initialData ? 'Save Changes' : 'Add Timer'}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

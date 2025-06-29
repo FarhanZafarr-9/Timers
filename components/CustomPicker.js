@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, TouchableOpacity, View, Text, FlatList, StyleSheet } from 'react-native';
-import { Icons } from '../assets/icons'; // Optional: for dropdown icon
-import { Dimensions } from 'react-native';
+import { Icons } from '../assets/icons';
 
 const CustomPicker = ({
     value,
@@ -14,22 +13,17 @@ const CustomPicker = ({
     textStyle = {},
     iconColor = '#888',
     colors,
+    variables,
 }) => {
     const [visible, setVisible] = useState(false);
 
-    // Get screen height for responsive modal
-    const screenHeight = Dimensions.get('window').height;
-    // Calculate maxHeight: 30% for <=5 options, 50% for more
-    const maxHeight = options.length <= 5
-        ? screenHeight * 0.2
-        : screenHeight * 0.5;
-
+    const maxHeight = options.length * 55;
 
     const styles = StyleSheet.create({
         trigger: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderRadius: 14,
+            borderRadius: variables.radius.sm,
             paddingVertical: 8,
             paddingHorizontal: 16,
             backgroundColor: colors.highlight + '20',
@@ -44,13 +38,13 @@ const CustomPicker = ({
         },
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + 'd2',
+            backgroundColor: colors.background + 'f0',
             justifyContent: 'center',
             alignItems: 'center',
         },
         modal: {
             backgroundColor: colors.settingBlock,
-            borderRadius: 18,
+            borderRadius: variables.radius.md,
             paddingVertical: 8,
             minWidth: 250,
             maxHeight,
@@ -75,7 +69,6 @@ const CustomPicker = ({
         },
     });
 
-    // ...existing code...
     const selectedOption = options.find(opt => opt.value === value);
     const selectedLabel = selectedOption?.label || placeholder;
     const selectedIcon = selectedOption?.icon;
@@ -89,7 +82,7 @@ const CustomPicker = ({
             >
                 {selectedIcon ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {selectedIcon}
+                        {React.cloneElement(selectedIcon, { color: colors.text })}
                     </View>
                 ) : (
                     <Text style={[styles.triggerText, textStyle]}>{selectedLabel}</Text>
@@ -119,10 +112,10 @@ const CustomPicker = ({
                                         setVisible(false);
                                     }}
                                 >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center',minHeight: 32 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32 }}>
                                         {item.icon && (
                                             <View style={{ width: 26, alignItems: 'center', justifyContent: 'center' }}>
-                                                {item.icon}
+                                                {React.cloneElement(item.icon, { color: colors.text })}
                                             </View>
                                         )}
                                         <Text

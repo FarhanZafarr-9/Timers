@@ -13,7 +13,7 @@ import { SecurityProvider, useSecurity } from './utils/SecurityContext';
 import AuthComponent from './utils/AuthComponent';
 import * as Notifications from 'expo-notifications';
 import Toast from 'react-native-toast-message';
-import { ThemeProvider, useTheme } from './utils/variables';
+import { ThemeProvider, useTheme } from './utils/ThemeContext';
 import SplashScreen from './screens/SplashScreen';
 
 const Tab = createBottomTabNavigator();
@@ -29,12 +29,17 @@ async function setupNotificationChannel() {
 }
 
 function AppContent() {
-  const { colors } = useTheme();
+  const { variables, colors } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
 
+  const [splashDone, setSplashDone] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2500); // 2.5 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500); // 2.5 seconds
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -64,12 +69,13 @@ function AppContent() {
     setupNotifications();
   }, []);
 
-  if (showSplash) {
-    return <SplashScreen colors={colors} />;
-  }
-
-  if (loading) {
-    return null;
+  if ((showSplash && !splashDone) || loading) {
+    return (
+      <>
+        <StatusBar hidden />
+        <SplashScreen visible={(showSplash && !splashDone) || loading} colors={colors} variables={variables} />
+      </>
+    );
   }
 
   return (

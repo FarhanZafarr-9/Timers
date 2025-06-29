@@ -6,7 +6,7 @@ import AddTimerModal from '../components/AddTimerModal';
 import HeaderControls from '../components/HeaderControls';
 import { useTimers } from '../utils/TimerContext';
 import { Icons } from '../assets/icons';
-import { useTheme } from '../utils/variables';
+import { useTheme } from '../utils/ThemeContext';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import Timer from '../classes/Timer';
 
