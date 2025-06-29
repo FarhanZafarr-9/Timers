@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Icons } from '../assets/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../utils/variables';
+import { useTheme } from '../utils/ThemeContext';
 import { Easing } from 'react-native';
 import {
     View,
@@ -9,75 +9,50 @@ import {
     StyleSheet,
     Text,
     Animated,
-    Dimensions
 } from 'react-native';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
-    const { colors } = useTheme();
+    const { variables, colors } = useTheme();
 
-    // Animation values
-    const highlightPosition = useRef(new Animated.Value(0)).current;
-    const highlightWidth = useRef(new Animated.Value(0)).current;
+    // Animation values for text, icon, and highlight
     const textOpacity = useRef(new Animated.Value(0)).current;
     const iconScale = useRef(new Animated.Value(1)).current;
 
-    // Tab measurements
-    const [tabLayouts, setTabLayouts] = useState({});
-    const [containerWidth, setContainerWidth] = useState(0);
-
-    const tabCount = state.routes.length;
-    const baseTabWidth = containerWidth / tabCount;
+    // Create animated values for each tab's highlight
+    const highlightAnimations = useRef(
+        state.routes.map(() => new Animated.Value(0))
+    ).current;
 
     useEffect(() => {
-        const focusedIndex = state.index;
-        const focusedLayout = tabLayouts[focusedIndex];
+        // Animate all highlights
+        const animations = highlightAnimations.map((animation, index) => {
+            return Animated.timing(animation, {
+                toValue: state.index === index ? 1 : 0,
+                duration: 250,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+                useNativeDriver: false,
+            });
+        });
 
-        if (focusedLayout && containerWidth > 0) {
-            const targetPosition = focusedLayout.x;
-            const targetWidth = focusedLayout.width;
+        // Animate text and icon for focused tab
+        const focusedAnimations = [
+            Animated.timing(textOpacity, {
+                toValue: 1,
+                duration: 200,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+                useNativeDriver: true,
+            }),
+            Animated.timing(iconScale, {
+                toValue: 0.9,
+                duration: 200,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+                useNativeDriver: true,
+            })
+        ];
 
-            Animated.parallel([
-                Animated.timing(highlightPosition, {
-                    toValue: targetPosition,
-                    duration: 300,
-                    easing: Easing.bezier(0.4, 0, 0.2, 1),
-                    useNativeDriver: false,
-                }),
-                Animated.timing(highlightWidth, {
-                    toValue: targetWidth,
-                    duration: 300,
-                    easing: Easing.bezier(0.4, 0, 0.2, 1),
-                    useNativeDriver: false,
-                }),
-                Animated.timing(textOpacity, {
-                    toValue: 1,
-                    duration: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(iconScale, {
-                    toValue: 0.9,
-                    duration: 150,
-                    useNativeDriver: true,
-                })
-            ]).start();
-        }
-    }, [state.index, tabLayouts, containerWidth]);
-
-    const handleTabLayout = (index, event) => {
-        const { x, width } = event.nativeEvent.layout;
-        setTabLayouts(prev => ({
-            ...prev,
-            [index]: { x, width }
-        }));
-    };
-
-    const handleContainerLayout = (event) => {
-        const { width } = event.nativeEvent.layout;
-        setContainerWidth(width);
-    };
+        Animated.parallel([...animations, ...focusedAnimations]).start();
+    }, [state.index]);
 
     const styles = StyleSheet.create({
         bgContainer: {
@@ -87,46 +62,41 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             right: 0,
             marginHorizontal: 40,
             height: 45,
-            borderRadius: 20,
+            borderRadius: variables.radius.md,
             overflow: 'hidden',
         },
         container: {
             flexDirection: 'row',
             backgroundColor: colors.card,
             borderColor: colors.cardBorder,
-            borderWidth: 0.5,
-            borderRadius: 20,
+            borderWidth: 0.75,
+            borderRadius: variables.radius.md,
             alignItems: 'center',
             height: 45,
-            position: 'relative',
             paddingHorizontal: 10,
-        },
-        highlightBackground: {
-            position: 'absolute',
-            height: 35,
-            backgroundColor: colors.highlight,
-            borderRadius: 18,
-            top: 5,
-            borderColor: colors.border,
-            borderWidth: 1,
         },
         tab: {
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            zIndex: 2,
+            marginHorizontal: 2,
         },
         tabContent: {
             flexDirection: 'row',
             alignItems: 'center',
-            marginHorizontal: 12,
+            paddingHorizontal: 12,
             paddingVertical: 6,
+            borderRadius: variables.radius.circle,
+            minHeight: 35,
+        },
+        activeTabContent: {
+            backgroundColor: colors.highlight,
         },
         tabText: {
             color: colors.background,
             fontSize: 12,
             fontWeight: 'bold',
-            marginHorizontal: 4,
+            marginLeft: 6,
         },
     });
 
@@ -149,25 +119,11 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     return (
         <View style={styles.bgContainer}>
-            <View
-                style={styles.container}
-                onLayout={handleContainerLayout}
-            >
-                {/* Animated Highlight Background */}
-                <Animated.View
-                    style={[
-                        styles.highlightBackground,
-                        {
-                            left: highlightPosition,
-                            width: highlightWidth,
-                        },
-                    ]}
-                />
-
+            <View style={styles.container}>
                 {state.routes.map((route, index) => {
-                    const { options } = descriptors[route.key];
                     const isFocused = state.index === index;
                     const iconName = getIconName(route.name);
+                    const tabCount = state.routes.length;
 
                     const onPress = () => {
                         const event = navigation.emit({
@@ -177,7 +133,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                         });
 
                         if (!isFocused && !event.defaultPrevented) {
-                            // Reset text opacity for smooth transition
+
                             textOpacity.setValue(0);
                             navigation.navigate(route.name);
                         }
@@ -191,12 +147,28 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                             style={[
                                 styles.tab,
                                 {
-                                    flex: isFocused ? 1.5 : 1,
+                                    flex: isFocused ? 0.5 * tabCount : 1,
                                 }
                             ]}
-                            onLayout={(event) => handleTabLayout(index, event)}
                         >
-                            <View style={styles.tabContent}>
+                            <Animated.View style={[
+                                styles.tabContent,
+                                isFocused && styles.activeTabContent,
+                                {
+                                    backgroundColor: highlightAnimations[index].interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['transparent', colors.highlight]
+                                    }),
+                                    borderColor: highlightAnimations[index].interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['transparent', colors.border]
+                                    }),
+                                    borderWidth: highlightAnimations[index].interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [0, 1]
+                                    })
+                                }
+                            ]}>
                                 <Animated.View
                                     style={{
                                         transform: [{ scale: isFocused ? iconScale : 1 }]
@@ -218,7 +190,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                                                     inputRange: [0, 1],
                                                     outputRange: [-10, 0],
                                                 })
-                                            }]
+                                            }],
                                         }}
                                     >
                                         <Text
@@ -229,7 +201,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                                         </Text>
                                     </Animated.View>
                                 )}
-                            </View>
+                            </Animated.View>
                         </TouchableOpacity>
                     );
                 })}

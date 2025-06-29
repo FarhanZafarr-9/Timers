@@ -1,22 +1,6 @@
-import React from 'react';
 import { Text } from 'react-native';
 
-const jumbleText = (str) => {
-    // Replace each character with a random letter (except spaces)
-    return str.split('').map(char =>
-        char === ' ' ? ' ' : String.fromCharCode(97 + Math.floor(Math.random() * 26))
-    ).join('');
-};
-
-const maskText = (str) => {
-    // Replace each character with an asterisk (except spaces)
-    return str.split('').map(char => (char === ' ' ? ' ' : '*')).join('');
-};
-
-const HighlightMatchText = ({ text, textStyle, search, privacyMode, colors }) => {
-    if (privacyMode !== 'off') {
-        return <Text style={textStyle}>{privacyMode === 'jumble' ? jumbleText(text) : maskText(text)}</Text>;
-    }
+const HighlightMatchText = ({ text, textStyle, search, colors }) => {
 
     if (!search) return <Text style={textStyle}>{text}</Text>;
 

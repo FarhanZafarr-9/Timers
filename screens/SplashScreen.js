@@ -1,24 +1,61 @@
-import React from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 
-const SplashScreen = ({ colors }) => {
-    
+const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
+    // Animated values for sliding
+    const logoSlide = useRef(new Animated.Value(-200)).current; // Start above
+    const textSlide = useRef(new Animated.Value(200)).current;  // Start below
+
+    useEffect(() => {
+        if (visible) {
+            // Slide in
+            Animated.parallel([
+                Animated.spring(logoSlide, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    friction: 7,
+                }),
+                Animated.spring(textSlide, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    friction: 7,
+                }),
+            ]).start();
+        } else {
+            // Slide out
+            Animated.parallel([
+                Animated.timing(logoSlide, {
+                    toValue: -200,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(textSlide, {
+                    toValue: 200,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => {
+                if (onHide) onHide();
+            });
+        }
+    }, [visible, logoSlide, textSlide, onHide]);
+
     const styles = StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: colors.background,
-            justifyContent: 'start',
+            justifyContent: 'flex-start',
             alignItems: 'center',
         },
         logoContainer: {
-            top: '30%',
+            marginTop: '30%',
             alignItems: 'center',
             width: 220,
         },
         logo: {
             width: 160,
             height: 160,
-            borderRadius: 32,
+            borderRadius: variables.radius.xl,
         },
         quote: {
             position: 'absolute',
@@ -26,12 +63,9 @@ const SplashScreen = ({ colors }) => {
             right: 0,
             bottom: '30%',
             textAlign: 'center',
-            marginTop: 16,
-            width: '100%',
             fontStyle: 'italic',
             fontSize: 16,
             color: colors.text,
-            height: 50,
         },
         credits: {
             position: 'absolute',
@@ -41,31 +75,36 @@ const SplashScreen = ({ colors }) => {
             textAlign: 'center',
             fontSize: 14,
             color: colors.textDesc,
-            height: 30,
             fontWeight: 'bold',
         },
     });
-    
 
     return (
         <View style={styles.container}>
-            <View style={styles.logoContainer}>
+            <Animated.View style={[
+                styles.logoContainer,
+                { transform: [{ translateY: logoSlide }] }
+            ]}>
                 <Image
-                    source={require('../assets/logo.png')} 
+                    source={require('../assets/logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
-                
-            </View>
-            <Text style={styles.quote}>
+            </Animated.View>
+            <Animated.Text style={[
+                styles.quote,
+                { transform: [{ translateY: textSlide }] }
+            ]}>
                 "Create what you wish existed"
-            </Text>
-            <Text style={styles.credits}>
+            </Animated.Text>
+            <Animated.Text style={[
+                styles.credits,
+                { transform: [{ translateY: textSlide }] }
+            ]}>
                 Made with ❤️ by Parzival.
-            </Text>
+            </Animated.Text>
         </View>
     );
 };
-
 
 export default SplashScreen;

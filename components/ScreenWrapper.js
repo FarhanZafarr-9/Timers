@@ -9,20 +9,26 @@ import {
     Platform
 } from 'react-native';
 
-const ScreenWrapper = ({ children, colors, onScroll, onContentSizeChange }) => {
+const ScreenWrapper = ({
+    children,
+    colors,
+    onScroll,
+    onContentSizeChange,
+    paddingX = 15
+}) => {
     const styles = StyleSheet.create({
         safeArea: {
             flex: 1,
-            backgroundColor: colors.background,
+            backgroundColor: colors.background
         },
         wrapper: {
             backgroundColor: colors.background,
-            paddingHorizontal: 15,
-            paddingBottom: 65,
+            paddingHorizontal: paddingX,
+            paddingBottom: 65
         },
         scrollContent: {
-            flexGrow: 1,
-        },
+            flexGrow: 1
+        }
     });
 
     return (
@@ -30,7 +36,7 @@ const ScreenWrapper = ({ children, colors, onScroll, onContentSizeChange }) => {
             <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
                     <ScrollView
                         contentContainerStyle={styles.scrollContent}
@@ -39,12 +45,10 @@ const ScreenWrapper = ({ children, colors, onScroll, onContentSizeChange }) => {
                         onScroll={onScroll}
                         scrollEventThrottle={16}
                         onContentSizeChange={onContentSizeChange}
-                        bounces={true}
+                        bounces
                         alwaysBounceVertical={false}
                     >
-                        <View style={styles.wrapper}>
-                            {children}
-                        </View>
+                        <View style={styles.wrapper}>{children}</View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
@@ -53,3 +57,4 @@ const ScreenWrapper = ({ children, colors, onScroll, onContentSizeChange }) => {
 };
 
 export default ScreenWrapper;
+  

@@ -1,15 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { View, Animated } from 'react-native';
-import { useTheme } from '../utils/variables';
+import { View, Animated, FlatList } from 'react-native';
+import { useTheme } from '../utils/ThemeContext';
 import CollapsibleHeader from './CollapsibleHeader';
 import ScreenWrapper from './ScreenWrapper';
-import { shouldForceCollapsed, MAX_HEADER_HEIGHT, MIN_HEADER_HEIGHT, HEADER_MARGIN_TOP } from '../utils/functions';
+import {
+    shouldForceCollapsed,
+    MAX_HEADER_HEIGHT,
+    MIN_HEADER_HEIGHT,
+    HEADER_MARGIN_TOP
+} from '../utils/functions';
+
 export default function ScreenWithHeader({
     headerIcon,
     headerTitle,
     borderRadius = 0,
     children,
-    paddingMargin = 20
+    paddingMargin = 20,
+    useFlatList = false,
+    flatListProps = {},
+    paddingX = 15
 }) {
     const { colors } = useTheme();
     const [contentHeight, setContentHeight] = useState(0);
@@ -33,15 +42,47 @@ export default function ScreenWithHeader({
                 pageLength={contentHeight}
                 borderRadius={borderRadius}
             />
-            <ScreenWrapper
-                onScroll={handleScroll}
-                onContentSizeChange={(w, h) => setContentHeight(h)}
-                colors={colors}
-            >
-                <View style={[{ paddingTop: headerPaddingTop + paddingMargin }]}>
-                    {children}
-                </View>
-            </ScreenWrapper>
+
+            {useFlatList ? (
+                <FlatList
+                    {...flatListProps}
+                    bounces={false}
+                    contentInsetAdjustmentBehavior="never"
+                    style={{ flex: 1, backgroundColor: colors.background }}
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        paddingTop: headerPaddingTop + paddingMargin,
+                        paddingHorizontal: 15,
+                        paddingBottom: 65,
+                        backgroundColor: colors.background,
+                    }}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    onContentSizeChange={(w, h) => setContentHeight(h)}
+                    keyboardShouldPersistTaps="handled"
+                    ListFooterComponent={<View style={{ height: 20 }} />}
+                />
+
+            ) : (
+                <ScreenWrapper
+                    onScroll={handleScroll}
+                    onContentSizeChange={(w, h) => setContentHeight(h)}
+                    colors={colors}
+                    paddingX={paddingX}
+                >
+                    <View style={{
+                        paddingTop: headerPaddingTop + paddingMargin,
+                        minHeight: '100%',
+                    }}>
+                        {children}
+                    </View>
+                </ScreenWrapper>
+            )}
         </>
     );
 }
+/*
+contentContainerStyle={{ paddingBottom: 95 }} // important for scroll spacing
+            useFlatList={false} 
+           ==> for scrollability
+*/

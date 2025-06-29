@@ -13,9 +13,9 @@ export class TimerManager {
             const loadedTimers = await loadTimers();
             // Convert loaded data to Timer instances
             this.timers = loadedTimers.map(timerData => new Timer(timerData));
-            console.log('Timers loaded into memory:', this.timers.length);
+            //console.log('Timers loaded into memory:', this.timers.length);
         } catch (error) {
-            console.error('Error loading timers from storage:', error);
+            //console.error('Error loading timers from storage:', error);
             this.timers = [];
         }
     }
@@ -39,7 +39,7 @@ export class TimerManager {
             }));
             await saveTimers(timerData);
         } catch (error) {
-            console.error('Error saving timers to storage:', error);
+            //console.error('Error saving timers to storage:', error);
         }
     }
 
@@ -54,7 +54,7 @@ export class TimerManager {
             await this.saveToStorage();
             return newTimer;
         } catch (error) {
-            console.error('Error adding timer:', error);
+            //console.error('Error adding timer:', error);
             throw error;
         }
     }
@@ -66,7 +66,7 @@ export class TimerManager {
             this.timers = this.timers.filter((timer) => timer.id !== id);
 
             if (this.timers.length === initialLength) {
-                console.warn(`Timer with ID ${id} not found for removal.`);
+                //console.warn(`Timer with ID ${id} not found for removal.`);
                 return false;
             }
 
