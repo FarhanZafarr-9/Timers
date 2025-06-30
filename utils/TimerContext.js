@@ -39,7 +39,7 @@ export const TimerProvider = ({ children }) => {
             for (const timer of newTimers) {
                 await manager.addTimer(timer);
             }
-            syncTimers(); // Sync state after operations
+            syncTimers();
         } catch (error) {
             console.error('Error setting timers:', error);
         }
@@ -54,12 +54,12 @@ export const TimerProvider = ({ children }) => {
             return 60 * 60 * 6; // 6 hours before
         } else if (secondsUntilEnd > 60 * 60 * 6) { // > 6 hours
             return 60 * 60 * 2; // 2 hours before
-        } else if (secondsUntilEnd > 60 * 30) { // > 30 minutes
-            return 60 * 10; // 10 minutes before
-        } else if (secondsUntilEnd > 60 * 5) { // > 5 minutes
-            return 60 * 2; // 2 minutes before
-        } else if (secondsUntilEnd > 30) { // > 30 seconds
-            return 10; // 10 seconds before
+        } else if (secondsUntilEnd > 60 * 60) { // > 1 hour
+            return 60 * 30; // 30 minutes before
+        } else if (secondsUntilEnd > 60 * 10) { // > 10 minutes
+            return 60 * 5; // 5 minutes before
+        } else if (secondsUntilEnd > 60) { // > 1 minute
+            return 30; // 30 seconds before
         }
         return 0; // Too short, no reminder
     }
@@ -72,34 +72,35 @@ export const TimerProvider = ({ children }) => {
             if (timerData.isCountdown) {
                 const targetDate = new Date(timerData.date);
                 const now = new Date();
+                const timeDifferenceMs = targetDate - now;
 
-                console.log('Scheduling notification:', {
-                    now: now.toISOString(),
-                    target: targetDate.toISOString(),
-                    differenceMs: targetDate - now
-                });
+                // Only schedule notifications if the target date is in the future
+                if (timeDifferenceMs > 0) {
+                    const triggerSeconds = Math.floor(timeDifferenceMs / 1000);
 
-                if (targetDate > now) {
-                    const triggerSeconds = Math.floor((targetDate - now) / 1000);
+                    // Schedule main notification only if there's at least 10 seconds remaining
+                    if (triggerSeconds >= 10) {
+                        notificationId = await Notifications.scheduleNotificationAsync({
+                            content: {
+                                title: timerData.title || "Timer Alert",
+                                body: `Timer for ${timerData.personName || 'someone'} has completed!`,
+                                sound: true,
+                            },
+                            trigger: {
+                                seconds: triggerSeconds,
+                                channelId: 'timer-alerts'
+                            },
+                        });
 
-                    // Main notification
-                    notificationId = await Notifications.scheduleNotificationAsync({
-                        content: {
-                            title: timerData.title || "Timer Alert",
-                            body: `Timer for ${timerData.personName || 'someone'} has completed!`,
-                            sound: true,
-                        },
-                        trigger: {
-                            seconds: triggerSeconds,
-                            channelId: 'timer-alerts'
-                        },
-                    });
-
-                    // Reminder notification
-                    const reminderOffset = getReminderOffset(triggerSeconds);
-                    if (reminderOffset > 0) {
+                        // Calculate reminder time
+                        const reminderOffset = getReminderOffset(triggerSeconds);
                         const reminderTime = triggerSeconds - reminderOffset;
-                        if (reminderTime > 0) {
+
+                        // Only schedule reminder if:
+                        // 1. There's a positive reminder offset
+                        // 2. The reminder would happen at least 10 seconds from now
+                        // 3. The reminder would happen before the main notification
+                        if (reminderOffset > 0 && reminderTime >= 10 && reminderTime < triggerSeconds) {
                             reminderNotificationId = await Notifications.scheduleNotificationAsync({
                                 content: {
                                     title: timerData.title || "Timer Reminder",
@@ -116,7 +117,6 @@ export const TimerProvider = ({ children }) => {
                 }
             }
 
-            // Create the timer with notification IDs
             const timerToAdd = {
                 ...timerData,
                 date: new Date(timerData.date),
@@ -125,7 +125,7 @@ export const TimerProvider = ({ children }) => {
             };
 
             await manager.addTimer(timerToAdd);
-            syncTimers(); // Sync state after adding
+            syncTimers();
         } catch (error) {
             console.error('Error adding timer:', error);
         }
@@ -148,26 +148,28 @@ export const TimerProvider = ({ children }) => {
             if (timerData.isCountdown) {
                 const targetDate = new Date(timerData.date);
                 const now = new Date();
+                const timeDifferenceMs = targetDate - now;
 
-                if (targetDate > now) {
-                    const triggerSeconds = Math.floor((targetDate - now) / 1000);
+                if (timeDifferenceMs > 0) {
+                    const triggerSeconds = Math.floor(timeDifferenceMs / 1000);
 
-                    notificationId = await Notifications.scheduleNotificationAsync({
-                        content: {
-                            title: timerData.title || "Timer Alert",
-                            body: `Timer for ${timerData.personName || 'someone'} has completed!`,
-                            sound: true,
-                        },
-                        trigger: {
-                            seconds: triggerSeconds,
-                            channelId: 'timer-alerts'
-                        },
-                    });
+                    if (triggerSeconds >= 10) {
+                        notificationId = await Notifications.scheduleNotificationAsync({
+                            content: {
+                                title: timerData.title || "Timer Alert",
+                                body: `Timer for ${timerData.personName || 'someone'} has completed!`,
+                                sound: true,
+                            },
+                            trigger: {
+                                seconds: triggerSeconds,
+                                channelId: 'timer-alerts'
+                            },
+                        });
 
-                    const reminderOffset = getReminderOffset(triggerSeconds);
-                    if (reminderOffset > 0) {
+                        const reminderOffset = getReminderOffset(triggerSeconds);
                         const reminderTime = triggerSeconds - reminderOffset;
-                        if (reminderTime > 0) {
+
+                        if (reminderOffset > 0 && reminderTime >= 10 && reminderTime < triggerSeconds) {
                             reminderNotificationId = await Notifications.scheduleNotificationAsync({
                                 content: {
                                     title: timerData.title || "Timer Reminder",
@@ -192,7 +194,7 @@ export const TimerProvider = ({ children }) => {
             };
 
             await manager.editTimer(timerToUpdate);
-            syncTimers(); // Sync state after editing
+            syncTimers();
         } catch (error) {
             console.error('Error editing timer:', error);
         }

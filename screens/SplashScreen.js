@@ -3,8 +3,8 @@ import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 
 const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
     // Animated values for sliding
-    const logoSlide = useRef(new Animated.Value(-200)).current; // Start above
-    const textSlide = useRef(new Animated.Value(200)).current;  // Start below
+    const logoSlide = useRef(new Animated.Value(-250)).current; // Start above
+    const textSlide = useRef(new Animated.Value(250)).current;  // Start below
 
     useEffect(() => {
         if (visible) {

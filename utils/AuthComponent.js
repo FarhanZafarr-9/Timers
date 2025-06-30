@@ -4,6 +4,8 @@ import { useSecurity } from './SecurityContext';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import { showToast } from './functions';
+import { AppState } from 'react-native';
+
 
 const AuthComponent = ({ children }) => {
     const { variables, colors } = useTheme();
@@ -24,18 +26,39 @@ const AuthComponent = ({ children }) => {
         getTimeUntilLockout,
         shouldUseLockout,
         lockoutMode,
-        lastActiveTime
+        lastActiveTime,
+        updateLastActiveTime
     } = useSecurity();
 
     const [authenticated, setAuthenticated] = useState(false);
     const [input, setInput] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState(null);
-    const [showPasswordInput, setShowPasswordInput] = useState(false); // New state to control password input visibility
-
+    const [showPasswordInput, setShowPasswordInput] = useState(false);
     // Animation values
     const topSlide = useRef(new Animated.Value(-120)).current;
     const bottomSlide = useRef(new Animated.Value(120)).current;
+
+    const [appState, setAppState] = useState(AppState.currentState);
+
+    useEffect(() => {
+        const handleAppStateChange = (nextAppState) => {
+            if (
+                appState.match(/inactive|background/) &&
+                nextAppState === 'active'
+            ) {
+                // If the app is NOT locked and NOT in lockout, update last active time
+                if (!isAppLocked && (!shouldUseLockout || !shouldUseLockout())) {
+                    updateLastActiveTime && updateLastActiveTime();
+                }
+            }
+            setAppState(nextAppState);
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        return () => subscription.remove();
+    }, [appState, isAppLocked, shouldUseLockout, updateLastActiveTime]);
+
 
     // Animate in on mount
     useEffect(() => {
@@ -219,8 +242,8 @@ const AuthComponent = ({ children }) => {
                         <Text style={styles.authText}>App Locked</Text>
                         <Text style={styles.lockoutMessage}>
                             {lockoutMode === '0' ?
-                                'The app is locked immediately after backgrounding.' :
-                                'The app will unlock automatically in:'}
+                                'The app is locked immediately after backgrounding.' : timeRemaining ?
+                                    'The app will be locked automatically in:' : 'The app is locked due to inactivity.'}
                         </Text>
                         {lockoutMode !== '0' && timeRemaining && (
                             <Text style={styles.timeRemaining}>

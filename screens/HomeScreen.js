@@ -12,34 +12,62 @@ export default function HomeScreen({ navigation }) {
     const { variables, colors } = useTheme();
 
     // Animation refs
-    const totalTranslate = useRef(new Animated.Value(-100)).current;
-    const rightTranslate = useRef(new Animated.Value(100)).current;
-    const quickActionsTranslate = useRef(new Animated.Value(30)).current;
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
     const [mounted, setMounted] = useState(false);
 
+    // 1. ADD OPACITY ANIMATIONS (add these after your existing useRef declarations)
+    const totalOpacity = useRef(new Animated.Value(0)).current;
+    const rightOpacity = useRef(new Animated.Value(0)).current;
+    // quickActionsOpacity already exists - keep it
+
+    // 2. CHANGE INITIAL VALUES (update your existing useRef declarations)
+    const totalTranslate = useRef(new Animated.Value(-50)).current;  // Changed from -200 to -50
+    const rightTranslate = useRef(new Animated.Value(-50)).current;  // Changed from 200 to -50
+    const quickActionsTranslate = useRef(new Animated.Value(-50)).current; // Changed from 150 to -50
+
+    // 3. REPLACE YOUR CURRENT ANIMATION EFFECT with this smoother version:
     useEffect(() => {
-        // Delay one frame to avoid flash
         const value = setTimeout(() => {
             setMounted(true);
 
-            Animated.stagger(150, [
-                Animated.spring(totalTranslate, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(rightTranslate, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                }),
+            // Use stagger with parallel animations like About screen
+            Animated.stagger(120, [
+                Animated.parallel([
+                    Animated.spring(totalTranslate, {
+                        toValue: 0,
+                        tension: 80,  // Same as About screen
+                        friction: 8,  // Same as About screen
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(totalOpacity, {
+                        toValue: 1,
+                        duration: 400,  // Same as About screen
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.parallel([
+                    Animated.spring(rightTranslate, {
+                        toValue: 0,
+                        tension: 80,
+                        friction: 8,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(rightOpacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]),
                 Animated.parallel([
                     Animated.spring(quickActionsTranslate, {
                         toValue: 0,
+                        tension: 80,
+                        friction: 8,
                         useNativeDriver: true,
                     }),
                     Animated.timing(quickActionsOpacity, {
                         toValue: 1,
-                        duration: 300,
+                        duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
@@ -153,7 +181,10 @@ export default function HomeScreen({ navigation }) {
                                 styles.gridItem,
                                 styles.leftColumn,
                                 styles.totalTimers,
-                                { transform: [{ translateX: totalTranslate }] }
+                                {
+                                    transform: [{ translateY: totalTranslate }],  // Changed from translateX to translateY
+                                    opacity: totalOpacity  // ADD THIS
+                                }
                             ]}
                         >
                             <Text style={styles.gridTitle}>Total Timers</Text>
@@ -163,7 +194,10 @@ export default function HomeScreen({ navigation }) {
                         <Animated.View
                             style={[
                                 styles.rightColumn,
-                                { transform: [{ translateX: rightTranslate }] }
+                                {
+                                    transform: [{ translateY: rightTranslate }],  // Changed from translateX to translateY
+                                    opacity: rightOpacity  // ADD THIS
+                                }
                             ]}
                         >
                             <View style={[styles.gridItem, styles.countdownTimers]}>

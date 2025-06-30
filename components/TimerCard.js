@@ -47,8 +47,6 @@ const TimerCard = React.memo(({
         [titleText] // Only re-mask if the title changes
     );
 
-
-
     // Use single animated value for performance
     const animatedValues = useRef({
         height: new Animated.Value(0),
@@ -59,6 +57,7 @@ const TimerCard = React.memo(({
         paddingBottom: new Animated.Value(isExpanded ? 16 : 0),
         marginBottom: new Animated.Value(isExpanded ? 12 : 0),
         actionsHeight: new Animated.Value(0),
+        detailsHeight: new Animated.Value(isExpanded ? 20 : 0),
     }).current;
 
     // Memoize time parsing to avoid recalculation
@@ -158,6 +157,7 @@ const TimerCard = React.memo(({
             fontSize: 12,
             marginBottom: 8,
             marginLeft: 4,
+            height: 20,
         },
         namePill: {
             backgroundColor: colors.highlight + '10',
@@ -210,7 +210,7 @@ const TimerCard = React.memo(({
         },
         measurementContainer: {
             position: 'absolute',
-            top: -10,
+            top: -100,
             left: 0,
             right: 0,
             opacity: 0,
@@ -246,7 +246,7 @@ const TimerCard = React.memo(({
             const animations = [
                 Animated.timing(animatedValues.height, {
                     toValue: isExpanded ? contentHeight : 0,
-                    duration: 200, // Reduced duration for snappier feel
+                    duration: 150,
                     useNativeDriver: false,
                 }),
                 Animated.timing(animatedValues.iconRotation, {
@@ -267,6 +267,11 @@ const TimerCard = React.memo(({
                 Animated.timing(animatedValues.marginBottom, {
                     toValue: isExpanded ? 12 : 0,
                     duration: 200,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(animatedValues.detailsHeight, {
+                    toValue: isExpanded ? 16 : 0,
+                    duration: 150,
                     useNativeDriver: false,
                 }),
             ];
@@ -318,10 +323,12 @@ const TimerCard = React.memo(({
     const ExpandableContent = useMemo(() => (
         <View style={styles.contentContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={styles.timerDetails}>
-                    {timer.isCountdown ? 'End:  ' : 'Start:  '}
-                    {formattedDate}
-                </Text>
+                <Animated.View style={{ height: animatedValues.detailsHeight, overflow: 'hidden' }}>
+                    <Text style={styles.timerDetails}>
+                        {timer.isCountdown ? 'End:  ' : 'Start:  '}
+                        {formattedDate}
+                    </Text>
+                </Animated.View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
                     <Animated.View
