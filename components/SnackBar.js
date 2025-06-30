@@ -9,7 +9,7 @@ const Snackbar = ({ text, onClose, style }) => {
     const { variables, colors } = useTheme();
 
     // Add some debugging
-    console.log('Snackbar rendered with text:', text);
+    //console.log('Snackbar rendered with text:', text);
 
     const styles = StyleSheet.create({
         snackbarContainer: {
@@ -47,6 +47,7 @@ const Snackbar = ({ text, onClose, style }) => {
             fontWeight: '600',
             fontStyle: 'italic',
             textAlign: 'center',
+            height: 20,
         },
     });
 

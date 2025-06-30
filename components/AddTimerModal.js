@@ -136,6 +136,25 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             date.getDate() === d
         );
     };
+
+    useEffect(() => {
+        if (!error) return;
+
+        // If any field changes and error exists, clear error
+        setError('');
+        // eslint-disable-next-line
+    }, [
+        timerData.title,
+        timerData.personName,
+        timerData.recurrenceInterval,
+        yearInput,
+        monthInput,
+        dayInput,
+        hourInput,
+        minuteInput,
+        secondInput
+    ]);
+
     const isValidTime = (h, min, s) =>
         h >= 0 && h < 24 && min >= 0 && min < 60 && s >= 0 && s < 60;
 
@@ -336,6 +355,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             fontSize: 14,
             textAlign: 'center',
             fontWeight: 'bold',
+            height: 20,
         },
         inputRow: {
             flexDirection: 'row',

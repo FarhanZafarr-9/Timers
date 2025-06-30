@@ -1,4 +1,4 @@
-import { Dimensions, Platform } from 'react-native';
+import { Dimensions, Platform, ToastAndroid, Alert } from 'react-native';
 import { Icons } from '../assets/icons';
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -88,9 +88,6 @@ export const lockoutOptions = [
         icon: <Icons.Ion name="close-circle-outline" size={16} />,
     },
 ];
-
-
-
 
 export const sortOptions = [
     { label: 'Priority', value: 'priority', icon: <MaterialIcons name="flag" size={16} /> },

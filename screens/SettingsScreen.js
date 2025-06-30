@@ -57,53 +57,59 @@ export default function SettingsScreen() {
     const [confirmText, setConfirmText] = useState('');
     const [showExtra, setShowExtra] = useState(false);
     const DIRECTORY_KEY = 'download_directory_uri';
-
-    // Animation refs for each card section
-    const cardAnim = [
-        useRef(new Animated.Value(300)).current, // Appearance
-        useRef(new Animated.Value(-300)).current, // Security
-        useRef(new Animated.Value(200)).current  // Timer Management
-    ];
-
-    useEffect(() => {
-        // Staggered slide-in animation for each card
-        Animated.stagger(120, cardAnim.map(anim =>
-            Animated.timing(anim, {
-                toValue: 0,
-                duration: 500,
-                useNativeDriver: true,
-            })
-        )).start();
-    }, []);
-
-    const topTranslate = useRef(new Animated.Value(-100)).current;
-    const midTranslate = useRef(new Animated.Value(100)).current;
-    const bottomTranslate = useRef(new Animated.Value(30)).current;
-    const bottomOpacity = useRef(new Animated.Value(0)).current;
     const [mounted, setMounted] = useState(false);
 
+    const topTranslate = useRef(new Animated.Value(-50)).current;
+    const midTranslate = useRef(new Animated.Value(-50)).current;
+    const bottomTranslate = useRef(new Animated.Value(-50)).current;
+    // 1. ADD OPACITY ANIMATIONS (add these after your existing useRef declarations)
+    const topOpacity = useRef(new Animated.Value(0)).current;
+    const midOpacity = useRef(new Animated.Value(0)).current;
+    const bottomOpacity = useRef(new Animated.Value(0)).current; // You already have this one
+
+    // 2. REPLACE YOUR CURRENT ANIMATION EFFECT with this smoother version:
     useEffect(() => {
-        // Delay one frame to avoid flash
         const value = setTimeout(() => {
             setMounted(true);
 
-            Animated.stagger(150, [
-                Animated.spring(topTranslate, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(midTranslate, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                }),
+            // Use stagger with parallel animations like About screen
+            Animated.stagger(120, [
+                Animated.parallel([
+                    Animated.spring(topTranslate, {
+                        toValue: 0,
+                        tension: 80,  // Same as About screen
+                        friction: 8,  // Same as About screen
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(topOpacity, {
+                        toValue: 1,
+                        duration: 400,  // Same as About screen
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.parallel([
+                    Animated.spring(midTranslate, {
+                        toValue: 0,
+                        tension: 80,
+                        friction: 8,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(midOpacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]),
                 Animated.parallel([
                     Animated.spring(bottomTranslate, {
                         toValue: 0,
+                        tension: 80,
+                        friction: 8,
                         useNativeDriver: true,
                     }),
                     Animated.timing(bottomOpacity, {
                         toValue: 1,
-                        duration: 300,
+                        duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
@@ -112,7 +118,6 @@ export default function SettingsScreen() {
 
         return () => clearTimeout(value);
     }, []);
-
 
     const getOrRequestDirectory = async () => {
         let uri = await AsyncStorage.getItem(DIRECTORY_KEY);
@@ -130,7 +135,7 @@ export default function SettingsScreen() {
         card: {
             backgroundColor: 'transparent',
             marginBottom: 15,
-            borderRadius: variables.radius.md,
+            borderRadius: variables.radius.lg,
             overflow: 'hidden',
             borderWidth: 0,
             borderColor: colors.cardBorder,
@@ -142,7 +147,7 @@ export default function SettingsScreen() {
             paddingTop: 18,
             paddingBottom: 14,
             paddingHorizontal: 20,
-            backgroundColor: colors.settingBlock,
+            backgroundColor: colors.settingBlock  + 'f5',
             borderBottomWidth: .75,
             borderBottomColor: colors.border
         },
@@ -154,13 +159,13 @@ export default function SettingsScreen() {
             fontWeight: '600',
             color: colors.text,
             marginBottom: 2,
-            height: 25,
+            height: 22,
         },
         settingDesc: {
             fontSize: 13,
             color: colors.textDesc,
             opacity: 0.85,
-            height: 20,
+            height: 18,
         },
         snackbarContainer: {
             position: 'absolute',
@@ -371,7 +376,10 @@ export default function SettingsScreen() {
                     <Text style={styles.sectionHeaderText}>Appearance</Text>
                 </TouchableOpacity>
 
-                <Animated.View style={{ transform: [{ translateX: topTranslate }] }}>
+                <Animated.View style={{
+                    transform: [{ translateX: topTranslate }],
+                    opacity: topOpacity  // ADD THIS
+                }}>
                     <View style={styles.card} >
                         {/* Theme Mode Picker */}
                         <View style={[styles.settingBlock, { borderBottomWidth: 0 }]}>
@@ -393,11 +401,14 @@ export default function SettingsScreen() {
                 </Animated.View>
 
                 <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>Security</Text>
+                    <Text style={styles.sectionHeaderText}>Security & Privacy</Text>
                 </TouchableOpacity>
 
                 {/* SECURITY SETTINGS */}
-                <Animated.View style={{ transform: [{ translateX: midTranslate }] }}>
+                <Animated.View style={{
+                    transform: [{ translateX: midTranslate }],
+                    opacity: midOpacity  // ADD THIS
+                }}>
                     <View style={styles.card}>
                         {/* Fingerprint Unlock */}
                         {isSensorAvailable ? (
@@ -498,7 +509,7 @@ export default function SettingsScreen() {
                             <Icons.Ion name="eye-off-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Privacy Mode</Text>
-                                <Text style={styles.settingDesc}>Hides timer names and titles</Text>
+                                <Text style={styles.settingDesc}>Masks timer names and titles</Text>
                             </View>
                             <CustomPicker
                                 value={privacyMode}
@@ -515,7 +526,7 @@ export default function SettingsScreen() {
                             <Icons.Ion name="timer-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Lockout</Text>
-                                <Text style={styles.settingDesc}>Set lockout duration after failed attempts</Text>
+                                <Text style={styles.settingDesc}>Set duration for reauthentication</Text>
                             </View>
                             <CustomPicker
                                 value={lockoutMode}
@@ -536,7 +547,7 @@ export default function SettingsScreen() {
                 {/* TIMER MANAGEMENT */}
                 <Animated.View style={{
                     transform: [{ translateY: bottomTranslate }],
-                    opacity: bottomOpacity,
+                    opacity: bottomOpacity,  // This should already be there
                 }}>
                     <View style={styles.card}>
 

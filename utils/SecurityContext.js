@@ -160,22 +160,6 @@ export const SecurityProvider = ({ children }) => {
         }
     };
 
-    const logEverything = () => {
-        console.log('isFingerprintEnabled:', isFingerprintEnabled);
-        console.log('isPasswordLockEnabled:', isPasswordLockEnabled);
-        console.log('password:', password);
-        console.log('privacyMode:', privacyMode);
-        console.log('lockoutMode:', lockoutMode);
-        console.log('isAppLocked:', isAppLocked);
-        console.log('lastActiveTime:', lastActiveTime);
-        console.log('appState:', appState);
-        console.log('isSensorAvailable:', isSensorAvailable);
-        console.log('shouldUseLockout:', shouldUseLockout());
-        console.log('lockoutOptions:', lockoutOptions);
-        console.log('lockoutTimerRef:', lockoutTimerRef.current);
-        console.log('appStateRef:', appStateRef.current);
-    };
-
     // Update last active time when user interacts with app
     const updateLastActiveTime = async () => {
         const currentTime = Date.now();
@@ -331,7 +315,6 @@ export const SecurityProvider = ({ children }) => {
                 lockoutOptions,
                 lastActiveTime,
                 appState,
-                logEverything
             }}
         >
             {children}

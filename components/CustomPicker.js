@@ -26,7 +26,7 @@ const CustomPicker = ({
             borderRadius: variables.radius.sm,
             paddingVertical: 8,
             paddingHorizontal: 16,
-            backgroundColor: colors.highlight + '20',
+            backgroundColor: colors.highlight + '0f',
             borderWidth: 0.75,
             borderColor: colors.border,
             minWidth: 70,

@@ -8,27 +8,56 @@ export default function AboutScreen() {
     const { variables, colors } = useTheme();
 
     // Animations
-    const topCardAnim = useRef(new Animated.Value(-500)).current;
-    const descCardAnim = useRef(new Animated.Value(500)).current;
-    const creditsCardAnim = useRef(new Animated.Value(100)).current;
+    const topCardAnim = useRef(new Animated.Value(-50)).current;
+    const descCardAnim = useRef(new Animated.Value(-50)).current;
+    const creditsCardAnim = useRef(new Animated.Value(-50)).current;
+
+    // Opacity animations for fade-in effect
+    const topOpacityAnim = useRef(new Animated.Value(0)).current;
+    const descOpacityAnim = useRef(new Animated.Value(0)).current;
+    const creditsOpacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.stagger(150, [
-            Animated.timing(topCardAnim, {
-                toValue: 0,
-                duration: 500,
-                useNativeDriver: true,
-            }),
-            Animated.timing(descCardAnim, {
-                toValue: 0,
-                duration: 500,
-                useNativeDriver: true,
-            }),
-            Animated.timing(creditsCardAnim, {
-                toValue: 0,
-                duration: 500,
-                useNativeDriver: true,
-            }),
+        Animated.stagger(120, [
+            Animated.parallel([
+                Animated.spring(topCardAnim, {
+                    toValue: 0,
+                    tension: 80,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(topOpacityAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.parallel([
+                Animated.spring(descCardAnim, {
+                    toValue: 0,
+                    tension: 80,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(descOpacityAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.parallel([
+                Animated.spring(creditsCardAnim, {
+                    toValue: 0,
+                    tension: 80,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(creditsOpacityAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
         ]).start();
     }, []);
 
@@ -102,8 +131,15 @@ export default function AboutScreen() {
             paddingX={0}
         >
             <View style={styles.content}>
-                {/* Top Card - Slide from left */}
-                <Animated.View style={[styles.card, styles.row, { transform: [{ translateX: topCardAnim }] }]}>
+                {/* Top Card - Slide from top with fade */}
+                <Animated.View style={[
+                    styles.card,
+                    styles.row,
+                    {
+                        transform: [{ translateY: topCardAnim }],
+                        opacity: topOpacityAnim
+                    }
+                ]}>
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>Timers</Text>
@@ -111,17 +147,29 @@ export default function AboutScreen() {
                     </View>
                 </Animated.View>
 
-                {/* Description Card - Slide from right */}
-                <Animated.View style={[styles.card, { transform: [{ translateX: descCardAnim }] }]}>
+                {/* Description Card - Slide from top with fade */}
+                <Animated.View style={[
+                    styles.card,
+                    {
+                        transform: [{ translateY: descCardAnim }],
+                        opacity: descOpacityAnim
+                    }
+                ]}>
                     <Text style={[styles.description, { textAlign: 'justify' }]}>
                         Designed for remembering important moments. Whether you're timing an event or counting down to a special occasion, Timers has you covered.
                         {'\n\n'}As a wise man once said:
                     </Text>
-                    <Text style={styles.quote}>“Create what you wish existed.”</Text>
+                    <Text style={styles.quote}>"Create what you wish existed."</Text>
                 </Animated.View>
 
-                {/* Credits Card - Slide from bottom */}
-                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }] }]}>
+                {/* Credits Card - Slide from top with fade */}
+                <Animated.View style={[
+                    styles.card,
+                    {
+                        transform: [{ translateY: creditsCardAnim }],
+                        opacity: creditsOpacityAnim
+                    }
+                ]}>
                     <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
             </View>

@@ -88,7 +88,7 @@ export class TimerManager {
                 const updatedTimer = new Timer(rest);
 
                 this.timers[index] = updatedTimer;
-                console.log('Timer edited:', this.timers[index]);
+                //console.log('Timer edited:', this.timers[index]);
                 await this.saveToStorage();
                 return updatedTimer;
             } else {
@@ -106,7 +106,7 @@ export class TimerManager {
         try {
             this.timers = [];
             await this.saveToStorage();
-            console.log('All timers cleared');
+            //console.log('All timers cleared');
         } catch (error) {
             console.error('Error clearing all timers:', error);
             throw error;
@@ -150,7 +150,7 @@ export class TimerManager {
     async initializeTimers() {
         try {
             const existingTimers = await loadTimers();
-            console.log('Existing timers:', existingTimers.length);
+            //console.log('Existing timers:', existingTimers.length);
 
             // Find the most futuristic and oldest dates
             let maxFuture = null;
@@ -205,13 +205,13 @@ export class TimerManager {
 
             // Append new timers to existing timers
             const updatedTimers = [...existingTimers, ...sampleData];
-            console.log('Saving timers:', updatedTimers.length);
+            //console.log('Saving timers:', updatedTimers.length);
 
             await saveTimers(updatedTimers);
 
             // Reload from storage to ensure consistency
             await this.loadFromStorage();
-            console.log('Sample data initialized with recurring and expired timers.');
+            //console.log('Sample data initialized with recurring and expired timers.');
         } catch (error) {
             console.error('Error initializing timers:', error);
             throw error;

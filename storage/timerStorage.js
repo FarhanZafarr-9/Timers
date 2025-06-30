@@ -4,10 +4,10 @@ const TIMERS_KEY = 'timers_data';
 
 export async function saveTimers(timers) {
     try {
-        console.log('Saving Timers to AsyncStorage:', timers.length);
+        //console.log('Saving Timers to AsyncStorage:', timers.length);
         const jsonValue = JSON.stringify(timers);
         await AsyncStorage.setItem(TIMERS_KEY, jsonValue);
-        console.log('Timers successfully saved to AsyncStorage.');
+        //console.log('Timers successfully saved to AsyncStorage.');
         return true;
     } catch (e) {
         console.error('Error saving timers to storage:', e);
@@ -19,7 +19,7 @@ export async function loadTimers() {
     try {
         const jsonValue = await AsyncStorage.getItem(TIMERS_KEY);
         if (!jsonValue) {
-            console.log('No timers found in AsyncStorage.');
+            //console.log('No timers found in AsyncStorage.');
             return [];
         }
         const timers = JSON.parse(jsonValue);
@@ -34,7 +34,7 @@ export async function loadTimers() {
 export async function clearTimers() {
     try {
         await AsyncStorage.removeItem(TIMERS_KEY);
-        console.log('Timers cleared from AsyncStorage.');
+        //console.log('Timers cleared from AsyncStorage.');
         return true;
     } catch (e) {
         console.error('Error clearing timers:', e);
@@ -48,7 +48,7 @@ export async function addTimer(newTimer) {
         const timers = await loadTimers();
         timers.push(newTimer);
         await saveTimers(timers);
-        console.log('Timer added:', newTimer.id);
+        //console.log('Timer added:', newTimer.id);
         return true;
     } catch (e) {
         console.error('Error adding timer:', e);
@@ -68,7 +68,7 @@ export async function editTimer(id, updatedFields) {
 
         timers[timerIndex] = { ...timers[timerIndex], ...updatedFields };
         await saveTimers(timers);
-        console.log(`Timer with ID ${id} updated:`, updatedFields);
+        //console.log(`Timer with ID ${id} updated:`, updatedFields);
         return true;
     } catch (e) {
         console.error('Error editing timer:', e);
@@ -87,7 +87,7 @@ export async function deleteTimer(id) {
         }
 
         await saveTimers(updatedTimers);
-        console.log(`Timer with ID ${id} deleted.`);
+        //console.log(`Timer with ID ${id} deleted.`);
         return true;
     } catch (e) {
         console.error('Error deleting timer:', e);
