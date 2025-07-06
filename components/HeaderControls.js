@@ -6,8 +6,11 @@ import {
     StyleSheet,
     Text,
     Animated,
+    Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HeaderControls = ({
     title,
@@ -28,210 +31,44 @@ const HeaderControls = ({
     const [isFocused, setIsFocused] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Animation for button row expansion/collapse
-    const expandAnim = useRef(new Animated.Value(0)).current;
-    const buttonRowHeight = useRef(new Animated.Value(0)).current;
-
-    // Animation for count indicator & divider in delete button
+    // Animation values
+    const searchAnim = useRef(new Animated.Value(1)).current;
+    const buttonsAnim = useRef(new Animated.Value(0)).current;
     const countAnim = useRef(new Animated.Value(0)).current;
-    const dividerAnim = useRef(new Animated.Value(0)).current;
-    const iconPositionAnim = useRef(new Animated.Value(0)).current;
 
-    // Animation for sort mode change
+    // Sort state
     const [sortIdx, setSortIdx] = useState(sortOptions.findIndex(opt => opt.value === sortMethod));
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const sortAnim = useRef(new Animated.Value(1)).current;
 
+    // Toggle between search and buttons
     useEffect(() => {
+        Animated.parallel([
+            Animated.spring(searchAnim, {
+                toValue: isExpanded ? 0 : 1,
+                useNativeDriver: true,
+            }),
+            Animated.spring(buttonsAnim, {
+                toValue: isExpanded ? 1 : 0,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
         if (isExpanded) {
-            Animated.parallel([
-                Animated.timing(buttonRowHeight, {
-                    toValue: 52,
-                    duration: 300,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(expandAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    delay: 100,
-                    useNativeDriver: false,
-                }),
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(expandAnim, {
-                    toValue: 0,
-                    duration: 150,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(buttonRowHeight, {
-                    toValue: 0,
-                    duration: 250,
-                    delay: 50,
-                    useNativeDriver: false,
-                }),
-            ]).start();
+            inputRef.current?.blur();
         }
     }, [isExpanded]);
 
-    // Handle selection mode animations
+    // Selection mode animation
     useEffect(() => {
-        if (isSelectable) {
-            Animated.parallel([
-                Animated.timing(iconPositionAnim, {
-                    toValue: 1,
-                    duration: 250,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(dividerAnim, {
-                    toValue: 1,
-                    duration: 250,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(countAnim, {
-                    toValue: 1,
-                    duration: 250,
-                    delay: 100,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(countAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(dividerAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    delay: 50,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(iconPositionAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    delay: 100,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }
+        Animated.spring(countAnim, {
+            toValue: isSelectable ? 1 : 0,
+            useNativeDriver: true,
+        }).start();
     }, [isSelectable]);
 
+    // Sort method change
     useEffect(() => {
-        const newIdx = sortOptions.findIndex(opt => opt.value === sortMethod);
-        if (newIdx !== sortIdx && !isTransitioning) {
-            setIsTransitioning(true);
-
-            Animated.timing(sortAnim, {
-                toValue: 0,
-                duration: 150,
-                useNativeDriver: true,
-            }).start(() => {
-                setSortIdx(newIdx);
-                Animated.timing(sortAnim, {
-                    toValue: 1,
-                    duration: 150,
-                    useNativeDriver: true,
-                }).start(() => {
-                    setIsTransitioning(false);
-                });
-            });
-        }
-    }, [sortMethod, sortIdx, isTransitioning]);
-
-    const styles = StyleSheet.create({
-        controlsContainer: {
-            flexDirection: 'column',
-            paddingVertical: 20,
-            marginVertical: 20,
-            borderBottomColor: colors.border,
-            borderBottomWidth: 1.75,
-            borderTopColor: colors.border,
-            borderTopWidth: 1.75,
-        },
-        searchRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-        },
-        searchContainer: {
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.highlight + '20',
-            borderRadius: variables.radius.sm,
-            borderWidth: 1.5,
-            borderColor: isFocused ? colors.border : 'transparent',
-            height: 40,
-        },
-        searchInput: {
-            flex: 1,
-            color: colors.text,
-            height: 36,
-            paddingVertical: 0,
-            textAlignVertical: 'center',
-            paddingHorizontal: 15,
-        },
-        clearButton: {
-            paddingHorizontal: 10,
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: 40,
-        },
-        toggleButton: {
-            width: 40,
-            height: 40,
-            backgroundColor: colors.highlight + '25',
-            borderRadius: variables.radius.sm,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        buttonRowContainer: {
-            overflow: 'hidden',
-        },
-        buttonRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            marginTop: 12,
-        },
-        actionButton: {
-            width: '32%',
-            height: 40,
-            backgroundColor: colors.highlight + '20',
-            borderWidth: 0,
-            borderColor: colors.border,
-            borderRadius: variables.radius.sm,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        deleteButton: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-        },
-        sortButton: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-        },
-        sortIconContainer: {
-            width: 24,
-            height: 24,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        sortDivider: {
-            width: 1,
-            height: 16,
-            backgroundColor: colors.highlight + '50',
-            marginHorizontal: 12,
-        },
-    });
+        setSortIdx(sortOptions.findIndex(opt => opt.value === sortMethod));
+    }, [sortMethod]);
 
     const handleSearch = (query) => {
         setSearchQuery(query);
@@ -241,236 +78,297 @@ const HeaderControls = ({
     const clearSearch = () => {
         setSearchQuery('');
         onSearch('');
-        inputRef.current?.blur();
     };
 
     const toggleExpanded = () => {
         setIsExpanded(!isExpanded);
     };
 
-    const handleAddFromExpanded = () => {
-        onAdd();
-        setIsExpanded(false);
+    const handleSortChange = () => {
+        const idx = sortOptions.findIndex(opt => opt.value === sortMethod);
+        const next = sortOptions[(idx + 1) % sortOptions.length].value;
+        onSortChange(next);
     };
 
+    const styles = StyleSheet.create({
+        container: {
+            paddingBottom: 12,
+            marginBottom: 12,
+            marginHorizontal: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: '700',
+            color: colors.textTitle,
+            marginBottom: 12,
+        },
+        row: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: 44,
+        },
+        searchContainer: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.cardLighter,
+            borderRadius: variables.radius.md,
+            borderWidth: 1,
+            borderColor: isFocused ? colors.highlight + '40' : colors.border,
+            height: 44,
+            paddingHorizontal: 12,
+        },
+        searchInput: {
+            flex: 1,
+            color: colors.text,
+            height: 42,
+            fontSize: 16,
+            paddingVertical: 0,
+            paddingHorizontal: 8,
+        },
+        clearButton: {
+            padding: 4,
+            borderRadius: 12,
+        },
+        buttonsContainer: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+        },
+        actionButton: {
+            flex: 1,
+            height: 44,
+            backgroundColor: colors.cardLighter,
+            borderRadius: variables.radius.md,
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'row',
+            borderWidth: 1,
+            borderColor: colors.border,
+        },
+        buttonContent: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        buttonText: {
+            marginLeft: 6,
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+        },
+        countBadge: {
+            display: isSelectable ? 'flex' : 'none',
+            minWidth: 20,
+            height: 20,
+            borderRadius: 6,
+            backgroundColor: '#ef4444',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginLeft: 6,
+        },
+        countText: {
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: '700',
+            lineHeight: 20,
+        },
+        toggleButton: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.cardLighter,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginLeft: 8,
+        },
+    });
+
     return (
-        <View style={styles.controlsContainer}>
-            {/* Search input with toggle button */}
-            <View style={styles.searchRow}>
-                <View style={styles.searchContainer}>
-                    <TextInput
-                        ref={inputRef}
-                        style={styles.searchInput}
-                        placeholder="Search timers..."
-                        placeholderTextColor={colors.textDesc}
-                        value={searchQuery}
-                        onChangeText={handleSearch}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                            <MaterialIcons name="close" size={20} color={colors.textDesc} />
-                        </TouchableOpacity>
-                    )}
-                </View>
+        <View style={styles.container}>
+            <Text style={styles.title}>{title}</Text>
 
-                <TouchableOpacity
-                    onPress={toggleExpanded}
-                    style={styles.toggleButton}
-                    activeOpacity={0.75}
+            <View style={styles.row}>
+                {/* Search Input (collapsed state) */}
+                <Animated.View
+                    style={[
+                        {
+                            flex: 1,
+                            flexDirection: 'row',
+                            opacity: searchAnim,
+                            transform: [{
+                                translateX: searchAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-SCREEN_WIDTH, 0],
+                                })
+                            }]
+                        }
+                    ]}
+                    pointerEvents={isExpanded ? 'none' : 'auto'}
                 >
-                    <Animated.View
-                        style={{
-                            transform: [
-                                {
-                                    rotate: expandAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: ['0deg', '180deg'],
-                                    }),
-                                },
-                            ],
-                        }}
-                    >
+                    <View style={[styles.searchContainer, { flex: 1 }]}>
                         <MaterialIcons
-                            name="keyboard-arrow-down"
+                            name="search"
                             size={20}
-                            color={colors.text}
+                            color={colors.textDesc}
+                            style={{ marginRight: 4 }}
                         />
-                    </Animated.View>
-                </TouchableOpacity>
-            </View>
+                        <TextInput
+                            ref={inputRef}
+                            style={styles.searchInput}
+                            placeholder="Search timers..."
+                            placeholderTextColor={colors.textDesc}
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity
+                                onPress={clearSearch}
+                                style={styles.clearButton}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <MaterialIcons name="close" size={18} color={colors.textDesc} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
-            {/* Animated button row with improved collapse behavior */}
-            <Animated.View
-                style={[
-                    styles.buttonRowContainer,
-                    {
-                        height: buttonRowHeight,
-                        opacity: expandAnim,
-                        transform: [
-                            {
-                                translateY: expandAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [-10, 0],
-                                }),
-                            },
-                            {
-                                scale: expandAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [0.95, 1],
-                                }),
-                            },
-                        ],
-                    },
-                ]}
-            >
-                <View style={styles.buttonRow}>
-                    {/* Add button */}
                     <TouchableOpacity
-                        onPress={handleAddFromExpanded}
-                        style={styles.actionButton}
-                        activeOpacity={0.75}
-                    >
-                        <MaterialIcons name="add-circle-outline" size={16} color={colors.text} />
-                    </TouchableOpacity>
-
-                    {/* Delete button with enhanced animations */}
-                    <TouchableOpacity
-                        onPress={onBatchDelete}
-                        style={[styles.actionButton, styles.deleteButton]}
-                        activeOpacity={0.75}
+                        onPress={toggleExpanded}
+                        style={styles.toggleButton}
+                        activeOpacity={0.8}
                     >
                         <Animated.View
                             style={{
-                                width: 16,
-                                height: 16,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transform: [
-                                    {
-                                        translateX: iconPositionAnim.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [10, -5],
-                                        }),
-                                    },
-                                ],
+                                transform: [{
+                                    rotate: buttonsAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['0deg', '180deg'],
+                                    })
+                                }]
                             }}
                         >
                             <MaterialIcons
-                                name="delete-sweep"
-                                size={16}
-                                color={isSelectable ? '#ef4444' : colors.text}
+                                name="tune"
+                                size={20}
+                                color={colors.text}
                             />
                         </Animated.View>
+                    </TouchableOpacity>
+                </Animated.View>
 
-                        <Animated.View
-                            style={{
-                                width: 1,
-                                height: 16,
-                                backgroundColor: colors.highlight + '50',
-                                marginHorizontal: dividerAnim.interpolate({
+                {/* Action Buttons (expanded state) */}
+                <Animated.View
+                    style={[
+                        styles.buttonsContainer,
+                        {
+                            position: 'absolute',
+                            width: '100%',
+                            opacity: buttonsAnim,
+                            transform: [{
+                                translateX: buttonsAnim.interpolate({
                                     inputRange: [0, 1],
-                                    outputRange: [0, 10],
-                                }),
-                                opacity: dividerAnim,
-                                alignSelf: 'center',
-                                transform: [
-                                    {
-                                        scaleX: dividerAnim.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [0, 1],
-                                        }),
-                                    },
-                                ],
-                            }}
-                        />
+                                    outputRange: [SCREEN_WIDTH, 0],
+                                })
+                            }]
+                        }
+                    ]}
+                    pointerEvents={isExpanded ? 'auto' : 'none'}
+                >
+                    <TouchableOpacity
+                        onPress={onAdd}
+                        style={styles.actionButton}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.buttonContent}>
+                            <MaterialIcons name="add" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Add</Text>
+                        </View>
+                    </TouchableOpacity>
 
-                        <Animated.View
-                            style={{
-                                minWidth: 20,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: countAnim,
-                                transform: [
-                                    {
-                                        translateX: countAnim.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [-20, 0],
-                                        }),
-                                    },
-                                    {
+                    <TouchableOpacity
+                        onPress={onBatchDelete}
+                        style={[
+                            styles.actionButton,
+                            isSelectable && { backgroundColor: '#fee2e2', borderColor: '#ef4444' }
+                        ]}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.buttonContent}>
+                            <MaterialIcons
+                                name="delete"
+                                size={18}
+                                color={isSelectable ? '#ef4444' : colors.text}
+                            />
+                            <Text style={[styles.buttonText, isSelectable && { color: '#ef4444' }]}>
+                                Delete
+                            </Text>
+                            <Animated.View style={[
+                                styles.countBadge,
+                                {
+                                    transform: [{
                                         scale: countAnim.interpolate({
                                             inputRange: [0, 1],
-                                            outputRange: [0.8, 1],
-                                        }),
-                                    },
-                                ],
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    color: colors.text,
-                                    fontWeight: 'bold',
-                                    fontSize: 14,
-                                    lineHeight: 16,
-                                    textAlign: 'center',
-                                    includeFontPadding: false,
-                                    textAlignVertical: 'center',
-                                }}
-                            >
-                                {selectedCount}
-                            </Text>
-                        </Animated.View>
+                                            outputRange: [0.5, 1],
+                                        })
+                                    }],
+                                    opacity: countAnim
+                                }
+                            ]}>
+                                {isSelectable && (
+                                    <Text style={styles.countText}>{selectedCount}</Text>
+                                )}
+                            </Animated.View>
+                        </View>
                     </TouchableOpacity>
 
-                    {/* Sort button with enhanced animations */}
                     <TouchableOpacity
-                        onPress={() => {
-                            const idx = sortOptions.findIndex(opt => opt.value === sortMethod);
-                            const next = sortOptions[(idx + 1) % sortOptions.length].value;
-                            onSortChange(next);
-                        }}
-                        style={[styles.actionButton, styles.sortButton]}
-                        activeOpacity={0.75}
+                        onPress={handleSortChange}
+                        style={styles.actionButton}
+                        activeOpacity={0.8}
                     >
-                        <MaterialIcons name="sort" size={16} color={colors.text} />
-                        <View style={styles.sortDivider} />
+                        <View style={styles.buttonContent}>
+                            <MaterialIcons name="sort" size={16} color={colors.text} />
+                            <Text style={styles.buttonText}>Sort</Text>
+                            {sortOptions[sortIdx]?.icon && (
+                                React.cloneElement(sortOptions[sortIdx].icon, {
+                                    color: colors.text,
+                                    size: 16,
+                                    marginLeft: 18,
+                                })
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={toggleExpanded}
+                        style={styles.toggleButton}
+                        activeOpacity={0.8}
+                    >
                         <Animated.View
-                            style={[
-                                styles.sortIconContainer,
-                                {
-                                    opacity: sortAnim,
-                                    transform: [
-                                        {
-                                            scale: sortAnim.interpolate({
-                                                inputRange: [0, 1],
-                                                outputRange: [0.7, 1],
-                                            }),
-                                        },
-                                        {
-                                            rotateY: sortAnim.interpolate({
-                                                inputRange: [0, 1],
-                                                outputRange: ['90deg', '0deg'],
-                                            }),
-                                        },
-                                    ],
-                                },
-                            ]}
+                            style={{
+                                transform: [{
+                                    rotate: buttonsAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['0deg', '180deg'],
+                                    })
+                                }]
+                            }}
                         >
-                            {sortOptions[sortIdx]?.icon &&
-                                React.cloneElement(
-                                    sortOptions[sortIdx].icon,
-                                    {
-                                        color: colors.text,
-                                        size: 14,
-                                    }
-                                )
-                            }
+                            <MaterialIcons
+                                name="tune"
+                                size={20}
+                                color={colors.text}
+                            />
                         </Animated.View>
                     </TouchableOpacity>
-                </View>
-            </Animated.View>
+                </Animated.View>
+            </View>
         </View>
     );
 };

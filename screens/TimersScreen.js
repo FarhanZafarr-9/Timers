@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import TimerCard from '../components/TimerCard';
 import AddTimerModal from '../components/AddTimerModal';
@@ -7,7 +7,6 @@ import { useTimers } from '../utils/TimerContext';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
 import ScreenWithHeader from '../components/ScreenWithHeder';
-import Timer from '../classes/Timer';
 import { useSecurity } from '../utils/SecurityContext';
 import { sortOptions } from '../utils/functions';
 import Snackbar from '../components/SnackBar';
@@ -26,14 +25,8 @@ export default function TimersScreen({ route }) {
     const [expandedCardIds, setExpandedCardIds] = useState(new Set());
     const [isSelectable, setIsSelectable] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
-    const [times, setTimes] = useState({});
     const [sortMethod, setSortMethod] = useState('priority');
     const [messages, setMessages] = useState([]);
-
-    // Refs for performance optimization
-    const timesRef = useRef({});
-    const updateIntervalRef = useRef(null);
-    const lastUpdateRef = useRef(0);
 
     // Optimized message handling
     const addMessage = useCallback((text) => {
@@ -51,7 +44,7 @@ export default function TimersScreen({ route }) {
         addMessage(`Sorted by ${method}`);
     }, [addMessage]);
 
-    // Memoized filtered timers with better caching
+    // Memoized filtered timers
     const filteredTimers = useMemo(() => {
         const filtered = timers.filter(timer => {
             const matchesMode = isCountdown ? timer.isCountdown : !timer.isCountdown;
@@ -75,7 +68,7 @@ export default function TimersScreen({ route }) {
         return filtered;
     }, [timers, isCountdown, privacyMode, searchQuery]);
 
-    // Optimized sorting with better performance
+    // Optimized sorting
     const sortedTimers = useMemo(() => {
         const arr = [...filteredTimers];
 
@@ -101,99 +94,6 @@ export default function TimersScreen({ route }) {
                 return arr;
         }
     }, [filteredTimers, sortMethod, isCountdown]);
-
-    // Optimized time formatting with caching
-    const formatTime = useCallback((timeValue) => {
-        if (isCountdown) {
-            const seconds = Math.floor(timeValue / 1000);
-            if (seconds <= 0) return '0s';
-
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-            const months = Math.floor(days / 30.44);
-            const years = Math.floor(months / 12);
-
-            const parts = [];
-            if (years > 0) parts.push(`${years}y`);
-            if (months % 12 > 0) parts.push(`${months % 12}mo`);
-            if (Math.floor(days % 30.44) > 0) parts.push(`${Math.floor(days % 30.44)}d`);
-            if (hours % 24 > 0) parts.push(`${hours % 24}h`);
-            if (minutes % 60 > 0) parts.push(`${minutes % 60}m`);
-            if (seconds % 60 > 0 || parts.length === 0) parts.push(`${seconds % 60}s`);
-
-            return parts.slice(0, 3).join(' '); // Limit to 3 parts for readability
-        } else {
-            const totalSeconds = Math.floor(timeValue / 1000);
-            const years = Math.floor(totalSeconds / (365 * 24 * 60 * 60));
-            const months = Math.floor((totalSeconds % (365 * 24 * 60 * 60)) / (30.44 * 24 * 60 * 60));
-            const days = Math.floor((totalSeconds % (30.44 * 24 * 60 * 60)) / (24 * 60 * 60));
-            const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
-            const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-            const seconds = totalSeconds % 60;
-
-            const parts = [];
-            if (years > 0) parts.push(`${years}y`);
-            if (months > 0) parts.push(`${months}mo`);
-            if (days > 0) parts.push(`${days}d`);
-            if (hours > 0) parts.push(`${hours}h`);
-            if (minutes > 0) parts.push(`${minutes}m`);
-            if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-
-            return parts.slice(0, 3).join(' '); // Limit to 3 parts for readability
-        }
-    }, [isCountdown]);
-
-    // Highly optimized time updates with throttling
-    const updateTimes = useCallback(() => {
-        const now = Date.now();
-
-        // Throttle updates to prevent excessive calculations
-        if (now - lastUpdateRef.current < 900) return;
-        lastUpdateRef.current = now;
-
-        const updated = { ...timesRef.current };
-        let hasChanges = false;
-
-        filteredTimers.forEach(timer => {
-            let timeValue;
-
-            if (isCountdown) {
-                const timerInstance = timer instanceof Timer ? timer : new Timer(timer);
-                const effectiveDate = timerInstance.getEffectiveDate();
-                timeValue = Math.max(effectiveDate.getTime() - now, 0);
-            } else {
-                const startTime = new Date(timer.date).getTime();
-                timeValue = Math.max(now - startTime, 0);
-            }
-
-            const formattedTime = formatTime(timeValue);
-            if (updated[timer.id] !== formattedTime) {
-                updated[timer.id] = formattedTime;
-                hasChanges = true;
-            }
-        });
-
-        if (hasChanges) {
-            timesRef.current = updated;
-            setTimes(updated);
-        }
-    }, [filteredTimers, isCountdown, formatTime]);
-
-    // Optimized timer updates with better interval management
-    useEffect(() => {
-        // Initial update
-        updateTimes();
-
-        // Set up interval for updates
-        updateIntervalRef.current = setInterval(updateTimes, 1000);
-
-        return () => {
-            if (updateIntervalRef.current) {
-                clearInterval(updateIntervalRef.current);
-            }
-        };
-    }, [updateTimes]);
 
     // Optimized selection handlers using Set
     const handleSelect = useCallback((id) => {
@@ -269,19 +169,14 @@ export default function TimersScreen({ route }) {
         }
     }, [isSelectable, handleSelect]);
 
-    // Memoized render function with better prop stability
-    const renderTimerCard = useCallback(({ item: timer }) => {
-        const timeValue = times[timer.id] || '0s';
+    // Memoized render function (no elapsedTime/remainingTime props)
+    function renderTimerCard({ item: timer }) {
         const isExpanded = expandedCardIds.has(timer.id);
         const isSelected = selectedIds.has(timer.id);
 
         return (
             <TimerCard
                 timer={timer}
-                {...(isCountdown
-                    ? { remainingTime: timeValue }
-                    : { elapsedTime: timeValue }
-                )}
                 onDelete={handleDeleteTimer}
                 onEdit={handleEditTimer}
                 isExpanded={isExpanded}
@@ -295,20 +190,7 @@ export default function TimersScreen({ route }) {
                 privacyMode={privacyMode}
             />
         );
-    }, [
-        times,
-        expandedCardIds,
-        selectedIds,
-        isSelectable,
-        colors,
-        variables,
-        isCountdown,
-        searchQuery,
-        privacyMode,
-        handleDeleteTimer,
-        handleEditTimer,
-        handleCardClick
-    ]);
+    }
 
     const keyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -454,7 +336,7 @@ export default function TimersScreen({ route }) {
                     windowSize: 8,
                     initialNumToRender: 8,
                     updateCellsBatchingPeriod: 100,
-                    getItemLayout: null, // Let FlatList handle dynamic heights
+                    getItemLayout: null, 
                     contentContainerStyle: {
                         paddingBottom: 95,
                         minHeight: '100%'

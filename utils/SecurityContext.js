@@ -13,6 +13,7 @@ const PASSWORD_KEY = 'appLockPassword';
 const PRIVACY_MODE_KEY = 'privacyMode';
 const LOCKOUT_MODE_KEY = 'lockoutMode';
 const LAST_ACTIVE_TIME_KEY = 'lastActiveTime';
+const RESET_CODE_KEY = 'resetCode';
 
 // Helper function to get timeout value by mode
 const getTimeoutByMode = (mode) => {
@@ -30,6 +31,7 @@ export const SecurityProvider = ({ children }) => {
     const [privacyMode, setPrivacyMode] = useState(undefined);
     const [password, setPassword] = useState(undefined);
     const [lockoutMode, setLockoutMode] = useState(undefined);
+    const [resetCode, setResetCode] = useState(null);
 
     // New state for lockout functionality
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -57,19 +59,22 @@ export const SecurityProvider = ({ children }) => {
                 setPrivacyMode(storedPrivacyMode === null || storedPrivacyMode === undefined ? 'off' : storedPrivacyMode);
 
                 const storedLockoutMode = await AsyncStorage.getItem(LOCKOUT_MODE_KEY);
-                setLockoutMode(storedLockoutMode === null || storedLockoutMode === undefined ? lockoutOptions[lockoutOptions.length - 1].value : storedLockoutMode);
+                setLockoutMode(storedLockoutMode === null || storedLockoutMode === undefined ? lockoutOptions[0].value : storedLockoutMode);
 
                 const storedLastActiveTime = await AsyncStorage.getItem(LAST_ACTIVE_TIME_KEY);
                 if (storedLastActiveTime) {
                     setLastActiveTime(parseInt(storedLastActiveTime, 10));
                 }
+                const storedResetCode = await AsyncStorage.getItem(RESET_CODE_KEY);
+                setResetCode(storedResetCode || null);
             } catch (e) {
                 setIsFingerprintEnabled(false);
                 setIsPasswordLockEnabled(false);
                 setPassword('');
                 setPrivacyMode('off');
-                setLockoutMode(lockoutOptions[lockoutOptions.length - 1].value); // Default to "Never"
+                setLockoutMode(lockoutOptions[0].value); // Default to "Never"
                 setLastActiveTime(null);
+                setResetCode(null);
             }
 
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
@@ -146,7 +151,7 @@ export const SecurityProvider = ({ children }) => {
 
     // Check if lockout should be used based on current settings
     const shouldUseLockout = () => {
-        
+
         return (
             (isPasswordLockEnabled || isFingerprintEnabled)
         );
@@ -209,6 +214,13 @@ export const SecurityProvider = ({ children }) => {
         }
     }, [lockoutMode]);
 
+    // Save reset code to storage when it changes
+    useEffect(() => {
+        if (resetCode !== null) {
+            AsyncStorage.setItem(RESET_CODE_KEY, resetCode);
+        }
+    }, [resetCode]);
+
     // Toggle fingerprint authentication
     const toggleFingerprint = () => {
         if (isSensorAvailable) {
@@ -222,13 +234,18 @@ export const SecurityProvider = ({ children }) => {
 
     // Set privacy mode to a specific value
     const setPrivacyModeValue = (mode) => {
+        if (!mode) {
+            mode = 'off'; // Default to 'off' if no mode is provided
+        }
         setPrivacyMode(mode);
     };
 
     // Set lockout mode to a specific value
     const setLockoutModeValue = (mode) => {
+        if (!mode) {
+            mode = 'never'; // Default to 'never' if no mode is provided
+        }
         setLockoutMode(mode);
-        // Clear any existing timer when changing lockout mode
         clearLockoutTimer();
     };
 
@@ -281,6 +298,9 @@ export const SecurityProvider = ({ children }) => {
         return timeRemaining > 0 ? timeRemaining : 0;
     };
 
+    const getResetCode = () => resetCode;
+    const setResetCodeValue = (value) => setResetCode(value);
+
     return (
         <SecurityContext.Provider
             value={{
@@ -315,6 +335,8 @@ export const SecurityProvider = ({ children }) => {
                 lockoutOptions,
                 lastActiveTime,
                 appState,
+                getResetCode,
+                setResetCodeValue
             }}
         >
             {children}

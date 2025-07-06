@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
@@ -11,11 +11,13 @@ export default function AboutScreen() {
     const topCardAnim = useRef(new Animated.Value(-50)).current;
     const descCardAnim = useRef(new Animated.Value(-50)).current;
     const creditsCardAnim = useRef(new Animated.Value(-50)).current;
+    const buttonsAnim = useRef(new Animated.Value(-50)).current;
 
-    // Opacity animations for fade-in effect
+    // Opacity animations
     const topOpacityAnim = useRef(new Animated.Value(0)).current;
     const descOpacityAnim = useRef(new Animated.Value(0)).current;
     const creditsOpacityAnim = useRef(new Animated.Value(0)).current;
+    const buttonsOpacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.stagger(120, [
@@ -58,8 +60,32 @@ export default function AboutScreen() {
                     useNativeDriver: true,
                 }),
             ]),
+            Animated.parallel([
+                Animated.spring(buttonsAnim, {
+                    toValue: 0,
+                    tension: 80,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(buttonsOpacityAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
         ]).start();
     }, []);
+
+    const handleOpenLink = (url) => {
+        Linking.openURL(url).catch(err => console.error("Failed to open URL:", err));
+    };
+
+    const handleReportBug = () => {
+        const email = 'your-email@example.com';
+        const subject = 'Bug Report - Timers App';
+        const body = 'Please describe the bug you encountered:';
+        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    };
 
     const styles = StyleSheet.create({
         content: {
@@ -119,6 +145,28 @@ export default function AboutScreen() {
             color: colors.textSecondary,
             fontSize: 14,
         },
+        buttonsContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: 8,
+            gap: 12,
+        },
+        actionButton: {
+            flex: 1,
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.sm,
+            padding: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        buttonText: {
+            marginLeft: 8,
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+            height: 20
+        },
     });
 
     return (
@@ -131,7 +179,7 @@ export default function AboutScreen() {
             paddingX={0}
         >
             <View style={styles.content}>
-                {/* Top Card - Slide from top with fade */}
+                {/* Top Card */}
                 <Animated.View style={[
                     styles.card,
                     styles.row,
@@ -147,7 +195,7 @@ export default function AboutScreen() {
                     </View>
                 </Animated.View>
 
-                {/* Description Card - Slide from top with fade */}
+                {/* Description Card */}
                 <Animated.View style={[
                     styles.card,
                     {
@@ -162,7 +210,7 @@ export default function AboutScreen() {
                     <Text style={styles.quote}>"Create what you wish existed."</Text>
                 </Animated.View>
 
-                {/* Credits Card - Slide from top with fade */}
+                {/* Credits Card */}
                 <Animated.View style={[
                     styles.card,
                     {
@@ -171,6 +219,43 @@ export default function AboutScreen() {
                     }
                 ]}>
                     <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
+                </Animated.View>
+
+                {/* Action Buttons */}
+                <Animated.View style={[
+                    {
+                        transform: [{ translateY: buttonsAnim }],
+                        opacity: buttonsOpacityAnim
+                    }
+                ]}>
+                    <View style={styles.buttonsContainer}>
+                        {/* GitHub Repo Button */}
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}
+                        >
+                            <Icons.Ion name="logo-github" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Repository</Text>
+                        </TouchableOpacity>
+
+                        {/* Creator's GitHub Button */}
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9')}
+                        >
+                            <Icons.Ion name="person" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Creator</Text>
+                        </TouchableOpacity>
+
+                        {/* Report Bug Button */}
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={handleReportBug}
+                        >
+                            <Icons.Ion name="bug" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Report Bug</Text>
+                        </TouchableOpacity>
+                    </View>
                 </Animated.View>
             </View>
         </ScreenWithHeader>
