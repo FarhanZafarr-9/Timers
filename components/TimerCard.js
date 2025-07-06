@@ -1,5 +1,5 @@
-// Optimized TimerCard.js
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+// Optimized TimerCard.js - Removed useMemo for better performance
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
@@ -27,26 +27,6 @@ const TimerCard = React.memo(({
     const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
     const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
 
-    const jumbledTitle = useMemo(
-        () => jumbleText(titleText),
-        [titleText] // Only re-jumble if the title changes
-    );
-
-    const jumbledName = useMemo(
-        () => jumbleText(nameText),
-        [nameText] // Only re-jumble if the name changes
-    );
-
-    const maskedName = useMemo(
-        () => maskText(nameText),
-        [nameText] // Only re-mask if the name changes
-    );
-
-    const maskedTitle = useMemo(
-        () => maskText(titleText),
-        [titleText] // Only re-mask if the title changes
-    );
-
     // Use single animated value for performance
     const animatedValues = useRef({
         height: new Animated.Value(0),
@@ -60,8 +40,8 @@ const TimerCard = React.memo(({
         detailsHeight: new Animated.Value(isExpanded ? 20 : 0),
     }).current;
 
-    // Memoize time parsing to avoid recalculation
-    const timeParts = useMemo(() => {
+    // Parse time parts
+    const getTimeParts = () => {
         const timeStr = timer.isCountdown
             ? (remainingTime || '0y 0mo 0d 0h 0m 0s')
             : (elapsedTime || '0y 0mo 0d 0h 0m 0s');
@@ -79,11 +59,15 @@ const TimerCard = React.memo(({
         }
 
         return [parts.y, parts.mo, parts.d, parts.h, parts.m, parts.s];
-    }, [timer.isCountdown, remainingTime, elapsedTime]);
+    };
 
-    // Memoize formatted date to avoid recalculation
-    const formattedDate = useMemo(() => {
-        return new Date(timer.isRecurring && timer.nextDate ? timer.nextDate : timer.date).toLocaleString('en-US', {
+    // Format date
+    const getFormattedDate = () => {
+        return new Date(
+            timer.isRecurring && timer.date < Date.now()
+                ? timer.nextDate
+                : timer.date
+        ).toLocaleString('en-US', {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
@@ -91,10 +75,10 @@ const TimerCard = React.memo(({
             hour: '2-digit',
             minute: '2-digit',
         });
-    }, [timer.date, timer.nextDate, timer.isRecurring]);
+    };
 
-    // Memoize styles to prevent recreation
-    const styles = useMemo(() => StyleSheet.create({
+    // Create styles
+    const createStyles = () => StyleSheet.create({
         timerItem: {
             backgroundColor: colors.cardLighter,
             padding: 12,
@@ -216,7 +200,7 @@ const TimerCard = React.memo(({
             opacity: 0,
             zIndex: -1,
         }
-    }), [colors, searchText, privacyMode]);
+    });
 
     // Optimized callbacks
     const handleEdit = useCallback(() => {
@@ -319,14 +303,54 @@ const TimerCard = React.memo(({
         Animated.parallel(animations).start();
     }, [showActions]);
 
-    // Memoized expandable content
-    const ExpandableContent = useMemo(() => (
+    // Render time display
+    const renderTimeDisplay = () => {
+        const [years, months, days, hours, minutes, seconds] = getTimeParts();
+
+        const timePartsArray = [
+            { value: years, label: 'y', id: 'years' },
+            { value: months, label: 'mo', id: 'months' },
+            { value: days, label: 'd', id: 'days' },
+            { value: hours, label: 'h', id: 'hours' },
+            { value: minutes, label: 'm', id: 'minutes' },
+            { value: seconds, label: 's', id: 'seconds' },
+        ];
+
+        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+
+        let prefix = '';
+        if (timer.isCountdown && !timer.isRecurring && remainingTime === '0s') {
+            prefix = 'Completed';
+        } else if (timer.isCountdown) {
+            prefix = 'Left: ';
+        } else {
+            prefix = 'Elapsed: ';
+        }
+
+        return (
+            <>
+                <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
+                {prefix === 'Completed' ? null : (
+                    nonZeroParts.length > 0
+                        ? nonZeroParts.map((part, idx) => (
+                            <Text style={{ fontSize: 14 }} key={part.id}>
+                                {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
+                            </Text>
+                        ))
+                        : <Text style={{ fontSize: 14 }}>0s</Text>
+                )}
+            </>
+        );
+    };
+
+    // Render expandable content
+    const renderExpandableContent = () => (
         <View style={styles.contentContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Animated.View style={{ height: animatedValues.detailsHeight, overflow: 'hidden' }}>
                     <Text style={styles.timerDetails}>
-                        {timer.isCountdown ? 'End:  ' : 'Start:  '}
-                        {formattedDate}
+                        {timer.isCountdown ? 'Ends:  ' : 'Started:  '}
+                        {getFormattedDate()}
                     </Text>
                 </Animated.View>
 
@@ -372,47 +396,7 @@ const TimerCard = React.memo(({
                 </View>
             </View>
         </View>
-    ), [timer, formattedDate, showActions, handleEdit, handleDelete, toggleActions, styles]);
-
-    // Memoized time display
-    const timeDisplay = useMemo(() => {
-        const [years, months, days, hours, minutes, seconds] = timeParts;
-
-        const timePartsArray = [
-            { value: years, label: 'y', id: 'years' },
-            { value: months, label: 'mo', id: 'months' },
-            { value: days, label: 'd', id: 'days' },
-            { value: hours, label: 'h', id: 'hours' },
-            { value: minutes, label: 'm', id: 'minutes' },
-            { value: seconds, label: 's', id: 'seconds' },
-        ];
-
-        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-        let prefix = '';
-        if (timer.isCountdown && !timer.isRecurring && remainingTime === '0s') {
-            prefix = 'Completed';
-        } else if (timer.isCountdown) {
-            prefix = 'Left: ';
-        } else {
-            prefix = 'Elapsed: ';
-        }
-
-        return (
-            <>
-                <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
-                {prefix === 'Completed' ? null : (
-                    nonZeroParts.length > 0
-                        ? nonZeroParts.map((part, idx) => (
-                            <Text style={{ fontSize: 14 }} key={part.id}>
-                                {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
-                            </Text>
-                        ))
-                        : <Text style={{ fontSize: 14 }}>0s</Text>
-                )}
-            </>
-        );
-    }, [timeParts, timer.isCountdown, timer.isRecurring, remainingTime]);
+    );
 
     const handleContentLayout = useCallback((event) => {
         if (!hasMeasured) {
@@ -431,8 +415,10 @@ const TimerCard = React.memo(({
         }
     }, [hasMeasured, isExpanded]);
 
-    // Memoized card style
-    const cardStyle = useMemo(() => ({
+    const styles = createStyles();
+
+    // Create card style
+    const cardStyle = {
         ...styles.timerItem,
         ...(selected && {
             borderColor: 'hsla(0, 84.20%, 60.20%, 0.60)',
@@ -441,9 +427,7 @@ const TimerCard = React.memo(({
         ...(selectable && !selected && {
             borderColor: 'hsla(0, 0.00%, 38.00%, 0.60)'
         })
-    }), [styles.timerItem, selected, selectable]);
-
-
+    };
 
     return (
         <View style={cardStyle}>
@@ -457,7 +441,9 @@ const TimerCard = React.memo(({
                             colors={colors}
                         />
                     ) :
-                        <Text style={styles.timerTitle}>{privacyMode === 'jumble' ? jumbledTitle : maskedTitle}</Text>
+                        <Text style={styles.timerTitle}>
+                            {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+                        </Text>
                     }
                     <View style={styles.priorityIndicator}>
                         {timer.isRecurring && (
@@ -472,22 +458,21 @@ const TimerCard = React.memo(({
                                     name="autorenew"
                                     size={14}
                                     color={colors.highlight}
-
                                 />
                             </View>
                         )}
                         {timer.personName && (
                             privacyMode === 'off' ? (
-
                                 <HighlightMatchText
                                     text={nameText}
                                     textStyle={styles.namePill}
                                     search={searchText}
                                     colors={colors}
                                 />
-
                             ) :
-                                <Text style={styles.namePill}>{privacyMode === 'jumble' ? jumbledName : maskedName}</Text>
+                                <Text style={styles.namePill}>
+                                    {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
+                                </Text>
                         )}
                         <View
                             style={[
@@ -521,7 +506,7 @@ const TimerCard = React.memo(({
                     }
                 ]}>
                     <Text style={styles.timerQuickInfo}>
-                        {timeDisplay}
+                        {renderTimeDisplay()}
                     </Text>
                     <Animated.View style={{
                         transform: [{
@@ -532,7 +517,7 @@ const TimerCard = React.memo(({
                         }]
                     }}>
                         <Icons.Material
-                            name="expand-more"
+                            name="keyboard-arrow-down"
                             size={18}
                             color={colors.text}
                             style={{ position: 'relative', opacity: 0.5 }}
@@ -543,7 +528,7 @@ const TimerCard = React.memo(({
 
             {!hasMeasured && (
                 <View style={styles.measurementContainer} onLayout={handleContentLayout} pointerEvents="none">
-                    {ExpandableContent}
+                    {renderExpandableContent()}
                 </View>
             )}
 
@@ -556,7 +541,7 @@ const TimerCard = React.memo(({
                         },
                     ]}
                 >
-                    {ExpandableContent}
+                    {renderExpandableContent()}
                 </Animated.View>
             )}
         </View>
