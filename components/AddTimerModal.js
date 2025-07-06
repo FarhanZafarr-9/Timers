@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
-    Modal,
     StyleSheet,
     TouchableWithoutFeedback,
     Keyboard,
     Switch,
+    Platform,
+    Dimensions,
+    Animated,
+    Modal
 } from 'react-native';
 import { Icons } from '../assets/icons';
 import FloatingLabelInput from './FloatingLabelInput';
 import { useTheme } from '../utils/ThemeContext';
+
 
 const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     const priorities = ['low', 'normal', 'high'];
@@ -25,7 +29,13 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         isCountdown: mode === 'countdown',
     });
 
+    const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+    const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 600 : 500);
+
+
     const { variables, colors } = useTheme();
+    const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+    const opacity = useRef(new Animated.Value(0)).current;
 
     const [currentIndex, setCurrentIndex] = useState(1);
     const [yearInput, setYearInput] = useState('');
@@ -36,7 +46,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     const [secondInput, setSecondInput] = useState('');
     const [error, setError] = useState('');
 
-    // Focus state for each input
     const [focus, setFocus] = useState({
         personName: false,
         title: false,
@@ -50,38 +59,82 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     });
 
     useEffect(() => {
+        if (visible) {
+            showBottomSheet();
+        } else {
+            hideBottomSheet();
+        }
+    }, [visible]);
+
+    const showBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
+    const hideBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: SCREEN_HEIGHT,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
+    useEffect(() => {
         if (!visible) {
-            setTimerData({
-                title: '',
-                personName: '',
-                priority: 'normal',
-                date: new Date(),
-                isRecurring: false,
-                recurrenceInterval: '',
-                isCountdown: mode === 'countdown',
-            });
-            setYearInput(String(new Date().getFullYear()));
-            setMonthInput(String(new Date().getMonth() + 1).padStart(2, '0'));
-            setDayInput(String(new Date().getDate()).padStart(2, '0'));
-            setHourInput(String(new Date().getHours()).padStart(2, '0'));
-            setMinuteInput(String(new Date().getMinutes()).padStart(2, '0'));
-            setSecondInput(String(new Date().getSeconds()).padStart(2, '0'));
-            setError('');
-            setFocus({
-                personName: false,
-                title: false,
-                recurrence: false,
-                year: false,
-                month: false,
-                day: false,
-                hour: false,
-                minute: false,
-                second: false,
-            });
+            resetForm();
         }
     }, [visible, mode]);
 
-    // Set initial data if provided
+    const resetForm = () => {
+        setTimerData({
+            title: '',
+            personName: '',
+            priority: 'normal',
+            date: new Date(),
+            isRecurring: false,
+            recurrenceInterval: '',
+            isCountdown: mode === 'countdown',
+        });
+
+        const now = new Date();
+        setYearInput(String(now.getFullYear()));
+        setMonthInput(String(now.getMonth() + 1).padStart(2, '0'));
+        setDayInput(String(now.getDate()).padStart(2, '0'));
+        setHourInput(String(now.getHours()).padStart(2, '0'));
+        setMinuteInput(String(now.getMinutes()).padStart(2, '0'));
+        setSecondInput(String(now.getSeconds()).padStart(2, '0'));
+        setError('');
+
+        setFocus({
+            personName: false,
+            title: false,
+            recurrence: false,
+            year: false,
+            month: false,
+            day: false,
+            hour: false,
+            minute: false,
+            second: false,
+        });
+    };
+
     useEffect(() => {
         let initialDate;
         if (initialData) {
@@ -111,6 +164,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             });
             setCurrentIndex(1);
         }
+
         setYearInput(String(initialDate.getFullYear()));
         setMonthInput(String(initialDate.getMonth() + 1).padStart(2, '0'));
         setDayInput(String(initialDate.getDate()).padStart(2, '0'));
@@ -119,7 +173,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         setSecondInput(String(initialDate.getSeconds()).padStart(2, '0'));
     }, [initialData, mode]);
 
-    // Decide timer type if mode is null
     const getTimerType = (date) => {
         if (mode === 'countdown') return true;
         if (mode === 'countup') return false;
@@ -127,7 +180,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         return new Date(date) > now;
     };
 
-    // Validation helpers
     const isValidDate = (y, m, d) => {
         const date = new Date(y, m - 1, d);
         return (
@@ -139,10 +191,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
 
     useEffect(() => {
         if (!error) return;
-
-        // If any field changes and error exists, clear error
         setError('');
-        // eslint-disable-next-line
     }, [
         timerData.title,
         timerData.personName,
@@ -168,7 +217,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             return;
         }
 
-        // Parse and validate date/time
         const y = parseInt(yearInput, 10);
         const m = parseInt(monthInput, 10);
         const d = parseInt(dayInput, 10);
@@ -200,12 +248,10 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
 
         timerToSave.isCountdown = getTimerType(finalDate);
 
-        //console.log(timerToSave)
         onAdd(timerToSave);
         onClose();
     };
 
-    // Only update input fields, not timerData.date directly (redundancy removed)
     const handleDatePartChange = (part, value) => {
         if (part === 'year') setYearInput(value);
         if (part === 'month') setMonthInput(value);
@@ -230,46 +276,45 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     }
 
     const styles = StyleSheet.create({
-        blurView: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            backgroundColor: colors.background + 'fa',
-        },
-        error: {
-            color: '#ef4444',
-            fontSize: 13,
-            marginBottom: 8,
-            textAlign: 'center',
-            backgroundColor: 'rgba(239, 68, 68, 0.18)',
-            borderWidth: 0.5,
-            borderColor: '#ef4444',
-            padding: 10,
-            borderRadius: variables.radius.sm,
-        },
-        modalContainer: {
+        overlay: {
             flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+            backgroundColor: colors.background + '80',
+            justifyContent: 'flex-end',
         },
-        modalContent: {
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
+        bottomSheet: {
+            height: BOTTOM_SHEET_HEIGHT,
             backgroundColor: colors.cardLighter,
-            padding: 25,
-            borderRadius: variables.radius.md,
-            width: '90%',
+            borderTopLeftRadius: variables.radius.lg,
+            borderTopRightRadius: variables.radius.lg,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            elevation: 20,
+        },
+        handle: {
+            width: 40,
+            height: 4,
+            backgroundColor: colors.border,
+            borderRadius: 2,
+            alignSelf: 'center',
+            marginTop: 12,
+            marginBottom: 8,
+        },
+        contentContainer: {
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 10,
+            paddingBottom: Platform.OS === 'ios' ? 34 : 20,
         },
         modePill: {
             position: 'absolute',
             top: 10,
-            right: 10,
+            right: 20,
             backgroundColor: colors.snackbarBg,
             paddingVertical: 4,
             paddingHorizontal: 8,
-            borderRadius: variables.radius.xs,
+            borderRadius: variables.radius.sm,
             borderWidth: 0.75,
             borderColor: colors.border,
         },
@@ -329,8 +374,8 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             fontWeight: 'bold',
         },
         buttonContainer: {
-            flexDirection: 'row',
-            marginTop: 10,
+            flexDirection: 'column',
+            marginTop: 'auto',
             borderTopColor: colors.border,
             borderTopWidth: 0.75,
             paddingTop: 20,
@@ -344,7 +389,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             borderRadius: variables.radius.sm,
         },
         cancelButton: {
-            backgroundColor: colors.highlight + '22',
+            backgroundColor: colors.card,
             borderWidth: 0.5,
             borderColor: colors.border,
             padding: 10,
@@ -369,208 +414,253 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             alignItems: 'center',
             marginBottom: 12,
         },
+        error: {
+            color: '#ef4444',
+            fontSize: 13,
+            marginBottom: 8,
+            textAlign: 'center',
+            backgroundColor: 'rgba(239, 68, 68, 0.18)',
+            borderWidth: 0.5,
+            borderColor: '#ef4444',
+            padding: 10,
+            borderRadius: variables.radius.sm,
+        },
+        scrollContent: {
+            flexGrow: 1,
+        },
     });
 
-    return (
-        <Modal visible={visible} transparent={true} animationType="fade">
+    if (!visible) return null;
 
-            <View style={styles.blurView}>
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
+    return (
+        <Modal
+            visible={visible}
+            transparent
+            animationType="none"
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <Animated.View style={[styles.overlay, { opacity }]}>
+                <TouchableWithoutFeedback onPress={onClose}>
+                    <View style={{ flex: 1 }} />
+                </TouchableWithoutFeedback>
+
+                <Animated.View style={[
+                    styles.bottomSheet,
+                    { transform: [{ translateY }] }
+                ]}>
+                    <View style={styles.handle} />
+
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <View style={styles.contentContainer}>
                             <View style={styles.modePill}>
-                                <Text style={styles.modeText}>{timerData.isCountdown ? 'Countdown' : 'Countup'}</Text>
+                                <Text style={styles.modeText}>
+                                    {timerData.isCountdown ? 'Countdown' : 'Countup'}
+                                </Text>
                             </View>
-                            <Text style={styles.modalTitle}>{initialData ? 'Edit Timer' : 'Add Timer'}</Text>
-                            <View style={styles.inputRow}>
-                                <View style={{ width: '45%' }}>
-                                    <FloatingLabelInput
-                                        label="Person Name"
-                                        value={timerData.personName}
-                                        onChangeText={text => setTimerData({ ...timerData, personName: text })}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="personName"
-                                        colors={colors}
-                                    />
-                                </View>
-                                <View style={{ width: '50%' }}>
-                                    <FloatingLabelInput
-                                        label="Title"
-                                        value={timerData.title}
-                                        onChangeText={text => setTimerData({ ...timerData, title: text })}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="title"
-                                        colors={colors}
-                                    />
-                                </View>
-                            </View>
-                            {/* Date Inputs */}
-                            <View style={styles.inputRow}>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="YYYY"
-                                        value={yearInput}
-                                        onChangeText={val => handleDatePartChange('year', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="year"
-                                        keyboardType="numeric"
-                                        maxLength={4}
-                                        colors={colors}
-                                    />
-                                </View>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="MM"
-                                        value={monthInput}
-                                        onChangeText={val => handleDatePartChange('month', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="month"
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        colors={colors}
-                                    />
-                                </View>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="DD"
-                                        value={dayInput}
-                                        onChangeText={val => handleDatePartChange('day', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="day"
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        colors={colors}
-                                    />
-                                </View>
-                            </View>
-                            {/* Time Inputs */}
-                            <View style={styles.inputRow}>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="HH"
-                                        value={hourInput}
-                                        onChangeText={val => handleTimePartChange('hour', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="hour"
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        colors={colors}
-                                    />
-                                </View>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="MM"
-                                        value={minuteInput}
-                                        onChangeText={val => handleTimePartChange('minute', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="minute"
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        colors={colors}
-                                    />
-                                </View>
-                                <View style={{ width: '32%' }}>
-                                    <FloatingLabelInput
-                                        label="SS"
-                                        value={secondInput}
-                                        onChangeText={val => handleTimePartChange('second', val)}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="second"
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        colors={colors}
-                                    />
-                                </View>
-                            </View>
-                            <View style={styles.priorityParentContainer}>
-                                <Text style={styles.label}>Priority</Text>
-                                <View style={styles.priorityContainer}>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (currentIndex > 0) { changePriority(-1); }
-                                        }}
-                                        style={[styles.arrowButton, { opacity: currentIndex === 0 ? 0 : 1 }]}
-                                        activeOpacity={currentIndex === 0 ? 0 : 1}
-                                    >
-                                        <Icons.Material name="chevron-left" size={14} color={colors.highlight} />
-                                    </TouchableOpacity>
-                                    <Text style={styles.priorityText}>{capitalizeFirstLetter(timerData.priority)}</Text>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (currentIndex < priorities.length - 1) { changePriority(1); }
-                                        }}
-                                        style={[styles.arrowButton, { opacity: currentIndex === priorities.length - 1 ? 0 : 1 }]}
-                                        activeOpacity={currentIndex === priorities.length - 1 ? 0 : 1}
-                                    >
-                                        <Icons.Material name="chevron-right" size={14} color={colors.highlight} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            {mode === 'countdown' && (
-                                <View style={styles.recurringContainer}>
-                                    <Text style={styles.label}>Is Recurring?</Text>
-                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                        <Switch
-                                            value={timerData.isRecurring}
-                                            onValueChange={val =>
-                                                setTimerData({
-                                                    ...timerData,
-                                                    isRecurring: val,
-                                                    recurrenceInterval: val ? timerData.recurrenceInterval : '',
-                                                })
-                                            }
-                                            trackColor={{
-                                                false: colors.switchTrack,
-                                                true: colors.switchTrackActive,
-                                            }}
-                                            thumbColor={timerData.isRecurring ? colors.switchThumbActive : colors.switchThumb}
-                                            style={{ transform: [{ scale: 0.95 }] }}
+                            <Text style={styles.modalTitle}>
+                                {initialData ? 'Edit Timer' : 'Add Timer'}
+                            </Text>
+
+                            <View style={styles.scrollContent}>
+                                <View style={styles.inputRow}>
+                                    <View style={{ width: '45%' }}>
+                                        <FloatingLabelInput
+                                            label="Person Name"
+                                            value={timerData.personName}
+                                            onChangeText={text => setTimerData({ ...timerData, personName: text })}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="personName"
+                                            colors={colors}
+                                        />
+                                    </View>
+                                    <View style={{ width: '50%' }}>
+                                        <FloatingLabelInput
+                                            label="Title"
+                                            value={timerData.title}
+                                            onChangeText={text => setTimerData({ ...timerData, title: text })}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="title"
+                                            colors={colors}
                                         />
                                     </View>
                                 </View>
-                            )}
-                            {timerData.isRecurring && (
-                                <FloatingLabelInput
-                                    label="Recurrence Interval (e.g., 2 days, 1 month)"
-                                    value={timerData.recurrenceInterval}
-                                    onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
-                                    style={styles.input}
-                                    focus={focus}
-                                    setFocus={setFocus}
-                                    focusKey="recurrence"
-                                    colors={colors}
-                                />
-                            )}
 
-                            {error ? <Text style={styles.error}>{error}</Text> : null}
+                                <View style={styles.inputRow}>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="YYYY"
+                                            value={yearInput}
+                                            onChangeText={val => handleDatePartChange('year', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="year"
+                                            keyboardType="numeric"
+                                            maxLength={4}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="MM"
+                                            value={monthInput}
+                                            onChangeText={val => handleDatePartChange('month', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="month"
+                                            keyboardType="numeric"
+                                            maxLength={2}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="DD"
+                                            value={dayInput}
+                                            onChangeText={val => handleDatePartChange('day', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="day"
+                                            keyboardType="numeric"
+                                            maxLength={2}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                </View>
+
+                                <View style={styles.inputRow}>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="HH"
+                                            value={hourInput}
+                                            onChangeText={val => handleTimePartChange('hour', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="hour"
+                                            keyboardType="numeric"
+                                            maxLength={2}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="MM"
+                                            value={minuteInput}
+                                            onChangeText={val => handleTimePartChange('minute', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="minute"
+                                            keyboardType="numeric"
+                                            maxLength={2}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                    <View style={{ width: '32%' }}>
+                                        <FloatingLabelInput
+                                            label="SS"
+                                            value={secondInput}
+                                            onChangeText={val => handleTimePartChange('second', val)}
+                                            style={styles.input}
+                                            focus={focus}
+                                            setFocus={setFocus}
+                                            focusKey="second"
+                                            keyboardType="numeric"
+                                            maxLength={2}
+                                            colors={colors}
+                                        />
+                                    </View>
+                                </View>
+
+                                <View style={styles.priorityParentContainer}>
+                                    <Text style={styles.label}>Priority</Text>
+                                    <View style={styles.priorityContainer}>
+                                        <TouchableOpacity
+                                            onPress={() => { if (currentIndex > 0) changePriority(-1); }}
+                                            style={[styles.arrowButton, { opacity: currentIndex === 0 ? 0 : 1 }]}
+                                            activeOpacity={currentIndex === 0 ? 1 : 0}
+                                        >
+                                            <Icons.Material name="chevron-left" size={14} color={colors.highlight} />
+                                        </TouchableOpacity>
+                                        <Text style={styles.priorityText}>
+                                            {capitalizeFirstLetter(timerData.priority)}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => { if (currentIndex < priorities.length - 1) changePriority(1); }}
+                                            style={[styles.arrowButton, { opacity: currentIndex === priorities.length - 1 ? 0 : 1 }]}
+                                            activeOpacity={currentIndex === priorities.length - 1 ? 1 : 0}
+                                        >
+                                            <Icons.Material name="chevron-right" size={14} color={colors.highlight} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {mode === 'countdown' && (
+                                    <View style={styles.recurringContainer}>
+                                        <Text style={styles.label}>Is Recurring?</Text>
+                                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                            <Switch
+                                                value={timerData.isRecurring}
+                                                onValueChange={val =>
+                                                    setTimerData({
+                                                        ...timerData,
+                                                        isRecurring: val,
+                                                        recurrenceInterval: val ? timerData.recurrenceInterval : '',
+                                                    })
+                                                }
+                                                trackColor={{
+                                                    false: colors.switchTrack,
+                                                    true: colors.switchTrackActive,
+                                                }}
+                                                thumbColor={timerData.isRecurring ? colors.switchThumbActive : colors.switchThumb}
+                                                style={{ transform: [{ scale: 0.95 }] }}
+                                            />
+                                        </View>
+                                    </View>
+                                )}
+
+                                {timerData.isRecurring && (
+                                    <FloatingLabelInput
+                                        label="Recurrence Interval (e.g., 2 days, 1 month)"
+                                        value={timerData.recurrenceInterval}
+                                        onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
+                                        style={styles.input}
+                                        focus={focus}
+                                        setFocus={setFocus}
+                                        focusKey="recurrence"
+                                        colors={colors}
+                                    />
+                                )}
+
+                                {error ? <Text style={styles.error}>{error}</Text> : null}
+                            </View>
+
                             <View style={styles.buttonContainer}>
-                                <TouchableOpacity onPress={onClose} style={[styles.cancelButton, { width: '40%' }]}>
+                                <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
                                     <Text style={styles.buttonText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={handleAdd} style={[styles.addButton, { opacity: error ? 0.25 : 1, width: '60%' }]} disabled={!!error}>
-                                    <Text style={[styles.buttonText, { color: colors.card }]}>{initialData ? 'Save Changes' : 'Add Timer'}</Text>
+                                <TouchableOpacity
+                                    onPress={handleAdd}
+                                    style={[styles.addButton, { opacity: error ? 0.25 : 1 }]}
+                                    disabled={!!error}
+                                >
+                                    <Text style={[styles.buttonText, { color: colors.card }]}>
+                                        {initialData ? 'Save Changes' : 'Add Timer'}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
-                    </View>
-                </TouchableWithoutFeedback>
-            </View>
+                    </TouchableWithoutFeedback>
+                </Animated.View>
+            </Animated.View>
         </Modal>
     );
 };

@@ -1,8 +1,23 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet } from 'react-native';
-// If you use Expo, you can use @expo/vector-icons
+import React, { useState, useEffect } from 'react';
+import {
+    View,
+    Text,
+    TextInput,
+    Modal,
+    TouchableOpacity,
+    StyleSheet,
+    Animated,
+    Dimensions,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    Alert
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../utils/ThemeContext';
+import { useSecurity } from '../utils/SecurityContext';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 const getStrength = (password) => {
     if (!password) return { label: '', color: 'gray' };
@@ -18,7 +33,12 @@ const getStrength = (password) => {
     return { label: '', color: 'gray' };
 };
 
-export default function PasswordModal({
+const generateResetCode = () => {
+    // Generate a 6-digit reset code
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export default function PasswordBottomSheet({
     visible,
     onClose,
     onSave,
@@ -26,14 +46,20 @@ export default function PasswordModal({
     mode = 'set',
     variables,
 }) {
-
     const { colors } = useTheme();
+    const { getResetCode, setResetCodeValue } = useSecurity();
+
+    const [translateY] = useState(new Animated.Value(screenHeight));
+    const [opacity] = useState(new Animated.Value(0));
 
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [resetCode, setResetCode] = useState('');
+    const [enteredResetCode, setEnteredResetCode] = useState('');
     const [error, setError] = useState('');
     const [resetMode, setResetMode] = useState(false);
+    const [showResetCode, setShowResetCode] = useState(false);
 
     // Password visibility toggles
     const [showOld, setShowOld] = useState(false);
@@ -42,28 +68,105 @@ export default function PasswordModal({
 
     const strength = getStrength(newPassword);
 
+    useEffect(() => {
+        if (visible) {
+            showBottomSheet();
+        } else {
+            hideBottomSheet();
+        }
+    }, [visible]);
+
+    const showBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
+    const hideBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: screenHeight,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
     const styles = StyleSheet.create({
         overlay: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            backgroundColor: colors.background + 'da',
-            justifyContent: 'center',
-            alignItems: 'center',
+            flex: 1,
+            backgroundColor: colors.background + '80',
+            justifyContent: 'flex-end',
         },
-        card: {
-            width: 320,
-            borderRadius: 20,
-            padding: 22,
-            gap: 10,
+        bottomSheet: {
+            backgroundColor: colors.cardLighter,
+            borderTopLeftRadius: variables.radius.lg || 20,
+            borderTopRightRadius: variables.radius.lg || 20,
+            paddingBottom: 15, // Safe area bottom
+            maxHeight: screenHeight * 0.85,
+            shadowColor: '#000',
+            shadowOffset: {
+                width: 0,
+                height: -2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            elevation: 10,
+        },
+        handle: {
+            width: 40,
+            height: 4,
+            backgroundColor: colors.border,
+            borderRadius: 2,
+            alignSelf: 'center',
+            marginTop: 12,
+            marginBottom: 8,
+        },
+        header: {
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderBottomWidth: 0.75,
+            borderBottomColor: colors.border,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
         },
         title: {
             fontSize: 18,
-            fontWeight: 'bold',
-            marginBottom: 16,
-            textAlign: 'center',
+            fontWeight: '600',
+            color: colors.modalText,
+            height: 30
+        },
+        closeButton: {
+            padding: 4,
+        },
+        content: {
+            paddingHorizontal: 20,
+            paddingVertical: 20,
+        },
+        inputGroup: {
+            marginBottom: 20,
+        },
+        inputLabel: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: colors.text,
+            marginBottom: 8,
+            paddingLeft: 4,
         },
         inputRow: {
             flexDirection: 'row',
@@ -72,59 +175,162 @@ export default function PasswordModal({
             borderRadius: variables.radius.sm,
             borderColor: colors.border,
             backgroundColor: colors.settingBlock,
-            paddingHorizontal: 8,
+            paddingHorizontal: 12,
+            minHeight: 48,
         },
         input: {
-            padding: 10,
-            fontSize: 15,
-            borderWidth: 0,
             flex: 1,
+            fontSize: 15,
+            color: colors.text,
+            paddingVertical: 12,
+            paddingHorizontal: 4,
         },
         eyeBtn: {
-            marginLeft: 0,
-            padding: 4,
+            padding: 8,
+            marginLeft: 4,
         },
-        strengthRow: {
-            marginBottom: 8,
-            alignItems: 'flex-end',
+        strengthContainer: {
+            marginTop: 8,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        strengthText: {
+            fontSize: 13,
+            fontWeight: '500',
+        },
+        strengthBar: {
+            height: 4,
+            backgroundColor: colors.border,
+            borderRadius: 2,
+            flex: 1,
+            marginLeft: 12,
+            overflow: 'hidden',
+        },
+        strengthFill: {
+            height: '100%',
+            borderRadius: 2,
         },
         error: {
             color: '#ef4444',
             fontSize: 13,
-            marginBottom: 8,
+            marginBottom: 16,
             textAlign: 'center',
-            backgroundColor: 'rgba(239, 68, 68, 0.18)',
-            borderWidth: 0.5,
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderWidth: 0.75,
             borderColor: '#ef4444',
-            padding: 10,
+            padding: 12,
             borderRadius: variables.radius.sm,
         },
-        actions: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: 15,
-            borderTopColor: colors.border,
-            borderTopWidth: 1,
-            paddingTop: 20,
-        },
-        btn: {
-            borderRadius: variables.radius.sm,
+        resetLink: {
+            alignSelf: 'center',
+            marginTop: 12,
             paddingVertical: 8,
-            paddingHorizontal: 18,
-            marginHorizontal: 4,
+            paddingHorizontal: 16,
         },
-        btnText: {
-            fontSize: 15,
-            fontWeight: 'bold',
+        resetText: {
+            fontSize: 14,
+            color: colors.highlight,
+            fontWeight: '500',
+            height: 20
+        },
+        resetCodeContainer: {
+            backgroundColor: colors.settingBlock,
+            borderWidth: 0.75,
+            borderColor: colors.border,
+            borderRadius: variables.radius.sm,
+            padding: 16,
+            marginBottom: 16,
+        },
+        resetCodeTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.text,
+            marginBottom: 8,
+        },
+        resetCodeText: {
+            fontSize: 24,
+            fontWeight: '700',
+            color: colors.highlight,
+            textAlign: 'center',
+            letterSpacing: 4,
+            marginBottom: 12,
+            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        },
+        resetCodeWarning: {
+            fontSize: 13,
+            color: '#f59e42',
+            textAlign: 'center',
+            fontWeight: '500',
+            lineHeight: 18,
+        },
+        resetCodeInstruction: {
+            fontSize: 13,
+            color: colors.textDesc,
+            textAlign: 'center',
+            marginTop: 8,
+            lineHeight: 18,
+        },
+        actionButtons: {
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 8,
+            borderTopWidth: 0.75,
+            borderTopColor: colors.border,
+            gap: 12,
+        },
+        actionButton: {
+            width: '100%',
+            paddingVertical: 14,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 0.75,
+        },
+        saveButton: {
+            backgroundColor: colors.highlight,
+            borderColor: colors.highlight,
+        },
+        cancelButton: {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+        },
+        saveButtonText: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.background,
+        },
+        cancelButtonText: {
+            fontSize: 16,
+            fontWeight: '500',
+            color: colors.text,
         },
     });
 
     const handleSave = () => {
         setError('');
+
+        // If in reset mode, verify the reset code first
+        if (resetMode) {
+            const storedResetCode = getResetCode();
+            if (!storedResetCode) {
+                setError('No reset code found. Please contact support.');
+                return;
+            }
+            if (enteredResetCode !== storedResetCode) {
+                setError('Invalid reset code. Please check and try again.');
+                return;
+            }
+        }
+
+        // For password change mode (not reset), verify current password
         if (mode === 'change' && currentPassword && !resetMode && oldPassword !== currentPassword) {
             setError('Incorrect current password.');
             return;
         }
+
+        // Validate new password fields
         if (!newPassword || !confirmPassword) {
             setError('Please fill all fields.');
             return;
@@ -137,11 +343,18 @@ export default function PasswordModal({
             setError('Password is too weak.');
             return;
         }
-        onSave(newPassword);
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setResetMode(false);
+
+        // Generate a new reset code whenever password is changed
+        const newResetCode = generateResetCode();
+        setResetCodeValue(newResetCode);
+        setResetCode(newResetCode);
+        setShowResetCode(true);
+    };
+
+    const handleResetCodeAcknowledged = () => {
+        setShowResetCode(false);
+        onSave(newPassword, resetCode);
+        handleClose();
     };
 
     const handleClose = () => {
@@ -149,7 +362,10 @@ export default function PasswordModal({
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        setResetCode('');
+        setEnteredResetCode('');
         setResetMode(false);
+        setShowResetCode(false);
         onClose();
     };
 
@@ -158,82 +374,204 @@ export default function PasswordModal({
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        setEnteredResetCode('');
         setResetMode(true);
     };
 
-    return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-            <View style={styles.overlay}>
-                <View style={[styles.card, { backgroundColor: colors.cardLighter }]}>
-                    <Text style={[styles.title, { color: colors.modalText }]}>
-                        {resetMode ? 'Reset Password' : (currentPassword ? 'Change Password' : 'Set Password')}
-                    </Text>
-                    {mode === 'change' && currentPassword && !resetMode && (
-                        <View style={styles.inputRow}>
+    const getStrengthWidth = () => {
+        const score = strength.label;
+        if (score === 'Too short' || score === 'Weak') return '25%';
+        if (score === 'Medium') return '60%';
+        if (score === 'Strong') return '100%';
+        return '0%';
+    };
 
-                            <TextInput
-                                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                                placeholder="Current Password"
-                                placeholderTextColor={colors.textDesc}
-                                secureTextEntry={!showOld}
-                                value={oldPassword}
-                                onChangeText={setOldPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowOld(v => !v)} style={styles.eyeBtn}>
-                                <Ionicons name={showOld ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
+    if (!visible) return null;
+
+    return (
+        <Modal
+            visible={visible}
+            transparent
+            animationType="none"
+            onRequestClose={handleClose}
+            statusBarTranslucent
+        >
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <Animated.View style={[styles.overlay, { opacity }]}>
+                    <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={handleClose}
+                        activeOpacity={1}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.bottomSheet,
+                            {
+                                transform: [{ translateY }],
+                            }
+                        ]}
+                    >
+                        <View style={styles.handle} />
+
+                        <View style={styles.header}>
+                            <Text style={styles.title}>
+                                {showResetCode ? 'New Reset Code Generated' :
+                                    resetMode ? 'Reset Password' :
+                                        (currentPassword ? 'Change Password' : 'Set Password')}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={handleClose}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="close" size={20} color={colors.text} />
                             </TouchableOpacity>
                         </View>
-                    )}
-                    <View style={styles.inputRow}>
-                        <TextInput
-                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                            placeholder="New Password"
-                            placeholderTextColor={colors.textDesc}
-                            secureTextEntry={!showNew}
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                            textContentType="password"
-                            autoComplete="password"
-                        />
-                        <TouchableOpacity onPress={() => setShowNew(v => !v)} style={styles.eyeBtn}>
-                            <Ionicons name={showNew ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
-                        </TouchableOpacity>
-                    </View>
 
-                    {newPassword.length > 0 && <View style={styles.strengthRow}>
-                        <Text style={{ color: strength.color, fontWeight: 'bold', fontSize: 13 }}>
-                            {strength.label}
-                        </Text>
-                    </View>}
+                        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                            {showResetCode ? (
+                                <View style={styles.resetCodeContainer}>
+                                    <Text style={styles.resetCodeTitle}>Your New Reset Code</Text>
+                                    <Text style={styles.resetCodeText}>{resetCode}</Text>
+                                    <Text style={styles.resetCodeWarning}>
+                                        ⚠️ IMPORTANT: Save this NEW reset code immediately!
+                                    </Text>
+                                    <Text style={styles.resetCodeInstruction}>
+                                        This new 6-digit code replaces any previous reset codes. It's your only way to reset your password if you forget it.
+                                        Write it down and store it in a safe place. This code will only be shown once.
+                                    </Text>
+                                </View>
+                            ) : (
+                                <>
+                                    {resetMode && (
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>Reset Code</Text>
+                                            <View style={styles.inputRow}>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    placeholder="Enter your 6-digit reset code"
+                                                    placeholderTextColor={colors.textDesc}
+                                                    value={enteredResetCode}
+                                                    onChangeText={setEnteredResetCode}
+                                                    keyboardType="numeric"
+                                                    maxLength={6}
+                                                />
+                                            </View>
+                                        </View>
+                                    )}
 
-                    <View style={styles.inputRow}>
-                        <TextInput
-                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                            placeholder="Confirm Password"
-                            placeholderTextColor={colors.textDesc}
-                            secureTextEntry={!showConfirm}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            textContentType="password"
-                            autoComplete="password"
-                        />
-                        <TouchableOpacity onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn}>
-                            <Ionicons name={showConfirm ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
-                        </TouchableOpacity>
-                    </View>
+                                    {mode === 'change' && currentPassword && !resetMode && (
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>Current Password</Text>
+                                            <View style={styles.inputRow}>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    placeholder="Enter current password"
+                                                    placeholderTextColor={colors.textDesc}
+                                                    secureTextEntry={!showOld}
+                                                    value={oldPassword}
+                                                    onChangeText={setOldPassword}
+                                                />
+                                                <TouchableOpacity onPress={() => setShowOld(v => !v)} style={styles.eyeBtn}>
+                                                    <Ionicons name={showOld ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
 
-                    {error ? <Text style={styles.error}>{error}</Text> : null}
-                    <View style={styles.actions}>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.highlight + '10' }]} onPress={handleClose}>
-                            <Text style={[styles.btnText, { color: colors.text + 'f0' }]}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.highlight, width: '60%', justifyContent: 'center', alignItems: 'center' }]} onPress={handleSave}>
-                            <Text style={[styles.btnText, { color: colors.background }]}>Save</Text>
-                        </TouchableOpacity>
-                    </View>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.inputLabel}>New Password</Text>
+                                        <View style={styles.inputRow}>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Enter new password"
+                                                placeholderTextColor={colors.textDesc}
+                                                secureTextEntry={!showNew}
+                                                value={newPassword}
+                                                onChangeText={setNewPassword}
+                                                textContentType="password"
+                                                autoComplete="password"
+                                            />
+                                            <TouchableOpacity onPress={() => setShowNew(v => !v)} style={styles.eyeBtn}>
+                                                <Ionicons name={showNew ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
+                                            </TouchableOpacity>
+                                        </View>
 
-                </View>
-            </View>
+                                        {newPassword.length > 0 && (
+                                            <View style={styles.strengthContainer}>
+                                                <Text style={[styles.strengthText, { color: strength.color }]}>
+                                                    {strength.label}
+                                                </Text>
+                                                <View style={styles.strengthBar}>
+                                                    <View
+                                                        style={[
+                                                            styles.strengthFill,
+                                                            {
+                                                                backgroundColor: strength.color,
+                                                                width: getStrengthWidth()
+                                                            }
+                                                        ]}
+                                                    />
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.inputLabel}>Confirm Password</Text>
+                                        <View style={styles.inputRow}>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Confirm new password"
+                                                placeholderTextColor={colors.textDesc}
+                                                secureTextEntry={!showConfirm}
+                                                value={confirmPassword}
+                                                onChangeText={setConfirmPassword}
+                                                textContentType="password"
+                                                autoComplete="password"
+                                            />
+                                            <TouchableOpacity onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn}>
+                                                <Ionicons name={showConfirm ? 'eye' : 'eye-off'} size={16} color={colors.textDesc} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+
+                                    {mode === 'change' && currentPassword && !resetMode && (
+                                        <TouchableOpacity style={styles.resetLink} onPress={handleReset}>
+                                            <Text style={styles.resetText}>Forgot current password?</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </>
+                            )}
+
+                            {error ? <Text style={styles.error}>{error}</Text> : null}
+                        </ScrollView>
+
+                        <View style={styles.actionButtons}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.saveButton]}
+                                onPress={showResetCode ? handleResetCodeAcknowledged : handleSave}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.saveButtonText}>
+                                    {showResetCode ? 'I Have Saved The Code' : 'Save Password'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.cancelButton]}
+                                onPress={handleClose}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </Animated.View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }

@@ -1,17 +1,15 @@
-// Optimized TimerCard.js - Removed useMemo for better performance
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
 import { jumbleText, maskText } from '../utils/functions';
 
-const TimerCard = React.memo(({
+const { height: screenHeight } = Dimensions.get('window');
+
+const TimerCard = ({
     timer,
-    elapsedTime = '',
-    remainingTime = '',
     onDelete,
     onEdit,
-    isExpanded = false,
     onClick,
     colors,
     variables,
@@ -20,49 +18,48 @@ const TimerCard = React.memo(({
     searchText = '',
     privacyMode = 'off',
 }) => {
-    const [showActions, setShowActions] = useState(false);
-    const [contentHeight, setContentHeight] = useState(0);
-    const [hasMeasured, setHasMeasured] = useState(false);
+    const [showOverlay, setShowOverlay] = useState(false);
+    const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    // Self-ticking state
+    const [now, setNow] = useState(Date.now());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
     const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
 
-    // Use single animated value for performance
-    const animatedValues = useRef({
-        height: new Animated.Value(0),
-        iconRotation: new Animated.Value(0),
-        buttonsOpacity: new Animated.Value(0),
-        buttonsScale: new Animated.Value(0.8),
-        borderBottomWidth: new Animated.Value(isExpanded ? 2 : 0),
-        paddingBottom: new Animated.Value(isExpanded ? 16 : 0),
-        marginBottom: new Animated.Value(isExpanded ? 12 : 0),
-        actionsHeight: new Animated.Value(0),
-        detailsHeight: new Animated.Value(isExpanded ? 20 : 0),
-    }).current;
+    // Calculate time difference
+    function getTimeParts() {
+        // For countdown: time left until date (or nextDate if recurring)
+        // For countup: time since date
+        let targetDate = timer.isCountdown
+            ? (timer.isRecurring && timer.date < Date.now() ? timer.nextDate : timer.date)
+            : timer.date;
+        let diff = timer.isCountdown
+            ? Math.max(0, targetDate - now)
+            : Math.max(0, now - targetDate);
 
-    // Parse time parts
-    const getTimeParts = () => {
-        const timeStr = timer.isCountdown
-            ? (remainingTime || '0y 0mo 0d 0h 0m 0s')
-            : (elapsedTime || '0y 0mo 0d 0h 0m 0s');
+        const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
+        diff -= y * 365 * 24 * 60 * 60 * 1000;
+        const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
+        diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
+        const d = Math.floor(diff / (24 * 60 * 60 * 1000));
+        diff -= d * 24 * 60 * 60 * 1000;
+        const h = Math.floor(diff / (60 * 60 * 1000));
+        diff -= h * 60 * 60 * 1000;
+        const m = Math.floor(diff / (60 * 1000));
+        diff -= m * 60 * 1000;
+        const s = Math.floor(diff / 1000);
 
-        const parts = { y: 0, mo: 0, d: 0, h: 0, m: 0, s: 0 };
-        const regex = /(\d+)\s*y|(\d+)\s*mo|(\d+)\s*d|(\d+)\s*h|(\d+)\s*m(?!o)|(\d+)\s*s/g;
-        let match;
-        while ((match = regex.exec(timeStr)) !== null) {
-            if (match[1]) parts.y = parseInt(match[1]);
-            if (match[2]) parts.mo = parseInt(match[2]);
-            if (match[3]) parts.d = parseInt(match[3]);
-            if (match[4]) parts.h = parseInt(match[4]);
-            if (match[5]) parts.m = parseInt(match[5]);
-            if (match[6]) parts.s = parseInt(match[6]);
-        }
-
-        return [parts.y, parts.mo, parts.d, parts.h, parts.m, parts.s];
-    };
+        return [y, mo, d, h, m, s];
+    }
 
     // Format date
-    const getFormattedDate = () => {
+    function getFormattedDate() {
         return new Date(
             timer.isRecurring && timer.date < Date.now()
                 ? timer.nextDate
@@ -92,15 +89,6 @@ const TimerCard = React.memo(({
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: 8,
-        },
-        iconButton: {
-            backgroundColor: colors.card + '77',
-            padding: 6,
-            borderRadius: variables.radius.circle,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
         },
         timerTitle: {
             color: colors.textDesc,
@@ -133,16 +121,6 @@ const TimerCard = React.memo(({
             padding: 8,
             borderRadius: variables.radius.sm,
         },
-        expandableSection: {
-            overflow: 'hidden',
-        },
-        timerDetails: {
-            color: colors.textDesc,
-            fontSize: 12,
-            marginBottom: 8,
-            marginLeft: 4,
-            height: 20,
-        },
         namePill: {
             backgroundColor: colors.highlight + '10',
             paddingVertical: 6,
@@ -156,155 +134,189 @@ const TimerCard = React.memo(({
             fontSize: 12,
             fontWeight: 'bold',
         },
-        nameText: {
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: 'bold',
-        },
-        editButton: {
-            backgroundColor: colors.highlight + '33',
-            borderWidth: 0.75,
-            borderColor: colors.highlight,
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: variables.radius.sm,
-            alignSelf: 'flex-end',
-        },
-        deleteButton: {
-            backgroundColor: 'rgba(239, 68, 68, 0.18)',
-            borderWidth: 0.75,
-            borderColor: '#ef4444',
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: variables.radius.sm,
-        },
-        buttonText: {
-            color: colors.text,
-            fontSize: 12,
-            textAlign: 'center',
-        },
         midSection: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingVertical: 8,
         },
-        contentContainer: {
-            paddingTop: 4,
+        overlay: {
+            flex: 1,
+            backgroundColor: colors.background + '80',
+            justifyContent: 'flex-end',
         },
-        measurementContainer: {
-            position: 'absolute',
-            top: -100,
-            left: 0,
-            right: 0,
-            opacity: 0,
-            zIndex: -1,
-        }
+        bottomSheet: {
+            backgroundColor: colors.card,
+            borderTopLeftRadius: variables.radius.lg,
+            borderTopRightRadius: variables.radius.lg,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 40,
+            minHeight: 280,
+            maxHeight: screenHeight * 0.8,
+        },
+        handle: {
+            width: 40,
+            height: 4,
+            backgroundColor: colors.border,
+            borderRadius: 2,
+            alignSelf: 'center',
+            marginBottom: 20,
+        },
+        overlayTitle: {
+            color: colors.text,
+            fontSize: 20,
+            fontWeight: 'bold',
+            marginBottom: 8,
+        },
+        overlayPersonName: {
+            color: colors.textDesc,
+            fontSize: 14,
+            marginBottom: 16,
+            height: 20
+        },
+        timeSection: {
+            backgroundColor: colors.settingBlock,
+            padding: 16,
+            borderRadius: variables.radius.md,
+            marginBottom: 16,
+        },
+        timeLabel: {
+            color: colors.textDesc,
+            fontSize: 12,
+            marginBottom: 4,
+            height: 20
+        },
+        timeValue: {
+            color: colors.text,
+            fontSize: 18,
+            height: 55,
+            fontWeight: 'bold',
+            paddingVertical: 5
+        },
+        detailsSection: {
+            backgroundColor: colors.settingBlock,
+            padding: 16,
+            borderRadius: variables.radius.md,
+            marginBottom: 20,
+        },
+        detailRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        detailLabel: {
+            color: colors.textDesc,
+            fontSize: 14,
+        },
+        detailValue: {
+            color: colors.text,
+            fontSize: 14,
+            fontWeight: '500',
+            height: 20
+        },
+        actionsSection: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            gap: 12,
+        },
+        actionButton: {
+            flex: 1,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: variables.radius.sm,
+            alignItems: 'center',
+        },
+        editButton: {
+            backgroundColor: colors.highlight + '20',
+            borderWidth: 1,
+            borderColor: colors.highlight,
+        },
+        deleteButton: {
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            borderWidth: 1,
+            borderColor: '#ef4444',
+        },
+        actionButtonText: {
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        statusIndicator: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.highlight + '10',
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: variables.radius.sm,
+        },
+        statusText: {
+            color: colors.text,
+            fontSize: 12,
+            fontWeight: '500',
+            marginLeft: 4,
+        },
     });
 
     // Optimized callbacks
     const handleEdit = useCallback(() => {
-        setShowActions(false);
+        closeOverlay();
         onEdit(timer);
     }, [onEdit, timer]);
 
     const handleDelete = useCallback(() => {
-        setShowActions(false);
+        closeOverlay();
         onDelete(timer.id);
     }, [onDelete, timer.id]);
 
-    const toggleActions = useCallback(() => {
-        setShowActions(prev => !prev);
+    const handleCardPress = useCallback(() => {
+        if (!selectable) { openOverlay(); }
+        if (onClick) onClick();
+    }, [onClick]);
+
+    const openOverlay = useCallback(() => {
+        setShowOverlay(true);
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
-    // Reset actions when collapsed
-    useEffect(() => {
-        if (!isExpanded && showActions) {
-            setShowActions(false);
-        }
-    }, [isExpanded]);
-
-    // Optimized expand/collapse animation using parallel animations
-    useEffect(() => {
-        if (hasMeasured) {
-            const animations = [
-                Animated.timing(animatedValues.height, {
-                    toValue: isExpanded ? contentHeight : 0,
-                    duration: 150,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValues.iconRotation, {
-                    toValue: isExpanded ? 1 : 0,
-                    duration: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(animatedValues.borderBottomWidth, {
-                    toValue: isExpanded ? 2 : 0,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValues.paddingBottom, {
-                    toValue: isExpanded ? 16 : 0,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValues.marginBottom, {
-                    toValue: isExpanded ? 12 : 0,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValues.detailsHeight, {
-                    toValue: isExpanded ? 16 : 0,
-                    duration: 150,
-                    useNativeDriver: false,
-                }),
-            ];
-
-            Animated.parallel(animations).start();
-        }
-    }, [isExpanded, contentHeight, hasMeasured]);
-
-    // Optimized actions animation
-    useEffect(() => {
-        const animations = showActions ? [
-            Animated.timing(animatedValues.buttonsOpacity, {
-                toValue: 1,
-                duration: 150,
+    const closeOverlay = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: screenHeight,
+                duration: 250,
                 useNativeDriver: true,
             }),
-            Animated.timing(animatedValues.buttonsScale, {
-                toValue: 1,
-                duration: 150,
-                useNativeDriver: true,
-            }),
-            Animated.timing(animatedValues.actionsHeight, {
-                toValue: 28,
-                duration: 150,
-                useNativeDriver: false,
-            }),
-        ] : [
-            Animated.timing(animatedValues.buttonsOpacity, {
+            Animated.timing(fadeAnim, {
                 toValue: 0,
-                duration: 100,
+                duration: 250,
                 useNativeDriver: true,
             }),
-            Animated.timing(animatedValues.buttonsScale, {
-                toValue: 0.8,
-                duration: 100,
-                useNativeDriver: true,
-            }),
-            Animated.timing(animatedValues.actionsHeight, {
-                toValue: 0,
-                duration: 100,
-                useNativeDriver: false,
-            }),
-        ];
+        ]).start(() => {
+            setShowOverlay(false);
+        });
+    }, []);
 
-        Animated.parallel(animations).start();
-    }, [showActions]);
+    useEffect(() => {
+        if (!showOverlay) {
+            slideAnim.setValue(screenHeight);
+            fadeAnim.setValue(0);
+        }
+    }, [showOverlay]);
 
-    // Render time display
-    const renderTimeDisplay = () => {
+    // Render time display for card (short, 3 parts max)
+    function renderTimeDisplay() {
         const [years, months, days, hours, minutes, seconds] = getTimeParts();
 
         const timePartsArray = [
@@ -319,7 +331,7 @@ const TimerCard = React.memo(({
         const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
 
         let prefix = '';
-        if (timer.isCountdown && !timer.isRecurring && remainingTime === '0s') {
+        if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
             prefix = 'Completed';
         } else if (timer.isCountdown) {
             prefix = 'Left: ';
@@ -341,79 +353,38 @@ const TimerCard = React.memo(({
                 )}
             </>
         );
-    };
+    }
 
-    // Render expandable content
-    const renderExpandableContent = () => (
-        <View style={styles.contentContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Animated.View style={{ height: animatedValues.detailsHeight, overflow: 'hidden' }}>
-                    <Text style={styles.timerDetails}>
-                        {timer.isCountdown ? 'Ends:  ' : 'Started:  '}
-                        {getFormattedDate()}
-                    </Text>
-                </Animated.View>
+    // Render detailed time display for overlay (all parts, full words)
+    function renderDetailedTimeDisplay() {
+        const [years, months, days, hours, minutes, seconds] = getTimeParts();
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
-                    <Animated.View
-                        style={{
-                            height: animatedValues.actionsHeight,
-                            overflow: 'hidden',
-                            marginRight: 8,
-                            justifyContent: 'center',
-                        }}
-                        pointerEvents={showActions ? 'auto' : 'none'}
-                    >
-                        <Animated.View
-                            style={{
-                                flexDirection: 'row',
-                                opacity: animatedValues.buttonsOpacity,
-                                transform: [{ scale: animatedValues.buttonsScale }],
-                            }}
-                        >
-                            <TouchableOpacity
-                                onPress={handleEdit}
-                                style={[styles.editButton, { marginRight: 10 }]}
-                            >
-                                <Text style={styles.buttonText}>Edit</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleDelete}
-                                style={styles.deleteButton}
-                            >
-                                <Text style={styles.buttonText}>Delete</Text>
-                            </TouchableOpacity>
-                        </Animated.View>
-                    </Animated.View>
+        const timePartsArray = [
+            { value: years, label: 'year', plural: 'years' },
+            { value: months, label: 'month', plural: 'months' },
+            { value: days, label: 'day', plural: 'days' },
+            { value: hours, label: 'hour', plural: 'hours' },
+            { value: minutes, label: 'minute', plural: 'minutes' },
+            { value: seconds, label: 'second', plural: 'seconds' },
+        ];
 
-                    <TouchableOpacity
-                        onPress={toggleActions}
-                        style={styles.iconButton}
-                        activeOpacity={0.7}
-                    >
-                        <Icons.Material name="edit" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>
-    );
+        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
 
-    const handleContentLayout = useCallback((event) => {
-        if (!hasMeasured) {
-            const { height } = event.nativeEvent.layout;
-            setContentHeight(height);
-            setHasMeasured(true);
-
-            // Set initial values without animation
-            animatedValues.height.setValue(isExpanded ? height : 0);
-            animatedValues.iconRotation.setValue(isExpanded ? 1 : 0);
-            animatedValues.borderBottomWidth.setValue(isExpanded ? 2 : 0);
-            animatedValues.paddingBottom.setValue(isExpanded ? 16 : 0);
-            animatedValues.marginBottom.setValue(isExpanded ? 12 : 0);
-            animatedValues.buttonsOpacity.setValue(0);
-            animatedValues.buttonsScale.setValue(0.8);
+        if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
+            return 'Timer Completed';
         }
-    }, [hasMeasured, isExpanded]);
+
+        if (nonZeroParts.length === 0) {
+            return '0 seconds';
+        }
+
+        return nonZeroParts.map((part, idx) => {
+            const label = part.value === 1 ? part.label : part.plural;
+            const separator = idx === nonZeroParts.length - 1 ? '' :
+                idx === nonZeroParts.length - 2 ? ' and ' : ', ';
+            return `${part.value} ${label}${separator}`;
+        }).join('');
+    }
 
     const styles = createStyles();
 
@@ -430,122 +401,205 @@ const TimerCard = React.memo(({
     };
 
     return (
-        <View style={cardStyle}>
-            <TouchableOpacity onPress={onClick} activeOpacity={0.9}>
-                <View style={styles.header}>
-                    {privacyMode === 'off' ? (
-                        <HighlightMatchText
-                            text={titleText}
-                            textStyle={styles.timerTitle}
-                            search={searchText}
-                            colors={colors}
-                        />
-                    ) :
-                        <Text style={styles.timerTitle}>
-                            {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+        <>
+            <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
+                <View style={cardStyle}>
+                    <View style={styles.header}>
+                        {privacyMode === 'off' ? (
+                            <HighlightMatchText
+                                text={titleText}
+                                textStyle={styles.timerTitle}
+                                search={searchText}
+                                colors={colors}
+                            />
+                        ) : (
+                            <Text style={styles.timerTitle}>
+                                {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+                            </Text>
+                        )}
+                        <View style={styles.priorityIndicator}>
+                            {timer.isRecurring && (
+                                <View style={{
+                                    backgroundColor: colors.highlight + '10',
+                                    padding: 6,
+                                    borderRadius: 8,
+                                    borderWidth: 0.75,
+                                    borderColor: colors.border,
+                                }}>
+                                    <Icons.Material
+                                        name="autorenew"
+                                        size={14}
+                                        color={colors.highlight}
+                                    />
+                                </View>
+                            )}
+                            {timer.personName && (
+                                privacyMode === 'off' ? (
+                                    <HighlightMatchText
+                                        text={nameText}
+                                        textStyle={styles.namePill}
+                                        search={searchText}
+                                        colors={colors}
+                                    />
+                                ) : (
+                                    <Text style={styles.namePill}>
+                                        {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
+                                    </Text>
+                                )
+                            )}
+                            <View
+                                style={[
+                                    styles.priorityDot,
+                                    {
+                                        backgroundColor:
+                                            timer.priority === 'high'
+                                                ? 'hsla(0, 84.20%, 60.20%, 0.30)'
+                                                : timer.priority === 'normal'
+                                                    ? 'hsla(134, 39.02%, 50.20%, 0.30)'
+                                                    : 'hsla(210, 100%, 50.20%, 0.30)',
+                                        borderColor:
+                                            timer.priority === 'high'
+                                                ? '#ef4444'
+                                                : timer.priority === 'normal'
+                                                    ? '#22c55e'
+                                                    : '#3b82f6',
+                                    },
+                                ]}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.midSection}>
+                        <Text style={styles.timerQuickInfo}>
+                            {renderTimeDisplay()}
                         </Text>
-                    }
-                    <View style={styles.priorityIndicator}>
-                        {timer.isRecurring && (
-                            <View style={{
-                                backgroundColor: colors.highlight + '10',
-                                padding: 6,
-                                borderRadius: 8,
-                                borderWidth: 0.75,
-                                borderColor: colors.border,
-                            }}>
-                                <Icons.Material
-                                    name="autorenew"
-                                    size={14}
-                                    color={colors.highlight}
-                                />
-                            </View>
-                        )}
-                        {timer.personName && (
-                            privacyMode === 'off' ? (
-                                <HighlightMatchText
-                                    text={nameText}
-                                    textStyle={styles.namePill}
-                                    search={searchText}
-                                    colors={colors}
-                                />
-                            ) :
-                                <Text style={styles.namePill}>
-                                    {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
-                                </Text>
-                        )}
-                        <View
-                            style={[
-                                styles.priorityDot,
-                                {
-                                    backgroundColor:
-                                        timer.priority === 'high'
-                                            ? 'hsla(0, 84.20%, 60.20%, 0.30)'
-                                            : timer.priority === 'normal'
-                                                ? 'hsla(134, 39.02%, 50.20%, 0.30)'
-                                                : 'hsla(210, 100%, 50.20%, 0.30)',
-                                    borderColor:
-                                        timer.priority === 'high'
-                                            ? '#ef4444'
-                                            : timer.priority === 'normal'
-                                                ? '#22c55e'
-                                                : '#3b82f6',
-                                },
-                            ]}
+                        <Icons.Material
+                            name="keyboard-arrow-up"
+                            size={18}
+                            color={colors.text}
+                            style={{ opacity: 0.5 }}
                         />
                     </View>
                 </View>
-
-                <Animated.View style={[
-                    styles.midSection,
-                    {
-                        borderBottomWidth: animatedValues.borderBottomWidth,
-                        paddingBottom: animatedValues.paddingBottom,
-                        borderColor: colors.cardBorder,
-                        marginBottom: animatedValues.marginBottom,
-                    }
-                ]}>
-                    <Text style={styles.timerQuickInfo}>
-                        {renderTimeDisplay()}
-                    </Text>
-                    <Animated.View style={{
-                        transform: [{
-                            rotate: animatedValues.iconRotation.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ['0deg', '-90deg']
-                            })
-                        }]
-                    }}>
-                        <Icons.Material
-                            name="keyboard-arrow-down"
-                            size={18}
-                            color={colors.text}
-                            style={{ position: 'relative', opacity: 0.5 }}
-                        />
-                    </Animated.View>
-                </Animated.View>
             </TouchableOpacity>
 
-            {!hasMeasured && (
-                <View style={styles.measurementContainer} onLayout={handleContentLayout} pointerEvents="none">
-                    {renderExpandableContent()}
-                </View>
-            )}
+            {/* Bottom Sheet Overlay */}
+            <Modal
+                visible={showOverlay}
+                transparent={true}
+                animationType="none"
+                onRequestClose={closeOverlay}
+            >
+                <TouchableWithoutFeedback onPress={closeOverlay}>
+                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <Animated.View
+                                style={[
+                                    styles.bottomSheet,
+                                    {
+                                        transform: [{ translateY: slideAnim }],
+                                    },
+                                ]}
+                            >
+                                <View style={styles.handle} />
 
-            {hasMeasured && (
-                <Animated.View
-                    style={[
-                        styles.expandableSection,
-                        {
-                            height: animatedValues.height,
-                        },
-                    ]}
-                >
-                    {renderExpandableContent()}
-                </Animated.View>
-            )}
-        </View>
+                                {/* Title and Person */}
+                                <Text style={styles.overlayTitle}>
+                                    {privacyMode === 'off' ? timer.title :
+                                        privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
+                                </Text>
+
+                                {timer.personName && (
+                                    <Text style={styles.overlayPersonName}>
+                                        For: {privacyMode === 'off' ? timer.personName :
+                                            privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
+                                    </Text>
+                                )}
+
+                                {/* Time Section */}
+                                <View style={styles.timeSection}>
+                                    <Text style={styles.timeLabel}>
+                                        {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                                    </Text>
+                                    <Text style={styles.timeValue}>
+                                        {renderDetailedTimeDisplay()}
+                                    </Text>
+                                </View>
+
+                                {/* Details Section */}
+                                <View style={styles.detailsSection}>
+                                    <View style={styles.detailRow}>
+                                        <Text style={styles.detailLabel}>
+                                            {timer.isCountdown ? 'End Date' : 'Start Date'}
+                                        </Text>
+                                        <Text style={styles.detailValue}>
+                                            {getFormattedDate()}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.detailRow}>
+                                        <Text style={styles.detailLabel}>Priority</Text>
+                                        <View style={styles.statusIndicator}>
+                                            <View
+                                                style={[
+                                                    styles.priorityDot,
+                                                    {
+                                                        backgroundColor:
+                                                            timer.priority === 'high'
+                                                                ? '#ef4444'
+                                                                : timer.priority === 'normal'
+                                                                    ? '#22c55e'
+                                                                    : '#3b82f6',
+                                                        borderColor: 'transparent',
+                                                    },
+                                                ]}
+                                            />
+                                            <Text style={styles.statusText}>
+                                                {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {timer.isRecurring && (
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>Type</Text>
+                                            <View style={styles.statusIndicator}>
+                                                <Icons.Material
+                                                    name="autorenew"
+                                                    size={12}
+                                                    color={colors.highlight}
+                                                />
+                                                <Text style={styles.statusText}>Recurring</Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Action Buttons */}
+                                <View style={styles.actionsSection}>
+                                    <TouchableOpacity
+                                        onPress={handleEdit}
+                                        style={[styles.actionButton, styles.editButton]}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.actionButtonText}>Edit Timer</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={handleDelete}
+                                        style={[styles.actionButton, styles.deleteButton]}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.actionButtonText}>Delete Timer</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </Animated.View>
+                        </TouchableWithoutFeedback>
+                    </Animated.View>
+                </TouchableWithoutFeedback>
+            </Modal>
+        </>
     );
-});
+};
 
 export default TimerCard;

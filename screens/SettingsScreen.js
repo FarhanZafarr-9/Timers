@@ -3,15 +3,16 @@ import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
 import React, { useState, useRef, useEffect } from 'react';
-import PasswordModal from '../components/PasswordModal';
+import PasswordBottomSheet from '../components/PasswordModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import Timer from '../classes/Timer';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import { useTheme } from '../utils/ThemeContext';
-import CustomPicker from '../components/CustomPicker';
+import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themeOptions, privacyOptions, lockoutOptions } from '../utils/functions';
+import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 
 export default function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
@@ -40,7 +41,7 @@ export default function SettingsScreen() {
         privacyMode,
         setPrivacyModeValue,
         lockoutMode,
-        setLockoutMode,
+        setLockoutModeValue,
         shouldUseLockout
     } = useSecurity();
 
@@ -145,7 +146,7 @@ export default function SettingsScreen() {
             paddingTop: 18,
             paddingBottom: 14,
             paddingHorizontal: 20,
-            backgroundColor: colors.settingBlock  + 'f5',
+            backgroundColor: colors.settingBlock + 'f5',
             borderBottomWidth: .75,
             borderBottomColor: colors.border
         },
@@ -391,7 +392,7 @@ export default function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Theme</Text>
                                 <Text style={styles.settingDesc}>Choose app theme</Text>
                             </View>
-                            <CustomPicker
+                            <BottomSheetPicker
                                 value={themeMode}
                                 options={themeOptions}
                                 onChange={setThemeMode}
@@ -514,7 +515,7 @@ export default function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Privacy Mode</Text>
                                 <Text style={styles.settingDesc}>Masks timer names and titles</Text>
                             </View>
-                            <CustomPicker
+                            <BottomSheetPicker
                                 value={privacyMode}
                                 options={privacyOptions}
                                 onChange={setPrivacyModeValue}
@@ -531,10 +532,10 @@ export default function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Lockout</Text>
                                 <Text style={styles.settingDesc}>Set duration for reauthentication</Text>
                             </View>
-                            <CustomPicker
+                            <BottomSheetPicker
                                 value={lockoutMode}
                                 options={lockoutOptions}
-                                onChange={setLockoutMode}
+                                onChange={setLockoutModeValue}
                                 placeholder="Select lockout"
                                 colors={colors}
                                 variables={variables}
@@ -598,55 +599,24 @@ export default function SettingsScreen() {
                     </View>
                 </Animated.View>
 
-                {/* Custom Confirmation Modal - Only render when visible */}
-                {confirmVisible && (
-                    <Modal
-                        visible={confirmVisible}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setConfirmVisible(false)}
-                        statusBarTranslucent={false}
-                    >
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalCard}>
-                                <Text style={styles.modalText}>{confirmText}</Text>
-                                <View style={styles.modalActions}>
-                                    <Pressable
-                                        style={[
-                                            styles.modalBtn,
-                                            { backgroundColor: colors.highlight + '10', borderColor: colors.highlight + '43' }
-                                        ]}
-                                        onPress={() => setConfirmVisible(false)}
-                                    >
-                                        <Text style={[
-                                            styles.modalBtnText,
-                                            { color: colors.modalBtnText }
-                                        ]}>Cancel</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        style={[
-                                            styles.modalBtn,
-                                            { backgroundColor: '#ef444433', borderColor: '#ef4444' }
-                                        ]}
-                                        onPress={() => {
-                                            setConfirmVisible(false);
-                                            confirmAction();
-                                        }}
-                                    >
-                                        <Text style={[
-                                            styles.modalBtnText,
-                                            { color: colors.modalBtnOkText, }
-                                        ]}>Delete</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-                )}
+                // Replace your existing modal code with:
+                <ConfirmationBottomSheet
+                    visible={confirmVisible}
+                    onClose={() => setConfirmVisible(false)}
+                    onConfirm={confirmAction}
+                    title="Delete Item"
+                    message="Are you sure you want to delete this item? This action cannot be undone."
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    confirmColor="#ef4444"
+                    icon="trash-outline" // or custom icon component
+                    colors={colors}
+                    variables={variables}
+                />
 
                 {/* Password Modal - Only render when visible */}
                 {passwordModalVisible && (
-                    <PasswordModal
+                    <PasswordBottomSheet
                         visible={passwordModalVisible}
                         onClose={() => setPasswordModalVisible(false)}
                         onSave={(newPassword) => {

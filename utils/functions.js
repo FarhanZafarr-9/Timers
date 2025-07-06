@@ -50,6 +50,11 @@ export const privacyOptions = [
 
 export const lockoutOptions = [
     {
+        label: 'Disabled',
+        value: 'never',
+        icon: <Icons.Ion name="close-circle-outline" size={16} />,
+    },
+    {
         label: 'Instant',
         value: '0',
         icon: <Icons.Ion name="flash-outline" size={16} />,
@@ -81,11 +86,6 @@ export const lockoutOptions = [
         label: '30 minutes',
         value: '1800000',
         icon: <Icons.Ion name="timer-outline" size={16} />,
-    },
-    {
-        label: 'Never',
-        value: 'never',
-        icon: <Icons.Ion name="close-circle-outline" size={16} />,
     },
 ];
 
