@@ -18,7 +18,6 @@ import SplashScreen from './screens/SplashScreen';
 
 const Tab = createBottomTabNavigator();
 
-// Notification channel setup
 async function setupNotificationChannel() {
   await Notifications.setNotificationChannelAsync('timer-alerts', {
     name: 'Timer Alerts',
@@ -38,24 +37,22 @@ function AppContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2500); // 2.5 seconds
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     const setupNotifications = async () => {
-      // Request permissions
+      
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
         console.warn('Notification permissions not granted');
         return;
       }
 
-      // Setup notification channel
       await setupNotificationChannel();
 
-      // Set notification handler
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowBanner: true,

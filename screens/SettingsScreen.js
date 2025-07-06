@@ -62,28 +62,26 @@ export default function SettingsScreen() {
     const topTranslate = useRef(new Animated.Value(-50)).current;
     const midTranslate = useRef(new Animated.Value(-50)).current;
     const bottomTranslate = useRef(new Animated.Value(-50)).current;
-    // 1. ADD OPACITY ANIMATIONS (add these after your existing useRef declarations)
+
     const topOpacity = useRef(new Animated.Value(0)).current;
     const midOpacity = useRef(new Animated.Value(0)).current;
-    const bottomOpacity = useRef(new Animated.Value(0)).current; // You already have this one
+    const bottomOpacity = useRef(new Animated.Value(0)).current;
 
-    // 2. REPLACE YOUR CURRENT ANIMATION EFFECT with this smoother version:
     useEffect(() => {
         const value = setTimeout(() => {
             setMounted(true);
 
-            // Use stagger with parallel animations like About screen
             Animated.stagger(120, [
                 Animated.parallel([
                     Animated.spring(topTranslate, {
                         toValue: 0,
-                        tension: 80,  // Same as About screen
-                        friction: 8,  // Same as About screen
+                        tension: 80,
+                        friction: 8,
                         useNativeDriver: true,
                     }),
                     Animated.timing(topOpacity, {
                         toValue: 1,
-                        duration: 400,  // Same as About screen
+                        duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
@@ -281,9 +279,14 @@ export default function SettingsScreen() {
             const json = JSON.stringify(timers, null, 2);
             const directoryUri = await getOrRequestDirectory();
 
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const fileName = `export-(${day}/${month}/${year})`;
             const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
                 directoryUri,
-                'timers-export',
+                fileName,
                 'application/json'
             );
 

@@ -19,121 +19,118 @@ export default function TimersScreen({ route }) {
     const { variables, colors } = useTheme();
     const { timers, addTimer, editTimer, removeTimer } = useTimers();
 
+    // State management
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalVisible, setModalVisible] = useState(false);
     const [editingTimer, setEditingTimer] = useState(null);
-    const [expandedCardId, setExpandedCardId] = useState(null);
+    const [expandedCardIds, setExpandedCardIds] = useState(new Set());
     const [isSelectable, setIsSelectable] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
+    const [selectedIds, setSelectedIds] = useState(new Set());
     const [times, setTimes] = useState({});
     const [sortMethod, setSortMethod] = useState('priority');
     const [messages, setMessages] = useState([]);
 
-    // REMOVED: message state and scaleAnim - these were conflicting with the new system
+    // Refs for performance optimization
+    const timesRef = useRef({});
+    const updateIntervalRef = useRef(null);
+    const lastUpdateRef = useRef(0);
 
-    // Update the addMessage function to use better IDs
+    // Optimized message handling
     const addMessage = useCallback((text) => {
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         setMessages(prev => [...prev, { id, text }]);
     }, []);
 
-    // Update the removeMessage function
     const removeMessage = useCallback((messageId) => {
         setMessages(prev => prev.filter(msg => msg.id !== messageId));
     }, []);
 
-    // Update your handlers to use the new addMessage function
+    // Optimized sort handler
     const handleSortChange = useCallback((method) => {
         setSortMethod(method);
         addMessage(`Sorted by ${method}`);
     }, [addMessage]);
 
-    // Memoize filtered timers to prevent unnecessary recalculations
+    // Memoized filtered timers with better caching
     const filteredTimers = useMemo(() => {
-        return timers.filter(timer => {
+        const filtered = timers.filter(timer => {
             const matchesMode = isCountdown ? timer.isCountdown : !timer.isCountdown;
 
             if (privacyMode !== 'off') {
                 return matchesMode;
             }
 
+            if (!searchQuery.trim()) {
+                return matchesMode;
+            }
+
+            const query = searchQuery.toLowerCase();
             const matchesSearch =
-                !searchQuery.trim() ||
-                timer.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                timer.personName?.toLowerCase().includes(searchQuery.toLowerCase());
+                timer.title?.toLowerCase().includes(query) ||
+                timer.personName?.toLowerCase().includes(query);
 
             return matchesMode && matchesSearch;
         });
+
+        return filtered;
     }, [timers, isCountdown, privacyMode, searchQuery]);
 
+    // Optimized sorting with better performance
     const sortedTimers = useMemo(() => {
-        let arr = [...filteredTimers];
+        const arr = [...filteredTimers];
+
         switch (sortMethod) {
             case 'priority':
-                arr.sort((a, b) => (a.priority || '').localeCompare(b.priority || ''));
-                break;
+                return arr.sort((a, b) => (a.priority || '').localeCompare(b.priority || ''));
             case 'timeLeft':
-                arr.sort((a, b) => {
+                return arr.sort((a, b) => {
+                    const now = Date.now();
                     const aTime = isCountdown
-                        ? new Date(a.date).getTime() - Date.now()
-                        : Date.now() - new Date(a.date).getTime();
+                        ? new Date(a.date).getTime() - now
+                        : now - new Date(a.date).getTime();
                     const bTime = isCountdown
-                        ? new Date(b.date).getTime() - Date.now()
-                        : Date.now() - new Date(b.date).getTime();
+                        ? new Date(b.date).getTime() - now
+                        : now - new Date(b.date).getTime();
                     return aTime - bTime;
                 });
-                break;
             case 'recurring':
-                arr = arr.filter(t => t.isRecurring);
-                break;
+                return arr.filter(t => t.isRecurring);
             case 'nonRecurring':
-                arr = arr.filter(t => !t.isRecurring);
-                break;
+                return arr.filter(t => !t.isRecurring);
             default:
-                break;
+                return arr;
         }
-
-        return arr;
     }, [filteredTimers, sortMethod, isCountdown]);
 
-    // Memoize formatTime function to prevent recreation on every render
-    const formatTime = useCallback((timeValue, timer = null) => {
+    // Optimized time formatting with caching
+    const formatTime = useCallback((timeValue) => {
         if (isCountdown) {
             const seconds = Math.floor(timeValue / 1000);
+            if (seconds <= 0) return '0s';
+
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);
             const months = Math.floor(days / 30.44);
             const years = Math.floor(months / 12);
 
-            const remainingMonths = months % 12;
-            const remainingDays = Math.floor(days % 30.44);
-            const remainingHours = hours % 24;
-            const remainingMinutes = minutes % 60;
-            const remainingSeconds = seconds % 60;
-
             const parts = [];
             if (years > 0) parts.push(`${years}y`);
-            if (remainingMonths > 0) parts.push(`${remainingMonths}mo`);
-            if (remainingDays > 0) parts.push(`${remainingDays}d`);
-            if (remainingHours > 0) parts.push(`${remainingHours}h`);
-            if (remainingMinutes > 0) parts.push(`${remainingMinutes}m`);
-            if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`);
+            if (months % 12 > 0) parts.push(`${months % 12}mo`);
+            if (Math.floor(days % 30.44) > 0) parts.push(`${Math.floor(days % 30.44)}d`);
+            if (hours % 24 > 0) parts.push(`${hours % 24}h`);
+            if (minutes % 60 > 0) parts.push(`${minutes % 60}m`);
+            if (seconds % 60 > 0 || parts.length === 0) parts.push(`${seconds % 60}s`);
 
-            return parts.join(' ');
+            return parts.slice(0, 3).join(' '); // Limit to 3 parts for readability
         } else {
-            let ms = timeValue;
-            const years = Math.floor(ms / (1000 * 60 * 60 * 24 * 365));
-            ms -= years * 1000 * 60 * 60 * 24 * 365;
-            const months = Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
-            ms -= months * 1000 * 60 * 60 * 24 * 30.44;
-            const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-            ms -= days * 1000 * 60 * 60 * 24;
-            const hours = Math.floor(ms / (1000 * 60 * 60));
-            ms -= hours * 1000 * 60 * 60;
-            const minutes = Math.floor(ms / (1000 * 60));
-            ms -= minutes * 1000 * 60;
-            const seconds = Math.floor(ms / 1000);
+            const totalSeconds = Math.floor(timeValue / 1000);
+            const years = Math.floor(totalSeconds / (365 * 24 * 60 * 60));
+            const months = Math.floor((totalSeconds % (365 * 24 * 60 * 60)) / (30.44 * 24 * 60 * 60));
+            const days = Math.floor((totalSeconds % (30.44 * 24 * 60 * 60)) / (24 * 60 * 60));
+            const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+            const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+            const seconds = totalSeconds % 60;
 
             const parts = [];
             if (years > 0) parts.push(`${years}y`);
@@ -143,58 +140,75 @@ export default function TimersScreen({ route }) {
             if (minutes > 0) parts.push(`${minutes}m`);
             if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
 
-            return parts.join(' ');
+            return parts.slice(0, 3).join(' '); // Limit to 3 parts for readability
         }
     }, [isCountdown]);
 
-    // Optimize time calculation with useCallback and reduce frequency
+    // Highly optimized time updates with throttling
     const updateTimes = useCallback(() => {
-        const updated = {};
+        const now = Date.now();
+
+        // Throttle updates to prevent excessive calculations
+        if (now - lastUpdateRef.current < 900) return;
+        lastUpdateRef.current = now;
+
+        const updated = { ...timesRef.current };
+        let hasChanges = false;
+
         filteredTimers.forEach(timer => {
+            let timeValue;
+
             if (isCountdown) {
                 const timerInstance = timer instanceof Timer ? timer : new Timer(timer);
                 const effectiveDate = timerInstance.getEffectiveDate();
-                const remaining = Math.max(effectiveDate.getTime() - Date.now(), 0);
-                updated[timer.id] = formatTime(remaining, timer);
+                timeValue = Math.max(effectiveDate.getTime() - now, 0);
             } else {
                 const startTime = new Date(timer.date).getTime();
-                const now = Date.now();
-                const elapsed = Math.max(now - startTime, 0);
-                updated[timer.id] = formatTime(elapsed);
+                timeValue = Math.max(now - startTime, 0);
+            }
+
+            const formattedTime = formatTime(timeValue);
+            if (updated[timer.id] !== formattedTime) {
+                updated[timer.id] = formattedTime;
+                hasChanges = true;
             }
         });
-        setTimes(updated);
+
+        if (hasChanges) {
+            timesRef.current = updated;
+            setTimes(updated);
+        }
     }, [filteredTimers, isCountdown, formatTime]);
 
-    // Reduce update frequency and use requestAnimationFrame for better performance
+    // Optimized timer updates with better interval management
     useEffect(() => {
-        let rafId;
-        let lastUpdate = 0;
+        // Initial update
+        updateTimes();
 
-        const tick = (timestamp) => {
-            // Update only once per second
-            if (timestamp - lastUpdate >= 1000) {
-                updateTimes();
-                lastUpdate = timestamp;
-            }
-            rafId = requestAnimationFrame(tick);
-        };
-
-        rafId = requestAnimationFrame(tick);
+        // Set up interval for updates
+        updateIntervalRef.current = setInterval(updateTimes, 1000);
 
         return () => {
-            if (rafId) {
-                cancelAnimationFrame(rafId);
+            if (updateIntervalRef.current) {
+                clearInterval(updateIntervalRef.current);
             }
         };
     }, [updateTimes]);
 
+    // Optimized selection handlers using Set
     const handleSelect = useCallback((id) => {
-        setSelectedIds(ids =>
-            ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
-        );
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
     }, []);
 
+    // Optimized timer operations
     const handleAddTimer = useCallback(async (newTimer) => {
         try {
             if (editingTimer) {
@@ -220,49 +234,74 @@ export default function TimersScreen({ route }) {
         try {
             await removeTimer(id);
             addMessage('Timer deleted');
-            // Close expanded card if it was deleted
-            if (expandedCardId === id) {
-                setExpandedCardId(null);
-            }
+
+            // Clean up expanded and selected states
+            setExpandedCardIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
+
+            setSelectedIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         } catch (error) {
             addMessage('Error deleting timer');
         }
-    }, [removeTimer, expandedCardId, addMessage]);
+    }, [removeTimer, addMessage]);
 
+    // Optimized card click handler
     const handleCardClick = useCallback((timerId) => {
         if (isSelectable) {
             handleSelect(timerId);
         } else {
-            setExpandedCardId(expandedCardId === timerId ? null : timerId);
+            setExpandedCardIds(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(timerId)) {
+                    newSet.delete(timerId);
+                } else {
+                    newSet.add(timerId);
+                }
+                return newSet;
+            });
         }
-    }, [isSelectable, handleSelect, expandedCardId]);
+    }, [isSelectable, handleSelect]);
 
-    // Optimized render function with better memoization
-    const renderTimerCard = useCallback(({ item: timer }) => (
-        <TimerCard
-            timer={timer}
-            {...(isCountdown
-                ? { remainingTime: times[timer.id] || '0s' }
-                : { elapsedTime: times[timer.id] || '0s' }
-            )}
-            onDelete={handleDeleteTimer}
-            onEdit={handleEditTimer}
-            isExpanded={expandedCardId === timer.id}
-            onClick={() => handleCardClick(timer.id)}
-            selectable={isSelectable}
-            selected={selectedIds.includes(timer.id)}
-            colors={colors}
-            variables={variables}
-            isCountdown={isCountdown}
-            searchText={searchQuery}
-            privacyMode={privacyMode}
-        />
-    ), [
+    // Memoized render function with better prop stability
+    const renderTimerCard = useCallback(({ item: timer }) => {
+        const timeValue = times[timer.id] || '0s';
+        const isExpanded = expandedCardIds.has(timer.id);
+        const isSelected = selectedIds.has(timer.id);
+
+        return (
+            <TimerCard
+                timer={timer}
+                {...(isCountdown
+                    ? { remainingTime: timeValue }
+                    : { elapsedTime: timeValue }
+                )}
+                onDelete={handleDeleteTimer}
+                onEdit={handleEditTimer}
+                isExpanded={isExpanded}
+                onClick={() => handleCardClick(timer.id)}
+                selectable={isSelectable}
+                selected={isSelected}
+                colors={colors}
+                variables={variables}
+                isCountdown={isCountdown}
+                searchText={searchQuery}
+                privacyMode={privacyMode}
+            />
+        );
+    }, [
         times,
-        expandedCardId,
-        isSelectable,
+        expandedCardIds,
         selectedIds,
+        isSelectable,
         colors,
+        variables,
         isCountdown,
         searchQuery,
         privacyMode,
@@ -273,82 +312,41 @@ export default function TimersScreen({ route }) {
 
     const keyExtractor = useCallback((item) => item.id.toString(), []);
 
+    // Optimized batch operations
     const handleBatchDelete = useCallback(async () => {
-        if (selectedIds.length === 0) return;
+        const idsArray = Array.from(selectedIds);
+        if (idsArray.length === 0) return;
 
         try {
-            await Promise.all(selectedIds.map(id => removeTimer(id)));
-            addMessage(`Deleted ${selectedIds.length} timer${selectedIds.length > 1 ? 's' : ''}`);
-            setSelectedIds([]);
+            await Promise.all(idsArray.map(id => removeTimer(id)));
+            addMessage(`Deleted ${idsArray.length} timer${idsArray.length > 1 ? 's' : ''}`);
+            setSelectedIds(new Set());
             setIsSelectable(false);
-            if (selectedIds.includes(expandedCardId)) {
-                setExpandedCardId(null);
-            }
+            setExpandedCardIds(prev => {
+                const newSet = new Set(prev);
+                idsArray.forEach(id => newSet.delete(id));
+                return newSet;
+            });
         } catch (error) {
             addMessage('Error deleting timers');
         }
-    }, [selectedIds, removeTimer, expandedCardId, addMessage]);
+    }, [selectedIds, removeTimer, addMessage]);
 
     const handleBatchDeletePress = useCallback(() => {
+        const selectedCount = selectedIds.size;
+
         if (!isSelectable) {
             setIsSelectable(true);
             addMessage("Select timers to delete");
-        } else if (selectedIds.length > 0) {
+        } else if (selectedCount > 0) {
             handleBatchDelete();
         } else {
             setIsSelectable(false);
             addMessage("Selection mode cancelled");
         }
-    }, [isSelectable, selectedIds.length, handleBatchDelete, addMessage]);
+    }, [isSelectable, selectedIds.size, handleBatchDelete, addMessage]);
 
-    const ListHeaderComponent = useMemo(() => (
-        <HeaderControls
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSearch={setSearchQuery}
-            onAdd={() => setModalVisible(true)}
-            onBatchDelete={handleBatchDeletePress}
-            isSelectable={isSelectable}
-            selectedCount={selectedIds.length}
-            colors={colors}
-            variables={variables}
-            sortMethod={sortMethod}
-            onSortChange={handleSortChange}
-            sortOptions={sortOptions}
-        />
-    ), [
-        searchQuery,
-        isSelectable,
-        selectedIds.length,
-        colors,
-        variables,
-        handleBatchDeletePress,
-        sortMethod,
-        handleSortChange
-    ]);
-
-    const ListEmptyComponent = useCallback(() => (
-        <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No timers found.</Text>
-            <TouchableOpacity
-                style={styles.actionButton}
-                activeOpacity={0.85}
-                onPress={() => setModalVisible(true)}
-            >
-                <Icons.Material name="add-circle" size={18} color={colors.highlight} style={{ marginRight: 6 }} />
-                <Text style={styles.actionText}>Quick Add Timer</Text>
-            </TouchableOpacity>
-        </View>
-    ), [colors]);
-
-    const handleModalClose = useCallback(() => {
-        setModalVisible(false);
-        setEditingTimer(null);
-    }, []);
-
-    // REMOVED: The conflicting useEffect for message/scaleAnim
-
-    // Memoize styles to prevent recreation on every render
+    // Memoized styles
     const styles = useMemo(() => StyleSheet.create({
         container: {
             flex: 1,
@@ -385,8 +383,55 @@ export default function TimersScreen({ route }) {
             fontSize: 16,
             fontWeight: '600',
         },
-
     }), [colors, variables]);
+
+
+    // Memoized components
+    const ListHeaderComponent = useMemo(() => (
+        <HeaderControls
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSearch={setSearchQuery}
+            onAdd={() => setModalVisible(true)}
+            onBatchDelete={handleBatchDeletePress}
+            isSelectable={isSelectable}
+            selectedCount={selectedIds.size}
+            colors={colors}
+            variables={variables}
+            sortMethod={sortMethod}
+            onSortChange={handleSortChange}
+            sortOptions={sortOptions}
+        />
+    ), [
+        searchQuery,
+        isSelectable,
+        selectedIds.size,
+        colors,
+        variables,
+        handleBatchDeletePress,
+        sortMethod,
+        handleSortChange
+    ]);
+
+    const ListEmptyComponent = useMemo(() => (
+        <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No timers found.</Text>
+            <TouchableOpacity
+                style={styles.actionButton}
+                activeOpacity={0.85}
+                onPress={() => setModalVisible(true)}
+            >
+                <Icons.Material name="add-circle" size={18} color={colors.highlight} style={{ marginRight: 6 }} />
+                <Text style={styles.actionText}>Quick Add Timer</Text>
+            </TouchableOpacity>
+        </View>
+    ), [colors]);
+
+    const handleModalClose = useCallback(() => {
+        setModalVisible(false);
+        setEditingTimer(null);
+    }, []);
+
 
     return (
         <>
@@ -405,10 +450,11 @@ export default function TimersScreen({ route }) {
                     showsVerticalScrollIndicator: false,
                     keyboardShouldPersistTaps: 'handled',
                     removeClippedSubviews: true,
-                    maxToRenderPerBatch: 10,
-                    windowSize: 10,
-                    initialNumToRender: 10,
-                    updateCellsBatchingPeriod: 50,
+                    maxToRenderPerBatch: 8,
+                    windowSize: 8,
+                    initialNumToRender: 8,
+                    updateCellsBatchingPeriod: 100,
+                    getItemLayout: null, // Let FlatList handle dynamic heights
                     contentContainerStyle: {
                         paddingBottom: 95,
                         minHeight: '100%'
