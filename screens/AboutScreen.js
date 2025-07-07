@@ -81,7 +81,7 @@ export default function AboutScreen() {
     };
 
     const handleReportBug = () => {
-        const email = 'your-email@example.com';
+        const email = 'farhanzafarr.9@gmail.com';
         const subject = 'Bug Report - Timers App';
         const body = 'Please describe the bug you encountered:';
         Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);

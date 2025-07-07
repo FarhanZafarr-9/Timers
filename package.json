@@ -29,7 +29,11 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.11.1",
     "react-native-toast-message": "^2.3.0",
-    "react-native-uuid": "^2.0.3"
+    "react-native-uuid": "^2.0.3",
+    "react-native-view-shot": "^4.0.3",
+    "react-native-wheel-picker-expo": "^0.5.4",
+    "expo-sharing": "~13.1.5",
+    "expo-media-library": "~17.1.7"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

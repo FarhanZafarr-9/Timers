@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Appearance, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { headerOptions } from './functions';
 
 const THEME_STORAGE_KEY = 'userThemePreference';
+const NAVIGATION_MODE_KEY = 'navigationModePreference';
+const HEADER_MODE_KEY = 'headerModePreference';
 const VALID_THEMES = ['light', 'dark', 'system'];
 
 const palettes = {
@@ -144,20 +147,35 @@ const normalizeTheme = (theme) => {
     return 'system';
 };
 
+const normalizeNavigationMode = (mode) => {
+    if (['floating', 'fixed', 'side'].includes(mode)) {
+        return mode;
+    }
+    return 'floating';
+};
+
+const normalizeHeaderMode = (mode) => {
+    if (['collapsible', 'fixed', 'floating'].includes(mode)) {
+        return mode;
+    }
+    return 'floating';
+};
+
 const getSystemTheme = () => {
     try {
         const systemTheme = Appearance.getColorScheme();
-        //console.log('Current system theme:', systemTheme); // Debug log
         return systemTheme === 'dark' ? 'dark' : 'light';
     } catch (error) {
         console.warn('Failed to get system color scheme:', error);
-        return 'light'; // Changed default to light for better UX
+        return 'light';
     }
 };
 
 export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeModeState] = useState('system');
-    const [theme, setTheme] = useState(() => getSystemTheme()); // Initialize immediately
+    const [navigationMode, setNavigationMode] = useState('floating');
+    const [headerMode, setHeaderMode] = useState('floating');
+    const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
 
     // Load themeMode from AsyncStorage on mount
@@ -166,18 +184,23 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+                const [storedTheme, storedNavMode, storedHeaderMode] = await Promise.all([
+                    AsyncStorage.getItem(THEME_STORAGE_KEY),
+                    AsyncStorage.getItem(NAVIGATION_MODE_KEY),
+                    AsyncStorage.getItem(HEADER_MODE_KEY)
+                ]);
+
                 if (isMounted) {
-                    const loadedTheme = stored && VALID_THEMES.includes(stored) ? stored : 'system';
+                    const loadedTheme = storedTheme && VALID_THEMES.includes(storedTheme) ? storedTheme : 'system';
+                    const loadedFloatingNav = storedNavMode !== null ? storedNavMode : 'floating';
+                    const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'floating';
+
                     setThemeModeState(loadedTheme);
+                    setNavigationMode(loadedFloatingNav);
+                    setHeaderMode(loadedHeaderMode);
 
                     // Set initial theme based on loaded preference
-                    if (loadedTheme === 'system') {
-                        setTheme(getSystemTheme());
-                    } else {
-                        setTheme(loadedTheme);
-                    }
-
+                    setTheme(loadedTheme === 'system' ? getSystemTheme() : loadedTheme);
                     setIsLoading(false);
                 }
             } catch (e) {
@@ -204,23 +227,34 @@ export const ThemeProvider = ({ children }) => {
         }
     }, [themeMode, isLoading]);
 
+    // Save navigationMode to AsyncStorage when it changes
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(NAVIGATION_MODE_KEY, navigationMode).catch(e =>
+                console.warn('Failed to save navigation mode preference:', e)
+            );
+        }
+    }, [navigationMode, isLoading]);
+
+    // Save headerMode to AsyncStorage when it changes
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(HEADER_MODE_KEY, headerMode).catch(e =>
+                console.warn('Failed to save header mode preference:', e)
+            );
+        }
+    }, [headerMode, isLoading]);
+
     // Handle system theme changes and manual theme changes
     useEffect(() => {
         let subscription = null;
 
         if (themeMode === 'system') {
-            // Set up system theme listener
             subscription = Appearance.addChangeListener(({ colorScheme }) => {
-                console.log('System theme changed to:', colorScheme); // Debug log
-                const newTheme = colorScheme === 'dark' ? 'dark' : 'light';
-                setTheme(newTheme);
+                setTheme(colorScheme === 'dark' ? 'dark' : 'light');
             });
-
-            // Ensure we have the current system theme
-            const currentSystemTheme = getSystemTheme();
-            setTheme(currentSystemTheme);
+            setTheme(getSystemTheme());
         } else {
-            // Manual theme mode
             setTheme(themeMode);
         }
 
@@ -231,27 +265,45 @@ export const ThemeProvider = ({ children }) => {
         };
     }, [themeMode]);
 
+    // Normalize theme mode to ensure it is valid
+    useEffect(() => {
+        const Navigation = normalizeNavigationMode(navigationMode);
+        if (Navigation !== navigationMode) {
+            setNavigationMode(Navigation);
+        }
+    }, [navigationMode]);
+
+    // Normalize header mode to ensure it is valid
+    useEffect(() => {
+        const header = normalizeHeaderMode(headerMode);
+        if (header !== headerMode) {
+            setHeaderMode(header);
+        }
+    }, [headerMode]);
+
     const setThemeMode = useCallback((mode) => {
-        const normalizedMode = normalizeTheme(mode);
-        console.log('Setting theme mode to:', normalizedMode); // Debug log
-        setThemeModeState(normalizedMode);
+        setThemeModeState(normalizeTheme(mode));
     }, []);
 
     const colors = palettes[theme] || palettes.light;
-    const styles = React.useMemo(() => createStyles(colors), [colors]);
+    const styles = createStyles(colors);
 
-    const value = React.useMemo(() => ({
+    const contextValue = {
         theme,
         themeMode,
         setThemeMode,
         colors,
         variables,
         styles,
-        isLoading, // Expose loading state
-    }), [theme, themeMode, setThemeMode, colors, styles, isLoading]);
+        navigationMode,
+        setNavigationMode,
+        headerMode,
+        setHeaderMode,
+        isLoading,
+    };
 
     return (
-        <ThemeContext.Provider value={value}>
+        <ThemeContext.Provider value={contextValue}>
             {children}
         </ThemeContext.Provider>
     );
@@ -265,18 +317,11 @@ export const useTheme = () => {
     return context;
 };
 
-// ========================
-// 4. UTILITY FUNCTIONS
-// ========================
 export const createThemedStyles = (styleFactory) => {
     return (colors, variables) => {
         try {
             const styles = styleFactory(colors, variables);
-            if (typeof styles !== 'object' || styles === null) {
-                console.warn('Style factory must return an object');
-                return {};
-            }
-            return StyleSheet.create(styles);
+            return StyleSheet.create(styles || {});
         } catch (error) {
             console.error('Error creating themed styles:', error);
             return {};
@@ -286,20 +331,7 @@ export const createThemedStyles = (styleFactory) => {
 
 export const useThemedStyles = (styleFactory) => {
     const { colors, variables } = useTheme();
-
-    return React.useMemo(() => {
-        try {
-            const styles = styleFactory(colors, variables);
-            if (typeof styles !== 'object' || styles === null) {
-                console.warn('Style factory must return an object');
-                return {};
-            }
-            return StyleSheet.create(styles);
-        } catch (error) {
-            console.error('Error creating themed styles:', error);
-            return {};
-        }
-    }, [colors, variables, styleFactory]);
+    return createThemedStyles(styleFactory)(colors, variables);
 };
 
 export const makeStyles = (styleFactory) => {

@@ -93,16 +93,13 @@ const HeaderControls = ({
     const styles = StyleSheet.create({
         container: {
             paddingBottom: 12,
-            marginBottom: 12,
+            paddingTop: 12,
+            marginVertical: 12,
             marginHorizontal: 12,
             borderBottomWidth: 1,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
             borderBottomColor: colors.border,
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: '700',
-            color: colors.textTitle,
-            marginBottom: 12,
         },
         row: {
             flexDirection: 'row',
@@ -136,18 +133,16 @@ const HeaderControls = ({
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: 12,
         },
         actionButton: {
             flex: 1,
-            height: 44,
+            height: 40,
             backgroundColor: colors.cardLighter,
             borderRadius: variables.radius.md,
             justifyContent: 'center',
             alignItems: 'center',
             flexDirection: 'row',
-            borderWidth: 1,
-            borderColor: colors.border,
         },
         buttonContent: {
             flexDirection: 'row',
@@ -190,7 +185,6 @@ const HeaderControls = ({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>{title}</Text>
 
             <View style={styles.row}>
                 {/* Search Input (collapsed state) */}
