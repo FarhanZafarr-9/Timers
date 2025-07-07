@@ -4,12 +4,12 @@ import { Icons } from '../assets/icons';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export const HEADER_MARGIN_TOP = 50;
-export const MAX_HEADER_HEIGHT = Platform.OS === 'ios' ? 130 : 66;
+export const MAX_HEADER_HEIGHT = 66;
 export const MIN_HEADER_HEIGHT = 60;
 
 export function shouldForceCollapsed(pageLength) {
     const screenHeight = Dimensions.get('window').height;
-    return pageLength !== null && (pageLength / 1.1) < screenHeight;
+    return (pageLength !== null && (pageLength / 1.1) < screenHeight);
 }
 
 export const themeOptions = [
@@ -94,6 +94,46 @@ export const sortOptions = [
     { label: 'Time Left', value: 'timeLeft', icon: <MaterialIcons name="hourglass-empty" size={16} /> },
     { label: 'Recurring', value: 'recurring', icon: <MaterialIcons name="repeat" size={16} /> },
     { label: 'Non-Recurring', value: 'nonRecurring', icon: <MaterialIcons name="remove-circle-outline" size={16} /> },
+];
+
+export const priorityOptions = [
+    { label: 'High', value: 'high', icon: <Icons.Ion name="flag" size={16} color="#ff0000" /> },
+    { label: 'Medium', value: 'normal', icon: <Icons.Ion name="flag" size={16} color="#ffa500" /> },
+    { label: 'Low', value: 'low', icon: <Icons.Ion name="flag" size={16} color="#008000" /> },
+];
+
+export const navOptions = [
+    {
+        label: 'Floating',
+        value: 'floating',
+        icon: <Icons.Ion name="layers-outline" size={16} />,
+    },
+    {
+        label: 'Fixed',
+        value: 'fixed',
+        icon: <Icons.Ion name="home-outline" size={16} />,
+    },
+    //side navigation
+    {
+        label: 'Side',
+        value: 'side',
+        icon: <Icons.Ion name="menu-outline" size={16} />,
+    },
+];
+
+// make an array for the header options as collapsable, fixed, and floating
+export const headerOptions = [
+    {
+        label: 'Floating',
+        value: 'floating',
+        icon: <Icons.Ion name="layers-outline" size={16} />,
+    },
+    {
+        label: 'Fixed',
+        value: 'fixed',
+        icon: <Icons.Ion name="home-outline" size={16} />,
+    },
+
 ];
 
 export const jumbleText = (str) => {

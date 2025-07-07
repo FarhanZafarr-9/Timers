@@ -25,7 +25,8 @@ const BottomSheetPicker = ({
     variables,
     title,
     maxHeight = screenHeight * 0.6,
-    pillsPerRow = 2, // How many pills per row
+    pillsPerRow = 2,
+    defaultValue = null,
 }) => {
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
@@ -151,6 +152,7 @@ const BottomSheetPicker = ({
             flex: pillsPerRow === 1 ? 1 : 0,
             width: pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`,
             marginBottom: 10,
+
         },
         selectedPill: {
             backgroundColor: colors.primary || colors.highlight,
@@ -162,6 +164,7 @@ const BottomSheetPicker = ({
             fontWeight: '500',
             textAlign: 'center',
             flex: 1,
+            height: 20,
         },
         selectedPillText: {
             color: colors.background,
@@ -229,7 +232,7 @@ const BottomSheetPicker = ({
     };
 
     const handleClear = () => {
-        onChange(null);
+        onChange(defaultValue);
     };
 
     const renderPill = (option) => {
@@ -248,7 +251,7 @@ const BottomSheetPicker = ({
                 {option.icon && (
                     <View style={styles.pillIcon}>
                         {React.cloneElement(option.icon, {
-                            color: isSelected ? colors.background : colors.text,
+                            color: option.icon.props.color ? option.icon.props.color : isSelected ? colors.background : colors.text,
                             size: option.icon.props.size || 16
                         })}
                     </View>
@@ -276,7 +279,7 @@ const BottomSheetPicker = ({
             >
                 {selectedIcon ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {React.cloneElement(selectedIcon, { color: colors.text })}
+                        {React.cloneElement(selectedIcon, { color: selectedIcon.props.color ? selectedIcon.props.color : colors.text })}
                     </View>
                 ) : (
                     <Text style={[styles.triggerText, textStyle]}>{selectedLabel}</Text>

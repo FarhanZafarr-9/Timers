@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal, Pressable, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
@@ -11,7 +11,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, privacyOptions, lockoutOptions } from '../utils/functions';
+import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 
 export default function SettingsScreen() {
@@ -24,6 +24,10 @@ export default function SettingsScreen() {
         variables,
         themeMode,
         setThemeMode,
+        navigationMode,
+        setNavigationMode,
+        headerMode,
+        setHeaderMode
     } = useTheme();
 
     const {
@@ -45,7 +49,7 @@ export default function SettingsScreen() {
         shouldUseLockout
     } = useSecurity();
 
-    if (loading || isPasswordLockEnabled === undefined || isFingerprintEnabled === undefined || privacyMode === undefined || lockoutMode === undefined) {
+    if (loading || isPasswordLockEnabled === undefined || isFingerprintEnabled === undefined || privacyMode === undefined || lockoutMode === undefined || navigationMode === undefined) {
         return null;
     }
 
@@ -386,7 +390,7 @@ export default function SettingsScreen() {
                 }}>
                     <View style={styles.card} >
                         {/* Theme Mode Picker */}
-                        <View style={[styles.settingBlock, { borderBottomWidth: 0 }]}>
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
                             <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Theme</Text>
@@ -400,7 +404,43 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                             />
-                        </View>
+                        </TouchableOpacity>
+
+                        {/* Floating Navigation Switch */}
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                            <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Navigation</Text>
+                                <Text style={styles.settingDesc}>Select navigation mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={navigationMode}
+                                options={navOptions}
+                                onChange={setNavigationMode}
+                                placeholder="Select navigation mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="floating"
+                            />
+                        </TouchableOpacity>
+
+                        {/* Header Mode Switch */}
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                            <Icons.Ion name='ellipsis-horizontal' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Header</Text>
+                                <Text style={styles.settingDesc}>Choose header mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={headerMode}
+                                options={headerOptions}
+                                onChange={setHeaderMode}
+                                placeholder="Select header mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="floating"
+                            />
+                        </TouchableOpacity>
                     </View>
                 </Animated.View>
 
@@ -411,7 +451,7 @@ export default function SettingsScreen() {
                 {/* SECURITY SETTINGS */}
                 <Animated.View style={{
                     transform: [{ translateX: midTranslate }],
-                    opacity: midOpacity  // ADD THIS
+                    opacity: midOpacity
                 }}>
                     <View style={styles.card}>
                         {/* Fingerprint Unlock */}
@@ -509,7 +549,7 @@ export default function SettingsScreen() {
                         </TouchableOpacity>}
 
                         {/* Privacy Mode Picker */}
-                        <View style={[styles.settingBlock, (isFingerprintEnabled || isPasswordLockEnabled) ? {} : { borderBottomWidth: 0 }]}>
+                        <TouchableOpacity style={[styles.settingBlock, (isFingerprintEnabled || isPasswordLockEnabled) ? {} : { borderBottomWidth: 0 }]} activeOpacity={1} >
                             <Icons.Ion name="eye-off-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Privacy Mode</Text>
@@ -523,10 +563,10 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                             />
-                        </View>
+                        </TouchableOpacity>
 
                         {/* Lockout Option Picker */}
-                        {shouldUseLockout() && <View style={[styles.settingBlock, { borderBottomWidth: 0 }]}>
+                        {shouldUseLockout() && <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
                             <Icons.Ion name="timer-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Lockout</Text>
@@ -539,8 +579,9 @@ export default function SettingsScreen() {
                                 placeholder="Select lockout"
                                 colors={colors}
                                 variables={variables}
+                                pillsPerRow={3}
                             />
-                        </View>}
+                        </TouchableOpacity>}
                     </View>
                 </Animated.View>
 
@@ -551,7 +592,7 @@ export default function SettingsScreen() {
                 {/* TIMER MANAGEMENT */}
                 <Animated.View style={{
                     transform: [{ translateY: bottomTranslate }],
-                    opacity: bottomOpacity,  // This should already be there
+                    opacity: bottomOpacity,
                 }}>
                     <View style={styles.card}>
 
@@ -609,7 +650,7 @@ export default function SettingsScreen() {
                     confirmText="Delete"
                     cancelText="Cancel"
                     confirmColor="#ef4444"
-                    icon="trash-outline" // or custom icon component
+                    icon="trash-outline"
                     colors={colors}
                     variables={variables}
                 />

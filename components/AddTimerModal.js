@@ -15,10 +15,13 @@ import {
 import { Icons } from '../assets/icons';
 import FloatingLabelInput from './FloatingLabelInput';
 import { useTheme } from '../utils/ThemeContext';
+import { WheelPicker, WheelPickerInput } from './RollerPickerInput';
+import BottomSheetPicker from './BottomSheetPicker';
+import { priorityOptions } from '../utils/functions';
 
 
 const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
-    const priorities = ['low', 'normal', 'high'];
+    const priorities = priorityOptions;
     const [timerData, setTimerData] = useState({
         title: '',
         personName: '',
@@ -30,7 +33,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     });
 
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-    const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 600 : 500);
+    const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 660 : 550);
 
 
     const { variables, colors } = useTheme();
@@ -150,7 +153,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
                 recurrenceInterval: initialData.recurrenceInterval || '',
                 isCountdown: initialData.isCountdown,
             });
-            setCurrentIndex(priorities.indexOf(initialData.priority) !== -1 ? priorities.indexOf(initialData.priority) : 1);
         } else {
             initialDate = new Date();
             setTimerData({
@@ -162,7 +164,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
                 recurrenceInterval: '',
                 isCountdown: mode === 'countdown',
             });
-            setCurrentIndex(1);
         }
 
         setYearInput(String(initialDate.getFullYear()));
@@ -212,10 +213,17 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             setError('Please fill in all required fields.');
             return;
         }
+
+        if (timerData.priority === '') {
+            setError('Please select a priority.');
+            return;
+        }
+
         if (timerData.isRecurring && !timerData.recurrenceInterval.trim()) {
             setError('Please specify the recurrence interval.');
             return;
         }
+
 
         const y = parseInt(yearInput, 10);
         const m = parseInt(monthInput, 10);
@@ -263,17 +271,6 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
         if (part === 'minute') setMinuteInput(value);
         if (part === 'second') setSecondInput(value);
     };
-
-    const changePriority = (direction) => {
-        const newIndex = (currentIndex + direction + priorities.length) % priorities.length;
-        setCurrentIndex(newIndex);
-        setTimerData({ ...timerData, priority: priorities[newIndex] });
-    };
-
-    function capitalizeFirstLetter(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
 
     const styles = StyleSheet.create({
         overlay: {
@@ -424,6 +421,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
             borderColor: '#ef4444',
             padding: 10,
             borderRadius: variables.radius.sm,
+            height: 40
         },
         scrollContent: {
             flexGrow: 1,
@@ -492,115 +490,99 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
 
                                 <View style={styles.inputRow}>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="YYYY"
+                                        <WheelPickerInput
+                                            label="Year"
                                             value={yearInput}
-                                            onChangeText={val => handleDatePartChange('year', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="year"
-                                            keyboardType="numeric"
-                                            maxLength={4}
+                                            onValueChange={val => handleDatePartChange('year', val)}
+                                            minValue={mode === 'countdown' ? new Date().getFullYear() : 1970}
+                                            maxValue={mode === 'countdown' ? new Date().getFullYear() + 10 : new Date().getFullYear()}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="MM"
+                                        <WheelPickerInput
+                                            label="Month"
                                             value={monthInput}
-                                            onChangeText={val => handleDatePartChange('month', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="month"
-                                            keyboardType="numeric"
-                                            maxLength={2}
+                                            onValueChange={val => handleDatePartChange('month', val)}
+                                            minValue={1}
+                                            maxValue={12}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="DD"
+                                        <WheelPickerInput
+                                            label="Day"
                                             value={dayInput}
-                                            onChangeText={val => handleDatePartChange('day', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="day"
-                                            keyboardType="numeric"
-                                            maxLength={2}
+                                            onValueChange={val => handleDatePartChange('day', val)}
+                                            minValue={1}
+                                            maxValue={31}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                 </View>
 
                                 <View style={styles.inputRow}>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="HH"
+                                        <WheelPickerInput
+                                            label="Hour"
                                             value={hourInput}
-                                            onChangeText={val => handleTimePartChange('hour', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="hour"
-                                            keyboardType="numeric"
-                                            maxLength={2}
+                                            onValueChange={val => handleTimePartChange('hour', val)}
+                                            minValue={0}
+                                            maxValue={23}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="MM"
+                                        <WheelPickerInput
+                                            label="Minute"
                                             value={minuteInput}
-                                            onChangeText={val => handleTimePartChange('minute', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="minute"
-                                            keyboardType="numeric"
-                                            maxLength={2}
+                                            onValueChange={val => handleTimePartChange('minute', val)}
+                                            minValue={0}
+                                            maxValue={59}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                     <View style={{ width: '32%' }}>
-                                        <FloatingLabelInput
-                                            label="SS"
+                                        <WheelPickerInput
+                                            label="Second"
                                             value={secondInput}
-                                            onChangeText={val => handleTimePartChange('second', val)}
-                                            style={styles.input}
-                                            focus={focus}
-                                            setFocus={setFocus}
-                                            focusKey="second"
-                                            keyboardType="numeric"
-                                            maxLength={2}
+                                            onValueChange={val => handleTimePartChange('second', val)}
+                                            minValue={0}
+                                            maxValue={59}
                                             colors={colors}
+                                            formatValue={(val) => val.toString()}
+                                            pickerType="wheel"
                                         />
                                     </View>
                                 </View>
 
                                 <View style={styles.priorityParentContainer}>
                                     <Text style={styles.label}>Priority</Text>
-                                    <View style={styles.priorityContainer}>
-                                        <TouchableOpacity
-                                            onPress={() => { if (currentIndex > 0) changePriority(-1); }}
-                                            style={[styles.arrowButton, { opacity: currentIndex === 0 ? 0 : 1 }]}
-                                            activeOpacity={currentIndex === 0 ? 1 : 0}
-                                        >
-                                            <Icons.Material name="chevron-left" size={14} color={colors.highlight} />
-                                        </TouchableOpacity>
-                                        <Text style={styles.priorityText}>
-                                            {capitalizeFirstLetter(timerData.priority)}
-                                        </Text>
-                                        <TouchableOpacity
-                                            onPress={() => { if (currentIndex < priorities.length - 1) changePriority(1); }}
-                                            style={[styles.arrowButton, { opacity: currentIndex === priorities.length - 1 ? 0 : 1 }]}
-                                            activeOpacity={currentIndex === priorities.length - 1 ? 1 : 0}
-                                        >
-                                            <Icons.Material name="chevron-right" size={14} color={colors.highlight} />
-                                        </TouchableOpacity>
-                                    </View>
+                                    <BottomSheetPicker
+                                        value={timerData.priority}
+                                        options={priorityOptions}
+                                        onChange={value => {
+                                            if (value) {
+                                                setError('');
+                                                setTimerData({ ...timerData, priority: value });
+                                            } else {
+                                                setTimerData({ ...timerData, priority: 'normal' });
+                                            }
+                                        }}
+                                        placeholder="Select Priority"
+                                        colors={colors}
+                                        variables={variables}
+                                    />
                                 </View>
 
                                 {mode === 'countdown' && (

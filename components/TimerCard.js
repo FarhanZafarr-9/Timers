@@ -3,6 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, 
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
 import { jumbleText, maskText } from '../utils/functions';
+import ViewShot from 'react-native-view-shot';
+import ExportBottomSheet from './ExportBottomSheet';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -19,60 +25,68 @@ const TimerCard = ({
     privacyMode = 'off',
 }) => {
     const [showOverlay, setShowOverlay] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     // Self-ticking state
     const [now, setNow] = useState(Date.now());
+    const [progressPct, setProgressPct] = useState(0);
+
+    const cardRef = useRef();
+    const sheetRef = useRef();
+
     useEffect(() => {
         const interval = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(interval);
     }, []);
 
-    const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
-    const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
+    useEffect(() => {
+        setProgressPct(calculateProgress());
+    }, [now]);
 
-    // Calculate time difference
-    function getTimeParts() {
-        // For countdown: time left until date (or nextDate if recurring)
-        // For countup: time since date
-        let targetDate = timer.isCountdown
-            ? (timer.isRecurring && timer.date < Date.now() ? timer.nextDate : timer.date)
-            : timer.date;
-        let diff = timer.isCountdown
-            ? Math.max(0, targetDate - now)
-            : Math.max(0, now - targetDate);
+    function calculateProgress() {
+        if (!timer.isCountdown || !timer.isRecurring) return 0;
 
-        const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
-        diff -= y * 365 * 24 * 60 * 60 * 1000;
-        const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
-        diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
-        const d = Math.floor(diff / (24 * 60 * 60 * 1000));
-        diff -= d * 24 * 60 * 60 * 1000;
-        const h = Math.floor(diff / (60 * 60 * 1000));
-        diff -= h * 60 * 60 * 1000;
-        const m = Math.floor(diff / (60 * 1000));
-        diff -= m * 60 * 1000;
-        const s = Math.floor(diff / 1000);
+        const nowDate = new Date(now);
+        const targetDate = new Date(timer.nextDate);
 
-        return [y, mo, d, h, m, s];
+        // Calculate the previous occurrence of this recurring timer
+        let prevOccurrence = new Date(targetDate);
+
+        if (timer.recurringType === 'daily') {
+            prevOccurrence.setDate(targetDate.getDate() - 1);
+        } else if (timer.recurringType === 'weekly') {
+            prevOccurrence.setDate(targetDate.getDate() - 7);
+        } else if (timer.recurringType === 'monthly') {
+            prevOccurrence.setMonth(targetDate.getMonth() - 1);
+            // Handle month-end dates
+            if (prevOccurrence.getDate() !== targetDate.getDate()) {
+                prevOccurrence.setDate(0); // Go to last day of previous month
+            }
+        } else if (timer.recurringType === 'yearly') {
+            prevOccurrence.setFullYear(targetDate.getFullYear() - 1);
+            // Handle leap year edge case for Feb 29
+            if (prevOccurrence.getMonth() === 1 && prevOccurrence.getDate() === 29) {
+                if (!isLeapYear(prevOccurrence.getFullYear())) {
+                    prevOccurrence.setDate(28);
+                }
+            }
+        }
+
+        const totalDuration = targetDate.getTime() - prevOccurrence.getTime();
+        const elapsed = nowDate.getTime() - prevOccurrence.getTime();
+
+        const progress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+        return progress;
     }
 
-    // Format date
-    function getFormattedDate() {
-        return new Date(
-            timer.isRecurring && timer.date < Date.now()
-                ? timer.nextDate
-                : timer.date
-        ).toLocaleString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
+    function isLeapYear(year) {
+        return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    }
+
+    const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
+    const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
 
     // Create styles
     const createStyles = () => StyleSheet.create({
@@ -153,7 +167,7 @@ const TimerCard = ({
             paddingTop: 20,
             paddingBottom: 40,
             minHeight: 280,
-            maxHeight: screenHeight * 0.8,
+            maxHeight: screenHeight * 0.9,
         },
         handle: {
             width: 40,
@@ -176,7 +190,7 @@ const TimerCard = ({
             height: 20
         },
         timeSection: {
-            backgroundColor: colors.settingBlock,
+            backgroundColor: colors.highlight + '10',
             padding: 16,
             borderRadius: variables.radius.md,
             marginBottom: 16,
@@ -195,7 +209,7 @@ const TimerCard = ({
             paddingVertical: 5
         },
         detailsSection: {
-            backgroundColor: colors.settingBlock,
+            backgroundColor: colors.highlight + '10',
             padding: 16,
             borderRadius: variables.radius.md,
             marginBottom: 20,
@@ -220,28 +234,42 @@ const TimerCard = ({
             flexDirection: 'row',
             justifyContent: 'space-between',
             gap: 12,
+            marginBottom: 12,
         },
         actionButton: {
             flex: 1,
-            paddingVertical: 10,
+            paddingVertical: 12,
             paddingHorizontal: 12,
             borderRadius: variables.radius.sm,
             alignItems: 'center',
         },
         editButton: {
             backgroundColor: colors.highlight + '20',
-            borderWidth: 1,
+            borderWidth: .75,
             borderColor: colors.highlight,
         },
         deleteButton: {
             backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            borderWidth: 1,
+            borderWidth: .75,
             borderColor: '#ef4444',
+        },
+        exportButton: {
+            backgroundColor: colors.highlight + '15',
+            borderWidth: .75,
+            borderColor: colors.highlight + '60',
         },
         actionButtonText: {
             color: colors.text,
             fontSize: 16,
             fontWeight: '600',
+            textAlign: 'center',
+        },
+        exportButtonText: {
+            color: colors.highlight,
+            fontSize: 16,
+            fontWeight: '600',
+            textAlign: 'center',
+            height: 20
         },
         statusIndicator: {
             flexDirection: 'row',
@@ -258,6 +286,46 @@ const TimerCard = ({
             marginLeft: 4,
         },
     });
+
+    // Calculate time difference
+    function getTimeParts() {
+        let targetDate = timer.isCountdown
+            ? (timer.isRecurring && timer.date < Date.now() ? timer.nextDate : timer.date)
+            : timer.date;
+        let diff = timer.isCountdown
+            ? Math.max(0, targetDate - now)
+            : Math.max(0, now - targetDate);
+
+        const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
+        diff -= y * 365 * 24 * 60 * 60 * 1000;
+        const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
+        diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
+        const d = Math.floor(diff / (24 * 60 * 60 * 1000));
+        diff -= d * 24 * 60 * 60 * 1000;
+        const h = Math.floor(diff / (60 * 60 * 1000));
+        diff -= h * 60 * 60 * 1000;
+        const m = Math.floor(diff / (60 * 1000));
+        diff -= m * 60 * 1000;
+        const s = Math.floor(diff / 1000);
+
+        return [y, mo, d, h, m, s];
+    }
+
+    // Format date
+    function getFormattedDate() {
+        return new Date(
+            timer.isRecurring && timer.date < Date.now()
+                ? timer.nextDate
+                : timer.date
+        ).toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
 
     // Optimized callbacks
     const handleEdit = useCallback(() => {
@@ -294,7 +362,7 @@ const TimerCard = ({
     const closeOverlay = useCallback(() => {
         Animated.parallel([
             Animated.timing(slideAnim, {
-                toValue: screenHeight,
+                toValue: 280,
                 duration: 250,
                 useNativeDriver: true,
             }),
@@ -402,86 +470,92 @@ const TimerCard = ({
 
     return (
         <>
-            <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
-                <View style={cardStyle}>
-                    <View style={styles.header}>
-                        {privacyMode === 'off' ? (
-                            <HighlightMatchText
-                                text={titleText}
-                                textStyle={styles.timerTitle}
-                                search={searchText}
-                                colors={colors}
-                            />
-                        ) : (
-                            <Text style={styles.timerTitle}>
-                                {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+            <ViewShot ref={cardRef} options={{ format: 'png', quality: 1 }}>
+                <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
+                    <View style={cardStyle}>
+                        <View style={styles.header}>
+                            {privacyMode === 'off' ? (
+                                <HighlightMatchText
+                                    text={titleText}
+                                    textStyle={styles.timerTitle}
+                                    search={searchText}
+                                    colors={colors}
+                                />
+                            ) : (
+                                <Text style={styles.timerTitle}>
+                                    {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+                                </Text>
+                            )}
+                            <View style={styles.priorityIndicator}>
+                                {timer.isRecurring && (
+                                    <View style={{
+                                        backgroundColor: colors.highlight + '10',
+                                        padding: 6,
+                                        borderRadius: 8,
+                                        borderWidth: 0.75,
+                                        borderColor: colors.border,
+                                    }}>
+                                        <Icons.Material
+                                            name="autorenew"
+                                            size={14}
+                                            color={colors.highlight}
+                                        />
+                                    </View>
+                                )}
+                                {timer.personName && (
+                                    privacyMode === 'off' ? (
+                                        <HighlightMatchText
+                                            text={nameText}
+                                            textStyle={styles.namePill} search={searchText}
+                                            colors={colors}
+                                        />
+                                    ) : (
+                                        <Text style={styles.namePill}>
+                                            {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
+                                        </Text>
+                                    )
+                                )}
+                                {timer.priority && <View
+                                    style={[
+                                        styles.priorityDot,
+                                        {
+                                            backgroundColor:
+                                                timer.priority === 'high'
+                                                    ? 'hsla(0, 84.20%, 60.20%, 0.30)'
+                                                    : timer.priority === 'normal'
+                                                        ? 'hsla(134, 39.02%, 50.20%, 0.30)'
+                                                        : 'hsla(210, 100%, 50.20%, 0.30)',
+                                            borderColor:
+                                                timer.priority === 'high'
+                                                    ? '#ef4444'
+                                                    : timer.priority === 'normal'
+                                                        ? '#22c55e'
+                                                        : '#3b82f6',
+                                        },
+                                    ]}
+                                />}
+                            </View>
+                        </View>
+
+                        <View style={styles.midSection}>
+                            <Text style={styles.timerQuickInfo}>
+                                {renderTimeDisplay()}
                             </Text>
-                        )}
-                        <View style={styles.priorityIndicator}>
-                            {timer.isRecurring && (
-                                <View style={{
-                                    backgroundColor: colors.highlight + '10',
-                                    padding: 6,
-                                    borderRadius: 8,
-                                    borderWidth: 0.75,
-                                    borderColor: colors.border,
-                                }}>
-                                    <Icons.Material
-                                        name="autorenew"
-                                        size={14}
-                                        color={colors.highlight}
-                                    />
-                                </View>
-                            )}
-                            {timer.personName && (
-                                privacyMode === 'off' ? (
-                                    <HighlightMatchText
-                                        text={nameText}
-                                        textStyle={styles.namePill}
-                                        search={searchText}
-                                        colors={colors}
-                                    />
-                                ) : (
-                                    <Text style={styles.namePill}>
-                                        {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
-                                    </Text>
-                                )
-                            )}
-                            <View
-                                style={[
-                                    styles.priorityDot,
-                                    {
-                                        backgroundColor:
-                                            timer.priority === 'high'
-                                                ? 'hsla(0, 84.20%, 60.20%, 0.30)'
-                                                : timer.priority === 'normal'
-                                                    ? 'hsla(134, 39.02%, 50.20%, 0.30)'
-                                                    : 'hsla(210, 100%, 50.20%, 0.30)',
-                                        borderColor:
-                                            timer.priority === 'high'
-                                                ? '#ef4444'
-                                                : timer.priority === 'normal'
-                                                    ? '#22c55e'
-                                                    : '#3b82f6',
-                                    },
-                                ]}
+                            <Icons.Material
+                                name="keyboard-arrow-up"
+                                size={18}
+                                color={colors.text}
+                                style={{ opacity: 0.5 }}
                             />
                         </View>
+                        {timer.isCountdown && timer.isRecurring && (
+                            <View style={{ height: 6, backgroundColor: colors.highlight + '20', borderRadius: 6, marginTop: 8, overflow: 'hidden' }}>
+                                <View style={{ width: `${progressPct}%`, height: '100%', backgroundColor: colors.highlight }} />
+                            </View>
+                        )}
                     </View>
-
-                    <View style={styles.midSection}>
-                        <Text style={styles.timerQuickInfo}>
-                            {renderTimeDisplay()}
-                        </Text>
-                        <Icons.Material
-                            name="keyboard-arrow-up"
-                            size={18}
-                            color={colors.text}
-                            style={{ opacity: 0.5 }}
-                        />
-                    </View>
-                </View>
-            </TouchableOpacity>
+                </TouchableOpacity>
+            </ViewShot>
 
             {/* Bottom Sheet Overlay */}
             <Modal
@@ -501,79 +575,81 @@ const TimerCard = ({
                                     },
                                 ]}
                             >
-                                <View style={styles.handle} />
+                                <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
+                                    <View style={styles.handle} />
 
-                                {/* Title and Person */}
-                                <Text style={styles.overlayTitle}>
-                                    {privacyMode === 'off' ? timer.title :
-                                        privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
-                                </Text>
-
-                                {timer.personName && (
-                                    <Text style={styles.overlayPersonName}>
-                                        For: {privacyMode === 'off' ? timer.personName :
-                                            privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
+                                    {/* Title and Person */}
+                                    <Text style={styles.overlayTitle}>
+                                        {privacyMode === 'off' ? timer.title :
+                                            privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
                                     </Text>
-                                )}
 
-                                {/* Time Section */}
-                                <View style={styles.timeSection}>
-                                    <Text style={styles.timeLabel}>
-                                        {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
-                                    </Text>
-                                    <Text style={styles.timeValue}>
-                                        {renderDetailedTimeDisplay()}
-                                    </Text>
-                                </View>
-
-                                {/* Details Section */}
-                                <View style={styles.detailsSection}>
-                                    <View style={styles.detailRow}>
-                                        <Text style={styles.detailLabel}>
-                                            {timer.isCountdown ? 'End Date' : 'Start Date'}
+                                    {timer.personName && (
+                                        <Text style={styles.overlayPersonName}>
+                                            For: {privacyMode === 'off' ? timer.personName :
+                                                privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
                                         </Text>
-                                        <Text style={styles.detailValue}>
-                                            {getFormattedDate()}
+                                    )}
+
+                                    {/* Time Section */}
+                                    <View style={styles.timeSection}>
+                                        <Text style={styles.timeLabel}>
+                                            {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                                        </Text>
+                                        <Text style={styles.timeValue}>
+                                            {renderDetailedTimeDisplay()}
                                         </Text>
                                     </View>
 
-                                    <View style={styles.detailRow}>
-                                        <Text style={styles.detailLabel}>Priority</Text>
-                                        <View style={styles.statusIndicator}>
-                                            <View
-                                                style={[
-                                                    styles.priorityDot,
-                                                    {
-                                                        backgroundColor:
-                                                            timer.priority === 'high'
-                                                                ? '#ef4444'
-                                                                : timer.priority === 'normal'
-                                                                    ? '#22c55e'
-                                                                    : '#3b82f6',
-                                                        borderColor: 'transparent',
-                                                    },
-                                                ]}
-                                            />
-                                            <Text style={styles.statusText}>
-                                                {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                    {/* Details Section */}
+                                    <View style={styles.detailsSection}>
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>
+                                                {timer.isCountdown ? 'End Date' : 'Start Date'}
+                                            </Text>
+                                            <Text style={styles.detailValue}>
+                                                {getFormattedDate()}
                                             </Text>
                                         </View>
-                                    </View>
 
-                                    {timer.isRecurring && (
                                         <View style={styles.detailRow}>
-                                            <Text style={styles.detailLabel}>Type</Text>
+                                            <Text style={styles.detailLabel}>Priority</Text>
                                             <View style={styles.statusIndicator}>
-                                                <Icons.Material
-                                                    name="autorenew"
-                                                    size={12}
-                                                    color={colors.highlight}
-                                                />
-                                                <Text style={styles.statusText}>Recurring</Text>
+                                                {timer.priority && <View
+                                                    style={[
+                                                        styles.priorityDot,
+                                                        {
+                                                            backgroundColor:
+                                                                timer.priority === 'high'
+                                                                    ? '#ef4444'
+                                                                    : timer.priority === 'normal'
+                                                                        ? '#22c55e'
+                                                                        : '#3b82f6',
+                                                            borderColor: 'transparent',
+                                                        },
+                                                    ]}
+                                                />}
+                                                <Text style={styles.statusText}>
+                                                    {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                                </Text>
                                             </View>
                                         </View>
-                                    )}
-                                </View>
+
+                                        {timer.isRecurring && (
+                                            <View style={styles.detailRow}>
+                                                <Text style={styles.detailLabel}>Type</Text>
+                                                <View style={styles.statusIndicator}>
+                                                    <Icons.Material
+                                                        name="autorenew"
+                                                        size={12}
+                                                        color={colors.highlight}
+                                                    />
+                                                    <Text style={styles.statusText}>Recurring</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+                                </ViewShot>
 
                                 {/* Action Buttons */}
                                 <View style={styles.actionsSection}>
@@ -582,7 +658,7 @@ const TimerCard = ({
                                         style={[styles.actionButton, styles.editButton]}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.actionButtonText}>Edit Timer</Text>
+                                        <Text style={styles.actionButtonText}>Edit</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
@@ -590,7 +666,15 @@ const TimerCard = ({
                                         style={[styles.actionButton, styles.deleteButton]}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.actionButtonText}>Delete Timer</Text>
+                                        <Text style={styles.actionButtonText}>Delete</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setShowExportModal(true)}
+                                        style={[styles.actionButton, styles.exportButton]}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.exportButtonText}>Export</Text>
                                     </TouchableOpacity>
                                 </View>
                             </Animated.View>
@@ -598,6 +682,16 @@ const TimerCard = ({
                     </Animated.View>
                 </TouchableWithoutFeedback>
             </Modal>
+
+            {/* Export Bottom Sheet */}
+            <ExportBottomSheet
+                visible={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                cardRef={cardRef}
+                sheetRef={sheetRef}
+                colors={colors}
+                variables={variables}
+            />
         </>
     );
 };

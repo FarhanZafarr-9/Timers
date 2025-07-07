@@ -1,6 +1,6 @@
 // FloatingLabelInput component for reuse
 import { useEffect, useRef } from 'react';
-import { TextInput, View, Animated } from 'react-native';
+import { TextInput, View, Animated, TouchableOpacity, Text } from 'react-native';
 
 const FloatingLabelInput = ({
     label,
@@ -30,11 +30,11 @@ const FloatingLabelInput = ({
 
     const labelTop = anim.interpolate({
         inputRange: [0, 1],
-        outputRange: [14, 4], // from center to top inside input
+        outputRange: [14, 4],
     });
     const labelRight = anim.interpolate({
         inputRange: [0, 1],
-        outputRange: [12, 6], // stays at 12px from right
+        outputRange: [12, 6],
     });
 
     const labelStyle = {
@@ -55,27 +55,39 @@ const FloatingLabelInput = ({
         height: 30
     };
 
+    const handleClear = () => {
+        onChangeText('');
+        setFocus(f => ({ ...f, [focusKey]: false }));
+        if (onClear) {
+            onClear();
+        }
+    };
+
     return (
         <View style={{ width: '100%', marginBottom: 12, justifyContent: 'flex-end' }}>
             <Animated.Text style={labelStyle}>{label}</Animated.Text>
-            <TextInput
-                style={[
-                    style,
-                    {
-                        borderColor: focus[focusKey] ? colors.textDesc : 'transparent',
-                        fontWeight: '600',
-                        paddingTop: 18,
-                    },
-                ]}
-                value={value}
-                onChangeText={onChangeText}
-                onFocus={() => setFocus(f => ({ ...f, [focusKey]: true }))}
-                onBlur={() => setFocus(f => ({ ...f, [focusKey]: false }))}
-                keyboardType={keyboardType}
-                maxLength={maxLength}
-                placeholder={''}
-                {...rest}
-            />
+            <View style={{ position: 'relative' }}>
+                <TextInput
+                    style={[
+                        style,
+                        {
+                            backgroundColor: colors.highlight + '10',
+                            borderColor: focus[focusKey] ? colors.textDesc : 'transparent',
+                            fontWeight: '600',
+                            paddingTop: 18,
+                            paddingRight: value ? 40 : 12,
+                        },
+                    ]}
+                    value={value}
+                    onChangeText={onChangeText}
+                    onFocus={() => setFocus(f => ({ ...f, [focusKey]: true }))}
+                    onBlur={() => setFocus(f => ({ ...f, [focusKey]: false }))}
+                    keyboardType={keyboardType}
+                    maxLength={maxLength}
+                    placeholder={''}
+                    {...rest}
+                />
+            </View>
         </View>
     );
 };

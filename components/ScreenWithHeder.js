@@ -20,12 +20,12 @@ export default function ScreenWithHeader({
     flatListProps = {},
     paddingX = 15
 }) {
-    const { colors } = useTheme();
+    const { colors, headerMode } = useTheme();
     const [contentHeight, setContentHeight] = useState(0);
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const forceCollapsed = shouldForceCollapsed(contentHeight);
-    const headerPaddingTop = (forceCollapsed ? MIN_HEADER_HEIGHT : MAX_HEADER_HEIGHT) + HEADER_MARGIN_TOP;
+    const forceCollapsed = headerMode === 'fixed' || shouldForceCollapsed(contentHeight);
+    const headerPaddingTop = headerMode === 'fixed' ? 0 : (forceCollapsed ? MIN_HEADER_HEIGHT : MAX_HEADER_HEIGHT) + HEADER_MARGIN_TOP;
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
