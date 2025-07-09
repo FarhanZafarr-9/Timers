@@ -5,6 +5,7 @@ import HighlightMatchText from './HighlightMatchText';
 import { jumbleText, maskText } from '../utils/functions';
 import ViewShot from 'react-native-view-shot';
 import ExportBottomSheet from './ExportBottomSheet';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -26,7 +27,7 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-
+    const { isBorder } = useTheme();
 
 
     // Self-ticking state
@@ -156,7 +157,7 @@ const TimerCard = ({
             borderRadius: variables.radius.md,
             marginBottom: 10,
             borderWidth: 0.75,
-            borderColor: searchText === '' || privacyMode !== 'off' ? 'transparent' : colors.highlight + '3a',
+            borderColor: searchText === '' || privacyMode !== 'off' ? colors.border : colors.highlight + '3a',
         },
         header: {
             flexDirection: 'row',
@@ -178,7 +179,7 @@ const TimerCard = ({
             width: 10,
             height: 10,
             borderRadius: variables.radius.circle,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
         },
         timerQuickInfo: {
             color: colors.text,
@@ -186,7 +187,7 @@ const TimerCard = ({
             fontWeight: 'bold',
             letterSpacing: 1,
             backgroundColor: colors.highlight + '10',
-            borderWidth: 0,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
             justifyContent: 'center',
             alignItems: 'center',
@@ -203,8 +204,8 @@ const TimerCard = ({
             marginHorizontal: 8,
             borderRadius: variables.radius.sm,
             alignSelf: 'flex-start',
-            borderWidth: 0,
-            borderColor: colors.cardBorder,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
             color: colors.text,
             fontSize: 12,
             fontWeight: 'bold',
@@ -229,6 +230,8 @@ const TimerCard = ({
             paddingBottom: 40,
             minHeight: 280,
             maxHeight: screenHeight * 0.9,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         handle: {
             width: 40,
@@ -256,6 +259,8 @@ const TimerCard = ({
             padding: 16,
             borderRadius: variables.radius.md,
             marginBottom: 16,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         timeLabel: {
             color: colors.textDesc,
@@ -295,7 +300,7 @@ const TimerCard = ({
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: variables.radius.sm,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         actionsSection: {
@@ -309,15 +314,17 @@ const TimerCard = ({
             paddingVertical: 6,
             borderRadius: variables.radius.sm,
             alignItems: 'center',
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         editButton: {
             backgroundColor: colors.highlight + '15',
         },
         deleteButton: {
             backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            borderColor: 'rgba(239, 68, 68, 0.5)',
             minHeight: 40,
             marginBottom: 20,
-
         },
         exportButton: {
             backgroundColor: colors.highlight + '15',
@@ -343,7 +350,7 @@ const TimerCard = ({
             paddingVertical: 4,
             borderRadius: variables.radius.sm,
             gap: 8,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         statusText: {
@@ -363,7 +370,7 @@ const TimerCard = ({
             paddingVertical: 4,
             paddingHorizontal: 16,
             borderRadius: variables.radius.sm,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         chipText: {

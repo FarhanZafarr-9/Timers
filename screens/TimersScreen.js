@@ -16,10 +16,9 @@ export default function TimersScreen({ route }) {
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
-    const { variables, colors } = useTheme();
+    const { variables, colors, isBorder } = useTheme();
     const { timers, addTimer, editTimer, removeTimer } = useTimers();
 
-    // State management
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalVisible, setModalVisible] = useState(false);
     const [editingTimer, setEditingTimer] = useState(null);
@@ -30,7 +29,6 @@ export default function TimersScreen({ route }) {
     const [sortMethod, setSortMethod] = useState('priority');
     const [messages, setMessages] = useState([]);
 
-    // Optimized message handling
     const addMessage = useCallback((text) => {
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         setMessages(prev => [...prev, { id, text }]);
@@ -40,13 +38,11 @@ export default function TimersScreen({ route }) {
         setMessages(prev => prev.filter(msg => msg.id !== messageId));
     }, []);
 
-    // Optimized sort handler
     const handleSortChange = useCallback((method) => {
         setSortMethod(method);
         addMessage(`Sorted by ${method}`);
     }, [addMessage]);
 
-    // Memoized filtered timers
     const filteredTimers = useMemo(() => {
         const filtered = timers.filter(timer => {
             const matchesMode = isCountdown ? timer.isCountdown : !timer.isCountdown;
@@ -70,7 +66,6 @@ export default function TimersScreen({ route }) {
         return filtered;
     }, [timers, isCountdown, privacyMode, searchQuery]);
 
-    // Optimized sorting
     const sortedTimers = useMemo(() => {
         const arr = [...filteredTimers];
 
@@ -97,7 +92,6 @@ export default function TimersScreen({ route }) {
         }
     }, [filteredTimers, sortMethod, isCountdown]);
 
-    // Optimized selection handlers using Set
     const handleSelect = useCallback((id) => {
         setSelectedIds(prev => {
             const newSet = new Set(prev);
@@ -110,7 +104,6 @@ export default function TimersScreen({ route }) {
         });
     }, []);
 
-    // Optimized timer operations
     const handleAddTimer = useCallback(async (newTimer) => {
         try {
             if (editingTimer && !isDuplicate) {
@@ -144,7 +137,6 @@ export default function TimersScreen({ route }) {
             await removeTimer(id);
             addMessage('Timer deleted');
 
-            // Clean up expanded and selected states
             setExpandedCardIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);
@@ -161,7 +153,6 @@ export default function TimersScreen({ route }) {
         }
     }, [removeTimer, addMessage]);
 
-    // Optimized card click handler
     const handleCardClick = useCallback((timerId) => {
         if (isSelectable) {
             handleSelect(timerId);
@@ -178,7 +169,6 @@ export default function TimersScreen({ route }) {
         }
     }, [isSelectable, handleSelect]);
 
-    // Memoized render function (no elapsedTime/remainingTime props)
     function renderTimerCard({ item: timer }) {
         const isExpanded = expandedCardIds.has(timer.id);
         const isSelected = selectedIds.has(timer.id);
@@ -268,7 +258,7 @@ export default function TimersScreen({ route }) {
             paddingVertical: 8,
             borderRadius: variables.radius.sm,
             backgroundColor: colors.cardLighter,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.cardBorder,
             justifyContent: 'center',
             marginTop: 16,
@@ -281,8 +271,6 @@ export default function TimersScreen({ route }) {
         },
     }), [colors, variables]);
 
-
-    // Memoized components
     const ListHeaderComponent = useMemo(() => (
         <HeaderControls
             searchQuery={searchQuery}
@@ -328,7 +316,6 @@ export default function TimersScreen({ route }) {
         setEditingTimer(null);
         setIsDuplicate(false);
     }, []);
-
 
     return (
         <>

@@ -9,6 +9,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../utils/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,6 +31,7 @@ const HeaderControls = ({
     const inputRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const { isBorder } = useTheme();
 
     // Animation values
     const searchAnim = useRef(new Animated.Value(1)).current;
@@ -138,6 +140,8 @@ const HeaderControls = ({
             justifyContent: 'center',
             alignItems: 'center',
             flexDirection: 'row',
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         buttonContent: {
             flexDirection: 'row',
@@ -173,6 +177,8 @@ const HeaderControls = ({
             justifyContent: 'center',
             alignItems: 'center',
             marginLeft: 8,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
     });
 

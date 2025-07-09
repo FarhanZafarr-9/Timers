@@ -11,7 +11,7 @@ export default function CollapsibleHeader({
     pageLength = null,
     borderRadius = 12,
 }) {
-    const { headerMode } = useTheme();
+    const { headerMode, isBorder } = useTheme();
     const forceCollapsed = shouldForceCollapsed(pageLength);
     const snapThreshold = 45;
 
@@ -104,7 +104,8 @@ export default function CollapsibleHeader({
                         {
                             height: MIN_HEADER_HEIGHT,
                             width: '90%',
-                            borderWidth: 0,
+                            borderWidth: isBorder ? 0.75 : 0,
+                            borderColor: colors.border,
                             top: 0,
                             zIndex: 100,
                             backgroundColor: colors.settingBlock,

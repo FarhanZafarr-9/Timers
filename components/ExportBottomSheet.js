@@ -15,6 +15,7 @@ import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 const DIRECTORY_KEY = 'download_directory_uri';
@@ -31,6 +32,7 @@ const ExportBottomSheet = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isExporting, setIsExporting] = useState(false);
     const [currentAction, setCurrentAction] = useState(null);
+    const { isBorder } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -166,6 +168,8 @@ const ExportBottomSheet = ({
             paddingBottom: 40,
             minHeight: 450,
             maxHeight: screenHeight * 0.8,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         handle: {
             width: 40,
@@ -195,7 +199,7 @@ const ExportBottomSheet = ({
             borderRadius: variables.radius.md,
             padding: 16,
             marginBottom: 16,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         optionTitle: {
@@ -222,7 +226,7 @@ const ExportBottomSheet = ({
             justifyContent: 'center',
             paddingVertical: 10,
             borderRadius: variables.radius.sm,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             backgroundColor: colors.highlight + '10',
             borderColor: colors.border,
             minHeight: 40,
@@ -248,7 +252,7 @@ const ExportBottomSheet = ({
         cancelButton: {
             backgroundColor: colors.cardLighter,
             borderColor: colors.border,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderRadius: variables.radius.sm,
             paddingVertical: 12,
             alignItems: 'center',
@@ -341,7 +345,7 @@ const ExportBottomSheet = ({
                                         {renderButtonContent('save-files', 'folder-outline', 'Save to Files')}
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.actionButton}
                                         onPress={() => handleExportAction(cardRef, 'card', 'share')}
                                         disabled={isExporting}

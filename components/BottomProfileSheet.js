@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useData } from '../utils/DataContext';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -30,7 +31,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
     const [localProfession, setLocalProfession] = useState(userData.profession || '');
     const [localProfilePic, setLocalProfilePic] = useState(userData.profilePic || null);
     const [errorMsg, setErrorMsg] = useState('');
-
+    const { isBorder } = useTheme();
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -159,6 +160,8 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             shadowOpacity: 0.25,
             shadowRadius: 10,
             elevation: 10,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         handle: {
             width: 40,
@@ -214,7 +217,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             backgroundColor: colors.card,
             justifyContent: 'center',
             alignItems: 'center',
-            borderWidth: 1,
+            borderWidth: isBorder ? 0 : 1,
             borderColor: colors.border,
         },
         placeholderText: {
@@ -228,7 +231,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             marginBottom: 16,
             fontSize: 16,
             color: colors.text,
-            borderWidth: 1,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         buttonRow: {
@@ -242,7 +245,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.card,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         saveButton: {
@@ -250,7 +253,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.highlight,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         cancelText: {

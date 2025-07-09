@@ -10,6 +10,7 @@ import {
     ScrollView
 } from 'react-native';
 import { Icons } from '../assets/icons';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -31,6 +32,7 @@ const BottomSheetPicker = ({
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
+    const { isBorder } = useTheme();
 
     const showBottomSheet = () => {
         setVisible(true);
@@ -73,7 +75,7 @@ const BottomSheetPicker = ({
             paddingVertical: 6,
             paddingHorizontal: 8,
             backgroundColor: colors.highlight + '0f',
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
             minWidth: 60,
             justifyContent: 'space-between',
@@ -91,7 +93,9 @@ const BottomSheetPicker = ({
             backgroundColor: colors.settingBlock,
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 15, // Safe area bottom
+            paddingBottom: 15,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
             maxHeight,
             minHeight: 200,
             shadowColor: '#000',
@@ -145,7 +149,7 @@ const BottomSheetPicker = ({
             paddingVertical: 8,
             paddingHorizontal: 14,
             borderRadius: 8,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
             backgroundColor: colors.cardLighter,
             minHeight: 36,
@@ -201,7 +205,7 @@ const BottomSheetPicker = ({
         },
         clearButton: {
             backgroundColor: colors.card,
-            borderWidth: 1,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         clearButtonText: {
@@ -225,7 +229,6 @@ const BottomSheetPicker = ({
 
     const handlePillPress = (optionValue) => {
         onChange(optionValue);
-        // Auto-close after selection (you can remove this if you want manual closing)
         setTimeout(() => {
             hideBottomSheet();
         }, 150);

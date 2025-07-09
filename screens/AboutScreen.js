@@ -5,7 +5,7 @@ import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 
 export default function AboutScreen() {
-    const { variables, colors } = useTheme();
+    const { variables, colors, isBorder } = useTheme();
 
     // Animations
     const topCardAnim = useRef(new Animated.Value(-50)).current;
@@ -96,6 +96,8 @@ export default function AboutScreen() {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
             padding: 20,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         row: {
             flexDirection: 'row',
@@ -154,11 +156,13 @@ export default function AboutScreen() {
         actionButton: {
             flex: 1,
             backgroundColor: colors.settingBlock,
-            borderRadius: variables.radius.sm,
+            borderRadius: variables.radius.md,
             padding: 12,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         buttonText: {
             marginLeft: 8,

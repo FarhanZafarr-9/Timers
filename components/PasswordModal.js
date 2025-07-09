@@ -34,7 +34,6 @@ const getStrength = (password) => {
 };
 
 const generateResetCode = () => {
-    // Generate a 6-digit reset code
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
@@ -46,7 +45,7 @@ export default function PasswordBottomSheet({
     mode = 'set',
     variables,
 }) {
-    const { colors } = useTheme();
+    const { colors, isBorder } = useTheme();
     const { getResetCode, setResetCodeValue } = useSecurity();
 
     const [translateY] = useState(new Animated.Value(screenHeight));
@@ -58,10 +57,9 @@ export default function PasswordBottomSheet({
     const [resetCode, setResetCode] = useState('');
     const [enteredResetCode, setEnteredResetCode] = useState('');
     const [error, setError] = useState('');
-    const [resetMode, setResetMode] = useState(false);
+    const [resetMode, setResetMode] = useState(mode === 'reset');
     const [showResetCode, setShowResetCode] = useState(false);
 
-    // Password visibility toggles
     const [showOld, setShowOld] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -70,11 +68,24 @@ export default function PasswordBottomSheet({
 
     useEffect(() => {
         if (visible) {
+            setResetMode(mode === 'reset');
             showBottomSheet();
         } else {
             hideBottomSheet();
         }
-    }, [visible]);
+    }, [visible, mode]);
+
+    useEffect(() => {
+        if (!visible) {
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setEnteredResetCode('');
+            setError('');
+            setShowResetCode(false);
+            setResetMode(mode === 'reset');
+        }
+    }, [visible, mode]);
 
     const showBottomSheet = () => {
         Animated.parallel([
@@ -116,8 +127,10 @@ export default function PasswordBottomSheet({
             backgroundColor: colors.cardLighter,
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 15, // Safe area bottom
+            paddingBottom: 15,
             maxHeight: screenHeight * 0.85,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: {
                 width: 0,
@@ -160,6 +173,7 @@ export default function PasswordBottomSheet({
         },
         inputGroup: {
             marginBottom: 20,
+            
         },
         inputLabel: {
             fontSize: 14,
@@ -171,7 +185,7 @@ export default function PasswordBottomSheet({
         inputRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderRadius: variables.radius.sm,
             borderColor: colors.border,
             backgroundColor: colors.settingBlock,
@@ -184,6 +198,7 @@ export default function PasswordBottomSheet({
             color: colors.text,
             paddingVertical: 12,
             paddingHorizontal: 4,
+            
         },
         eyeBtn: {
             padding: 8,
@@ -217,7 +232,7 @@ export default function PasswordBottomSheet({
             marginBottom: 16,
             textAlign: 'center',
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: '#ef4444',
             padding: 12,
             borderRadius: variables.radius.sm,
@@ -236,7 +251,7 @@ export default function PasswordBottomSheet({
         },
         resetCodeContainer: {
             backgroundColor: colors.settingBlock,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
             borderRadius: variables.radius.sm,
             padding: 16,
@@ -286,7 +301,7 @@ export default function PasswordBottomSheet({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
         },
         saveButton: {
             backgroundColor: colors.highlight,
@@ -306,12 +321,30 @@ export default function PasswordBottomSheet({
             fontWeight: '500',
             color: colors.text,
         },
+        resetModeInfo: {
+            backgroundColor: colors.settingBlock,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
+            borderRadius: variables.radius.sm,
+            padding: 16,
+            marginBottom: 16,
+        },
+        resetModeTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.text,
+            marginBottom: 8,
+        },
+        resetModeText: {
+            fontSize: 14,
+            color: colors.textDesc,
+            lineHeight: 20,
+        },
     });
 
     const handleSave = () => {
         setError('');
 
-        // If in reset mode, verify the reset code first
         if (resetMode) {
             const storedResetCode = getResetCode();
             if (!storedResetCode) {
@@ -340,7 +373,7 @@ export default function PasswordBottomSheet({
             return;
         }
         if (strength.label === 'Too short' || strength.label === 'Weak') {
-            setError('Password is too weak.');
+            setError('Password is too weak. Please use a stronger password.');
             return;
         }
 
@@ -364,7 +397,7 @@ export default function PasswordBottomSheet({
         setConfirmPassword('');
         setResetCode('');
         setEnteredResetCode('');
-        setResetMode(false);
+        setResetMode(mode === 'reset');
         setShowResetCode(false);
         onClose();
     };
@@ -447,20 +480,28 @@ export default function PasswordBottomSheet({
                             ) : (
                                 <>
                                     {resetMode && (
-                                        <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Reset Code</Text>
-                                            <View style={styles.inputRow}>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder="Enter your 6-digit reset code"
-                                                    placeholderTextColor={colors.textDesc}
-                                                    value={enteredResetCode}
-                                                    onChangeText={setEnteredResetCode}
-                                                    keyboardType="numeric"
-                                                    maxLength={6}
-                                                />
+                                        <>
+                                            <View style={styles.resetModeInfo}>
+                                                <Text style={styles.resetModeTitle}>Password Reset</Text>
+                                                <Text style={styles.resetModeText}>
+                                                    Enter your 6-digit reset code to create a new password. If you don't have your reset code, you'll need to contact support.
+                                                </Text>
                                             </View>
-                                        </View>
+                                            <View style={styles.inputGroup}>
+                                                <Text style={styles.inputLabel}>Reset Code</Text>
+                                                <View style={styles.inputRow}>
+                                                    <TextInput
+                                                        style={styles.input}
+                                                        placeholder="Enter your 6-digit reset code"
+                                                        placeholderTextColor={colors.textDesc}
+                                                        value={enteredResetCode}
+                                                        onChangeText={setEnteredResetCode}
+                                                        keyboardType="numeric"
+                                                        maxLength={6}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </>
                                     )}
 
                                     {mode === 'change' && currentPassword && !resetMode && (
