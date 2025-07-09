@@ -14,6 +14,7 @@ import AuthComponent from './utils/AuthComponent';
 import * as Notifications from 'expo-notifications';
 import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from './utils/ThemeContext';
+import { DataProvider } from './utils/DataContext';
 import SplashScreen from './screens/SplashScreen';
 
 const Tab = createBottomTabNavigator();
@@ -110,9 +111,12 @@ export default function App() {
   return (
     <SecurityProvider>
       <ThemeProvider>
-        <TimerProvider>
-          <AppContent />
-        </TimerProvider>
+        <DataProvider>
+          <TimerProvider>
+            <AppContent />
+          </TimerProvider>
+        </DataProvider>
+        
       </ThemeProvider>
     </SecurityProvider>
   );

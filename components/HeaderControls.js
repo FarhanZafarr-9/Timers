@@ -95,11 +95,6 @@ const HeaderControls = ({
             paddingBottom: 12,
             paddingTop: 12,
             marginVertical: 12,
-            marginHorizontal: 12,
-            borderBottomWidth: 1,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            borderBottomColor: colors.border,
         },
         row: {
             flexDirection: 'row',
@@ -173,12 +168,10 @@ const HeaderControls = ({
         toggleButton: {
             width: 44,
             height: 44,
-            borderRadius: 22,
+            borderRadius: 14,
             backgroundColor: colors.cardLighter,
             justifyContent: 'center',
             alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
             marginLeft: 8,
         },
     });

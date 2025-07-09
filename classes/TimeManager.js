@@ -146,47 +146,49 @@ export class TimerManager {
         });
     }
 
-    // Initialize sample timers
     async initializeTimers() {
         try {
             const existingTimers = await loadTimers();
-            //console.log('Existing timers:', existingTimers.length);
+            if (!Array.isArray(existingTimers)) {
+                existingTimers = [];
+            }
 
-            // Find the most futuristic and oldest dates
             let maxFuture = null;
             let minPast = null;
             for (const t of existingTimers) {
                 const d = new Date(t.date);
+                if (isNaN(d.getTime())) continue; // Skip invalid dates
+
                 if (!maxFuture || d > maxFuture) maxFuture = d;
                 if (!minPast || d < minPast) minPast = d;
             }
 
-            // If no timers, use now as base
             if (!maxFuture) maxFuture = new Date();
             if (!minPast) minPast = new Date();
 
             const sampleData = [];
             const total = 10; // 5 countdown + 5 countup
 
-            // Start from the most futuristic and oldest dates
             let countdownBase = new Date(maxFuture);
             let countupBase = new Date(minPast);
 
             for (let i = 0; i < total; i++) {
                 const isCountdown = i < 5;
                 const baseIndex = existingTimers.length + (isCountdown ? i + 1 : 20 + i - 5 + 1);
-                const isRecurring = i % 4 === 0;
-                const recurrenceInterval = isRecurring
-                    ? { value: i % 5 + 1, unit: isCountdown ? 'days' : 'weeks' }
-                    : null;
+                const isRecurring = true;
+
+                let recurrenceInterval = null;
+                if (isRecurring) {
+                    const value = i % 5 + 1;
+                    const unit = isCountdown ? 'days' : 'weeks';
+                    recurrenceInterval = `${value} ${unit}`;
+                }
 
                 let date;
                 if (isCountdown) {
-                    // Each new timer is 1 hour after the previous
                     countdownBase = new Date(countdownBase.getTime() + 60 * 60 * 1000);
                     date = new Date(countdownBase);
                 } else {
-                    // Each new timer is 1 hour before the previous
                     countupBase = new Date(countupBase.getTime() - 60 * 60 * 1000);
                     date = new Date(countupBase);
                 }
@@ -203,20 +205,16 @@ export class TimerManager {
                 });
             }
 
-            // Append new timers to existing timers
             const updatedTimers = [...existingTimers, ...sampleData];
-            //console.log('Saving timers:', updatedTimers.length);
-
             await saveTimers(updatedTimers);
 
-            // Reload from storage to ensure consistency
             await this.loadFromStorage();
-            //console.log('Sample data initialized with recurring and expired timers.');
+            console.log('Sample data initialized with recurring and expired timers.');
         } catch (error) {
-            console.error('Error initializing timers:', error);
+            console.error('Error initializing timers:', error.message);
             throw error;
         }
-    }
+    };
 
     // Calculate the next occurrence for recurring timers
     calculateNextDate(currentDate, recurrenceInterval) {

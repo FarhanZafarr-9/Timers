@@ -17,10 +17,10 @@ import FloatingLabelInput from './FloatingLabelInput';
 import { useTheme } from '../utils/ThemeContext';
 import { WheelPicker, WheelPickerInput } from './RollerPickerInput';
 import BottomSheetPicker from './BottomSheetPicker';
-import { priorityOptions } from '../utils/functions';
+import { priorityOptions, recurrenceOptions } from '../utils/functions';
 
 
-const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
+const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) => {
     const priorities = priorityOptions;
     const [timerData, setTimerData] = useState({
         title: '',
@@ -35,12 +35,10 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
     const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 660 : 550);
 
-
     const { variables, colors } = useTheme();
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
-    const [currentIndex, setCurrentIndex] = useState(1);
     const [yearInput, setYearInput] = useState('');
     const [monthInput, setMonthInput] = useState('');
     const [dayInput, setDayInput] = useState('');
@@ -606,20 +604,42 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
                                                 style={{ transform: [{ scale: 0.95 }] }}
                                             />
                                         </View>
+
                                     </View>
                                 )}
 
                                 {timerData.isRecurring && (
-                                    <FloatingLabelInput
-                                        label="Recurrence Interval (e.g., 2 days, 1 month)"
-                                        value={timerData.recurrenceInterval}
-                                        onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
-                                        style={styles.input}
-                                        focus={focus}
-                                        setFocus={setFocus}
-                                        focusKey="recurrence"
-                                        colors={colors}
-                                    />
+                                    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+
+                                        <View style={{ width: '80%' }}>
+                                            <FloatingLabelInput
+                                                label="Recurrence Interval (e.g., 2 days, 1 month)"
+                                                value={timerData.recurrenceInterval}
+                                                onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
+                                                style={styles.input}
+                                                focus={focus}
+                                                setFocus={setFocus}
+                                                focusKey="recurrence"
+                                                colors={colors}
+                                            />
+                                        </View>
+
+                                        <BottomSheetPicker
+                                            value={timerData.recurrenceInterval}
+                                            options={recurrenceOptions}
+                                            onChange={value => {
+                                                if (value) {
+                                                    setError('');
+                                                    setTimerData({ ...timerData, recurrenceInterval: value });
+                                                } else {
+                                                    setTimerData({ ...timerData, recurrenceInterval: null });
+                                                }
+                                            }}
+                                            placeholder=""
+                                            colors={colors}
+                                            variables={variables}
+                                        />
+                                    </View>
                                 )}
 
                                 {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -635,7 +655,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode }) => {
                                     disabled={!!error}
                                 >
                                     <Text style={[styles.buttonText, { color: colors.card }]}>
-                                        {initialData ? 'Save Changes' : 'Add Timer'}
+                                        {isDuplicate ? 'Duplicate Timer' : initialData ? 'Save Changes' : 'Add Timer'}
                                     </Text>
                                 </TouchableOpacity>
                             </View>

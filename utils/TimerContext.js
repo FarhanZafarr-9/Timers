@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { TimerManager } from '../classes/TimeManager';
 import * as Notifications from 'expo-notifications';
+import uuid from 'react-native-uuid';
 
 const TimerContext = createContext();
 
@@ -33,12 +34,37 @@ export const TimerProvider = ({ children }) => {
         loadInitialTimers();
     }, [syncTimers]);
 
+    function isTimerDuplicate(existingTimer, newTimer) {
+        // Compare all relevant fields except id
+        return (
+            existingTimer.title === newTimer.title &&
+            existingTimer.date.toString() === newTimer.date.toString() &&
+            existingTimer.personName === newTimer.personName &&
+            existingTimer.isCountdown === newTimer.isCountdown &&
+            existingTimer.isRecurring === newTimer.isRecurring &&
+            existingTimer.recurrenceInterval === newTimer.recurrenceInterval
+            // Add more fields if needed
+        );
+    }
+
     const setTimersAndSave = async (newTimers) => {
         try {
-            await manager.clearAllTimers();
-            for (const timer of newTimers) {
+            const existingTimers = manager.getAllTimers();
+            const existingIds = new Set(existingTimers.map(t => t.id));
+
+            for (let timer of newTimers) {
+                const isDuplicate = existingTimers.some(existing =>
+                    isTimerDuplicate(existing, timer)
+                );
+                if (isDuplicate) continue;
+
+
+                if (existingIds.has(timer.id)) {
+                    timer = { ...timer, id: uuid.v4() };
+                }
                 await manager.addTimer(timer);
             }
+
             syncTimers();
         } catch (error) {
             console.error('Error setting timers:', error);
@@ -243,7 +269,6 @@ export const TimerProvider = ({ children }) => {
         }
     };
 
-    // Refresh function to manually sync timers (useful for debugging or force updates)
     const refreshTimers = useCallback(async () => {
         try {
             await manager.loadFromStorage();
@@ -264,7 +289,7 @@ export const TimerProvider = ({ children }) => {
                 initializeTimers,
                 editTimer,
                 setTimersAndSave,
-                refreshTimers, // Added for manual refresh capability
+                refreshTimers,
             }}
         >
             {children}

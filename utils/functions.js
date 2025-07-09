@@ -135,6 +135,40 @@ export const headerOptions = [
     },
 
 ];
+// add options like bi weekly, fotnightly, etc
+
+export const recurrenceOptions = [
+    {
+        label: 'Daily',
+        value: '1 day',
+        icon: <Icons.Ion name="repeat-outline" size={16} />,
+    },
+    {
+        label: 'Weekly',
+        value: '1 week',
+        icon: <Icons.Ion name="calendar-outline" size={16} />,
+    },
+    {
+        label: 'Fortnightly',
+        value: '2 weeks',
+        icon: <Icons.Ion name="repeat-outline" size={16} />,
+    },
+    {
+        label: 'Monthly',
+        value: '1 month',
+        icon: <Icons.Ion name="calendar-outline" size={16} />,
+    },
+    {
+        label: 'Quarterly',
+        value: '3 months',
+        icon: <Icons.Ion name="repeat-outline" size={16} />,
+    },
+    {
+        label: 'Annually',
+        value: '1 year',
+        icon: <Icons.Ion name="calendar-outline" size={16} />,
+    },
+];
 
 export const jumbleText = (str) => {
     // Replace each character with a random letter (except spaces)

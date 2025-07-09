@@ -10,6 +10,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import { useSecurity } from '../utils/SecurityContext';
 import { sortOptions } from '../utils/functions';
 import Snackbar from '../components/SnackBar';
+import uuid from 'react-native-uuid';
 
 export default function TimersScreen({ route }) {
     const { mode } = route.params;
@@ -22,6 +23,7 @@ export default function TimersScreen({ route }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalVisible, setModalVisible] = useState(false);
     const [editingTimer, setEditingTimer] = useState(null);
+    const [isDuplicate, setIsDuplicate] = useState(false);
     const [expandedCardIds, setExpandedCardIds] = useState(new Set());
     const [isSelectable, setIsSelectable] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -111,13 +113,20 @@ export default function TimersScreen({ route }) {
     // Optimized timer operations
     const handleAddTimer = useCallback(async (newTimer) => {
         try {
-            if (editingTimer) {
+            if (editingTimer && !isDuplicate) {
                 await editTimer(newTimer);
                 setEditingTimer(null);
                 addMessage('Timer updated successfully');
-            } else {
+            } else if (!isDuplicate) {
                 await addTimer(newTimer);
                 addMessage('Timer added successfully');
+            } else {
+                const duplicateTimer = {
+                    ...newTimer,
+                    id: uuid.v4(),
+                };
+                await addTimer(duplicateTimer);
+                addMessage('Timer duplicated successfully');
             }
             setModalVisible(false);
         } catch (error) {
@@ -179,6 +188,11 @@ export default function TimersScreen({ route }) {
                 timer={timer}
                 onDelete={handleDeleteTimer}
                 onEdit={handleEditTimer}
+                handleDuplicate={() => {
+                    setIsDuplicate(true);
+                    setEditingTimer(timer);
+                    setModalVisible(true);
+                }}
                 isExpanded={isExpanded}
                 onClick={() => handleCardClick(timer.id)}
                 selectable={isSelectable}
@@ -312,6 +326,7 @@ export default function TimersScreen({ route }) {
     const handleModalClose = useCallback(() => {
         setModalVisible(false);
         setEditingTimer(null);
+        setIsDuplicate(false);
     }, []);
 
 
@@ -336,7 +351,7 @@ export default function TimersScreen({ route }) {
                     windowSize: 8,
                     initialNumToRender: 8,
                     updateCellsBatchingPeriod: 100,
-                    getItemLayout: null, 
+                    getItemLayout: null,
                     contentContainerStyle: {
                         paddingBottom: 95,
                         minHeight: '100%'
@@ -358,6 +373,7 @@ export default function TimersScreen({ route }) {
                 onClose={handleModalClose}
                 onAdd={handleAddTimer}
                 initialData={editingTimer}
+                isDuplicate={isDuplicate}
                 mode={mode}
             />
         </>

@@ -103,7 +103,7 @@ export default function CollapsibleHeader({
                         styles.header,
                         {
                             height: MIN_HEADER_HEIGHT,
-                            width: '75%',
+                            width: '90%',
                             borderWidth: 0,
                             top: 0,
                             zIndex: 100,

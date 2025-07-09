@@ -190,7 +190,7 @@ export default function AboutScreen() {
                 ]}>
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.appName}>Timers</Text>
+                        <Text style={styles.appName}>ChronoX</Text>
                         <Text style={styles.versionText}>v1.0</Text>
                     </View>
                 </Animated.View>

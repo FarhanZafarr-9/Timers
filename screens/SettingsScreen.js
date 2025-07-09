@@ -390,7 +390,7 @@ export default function SettingsScreen() {
                 }}>
                     <View style={styles.card} >
                         {/* Theme Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
                             <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Theme</Text>
@@ -407,7 +407,7 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
 
                         {/* Floating Navigation Switch */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
                             <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Navigation</Text>
