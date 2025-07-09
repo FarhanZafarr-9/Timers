@@ -20,6 +20,7 @@ import BottomSheetPicker from './BottomSheetPicker';
 import { priorityOptions, recurrenceOptions } from '../utils/functions';
 
 
+
 const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) => {
     const priorities = priorityOptions;
     const [timerData, setTimerData] = useState({
@@ -35,7 +36,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
     const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 660 : 550);
 
-    const { variables, colors } = useTheme();
+    const { variables, colors, isBorder } = useTheme();
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -286,6 +287,8 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             shadowOpacity: 0.25,
             shadowRadius: 10,
             elevation: 20,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         handle: {
             width: 40,
@@ -310,7 +313,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             paddingVertical: 4,
             paddingHorizontal: 8,
             borderRadius: variables.radius.sm,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         modeText: {
@@ -330,7 +333,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             padding: 10,
             borderRadius: variables.radius.sm,
             marginBottom: 0,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: 'transparent',
             fontSize: 14,
         },
@@ -343,7 +346,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             backgroundColor: colors.highlight + '22',
             padding: 2,
             borderRadius: variables.radius.sm,
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
         arrowButton: {
@@ -378,14 +381,14 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
         },
         addButton: {
             backgroundColor: colors.highlight,
-            borderWidth: 0.5,
+            borderWidth: isBorder ? 0.5 : 0,
             borderColor: colors.border,
             padding: 10,
             borderRadius: variables.radius.sm,
         },
         cancelButton: {
             backgroundColor: colors.card,
-            borderWidth: 0.5,
+            borderWidth: isBorder ? 0.5 : 0,
             borderColor: colors.border,
             padding: 10,
             borderRadius: variables.radius.sm,
@@ -415,7 +418,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             marginBottom: 8,
             textAlign: 'center',
             backgroundColor: 'rgba(239, 68, 68, 0.18)',
-            borderWidth: 0.5,
+            borderWidth: isBorder ? 0.5 : 0,
             borderColor: '#ef4444',
             padding: 10,
             borderRadius: variables.radius.sm,
@@ -609,7 +612,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                 )}
 
                                 {timerData.isRecurring && (
-                                    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
 
                                         <View style={{ width: '80%' }}>
                                             <FloatingLabelInput

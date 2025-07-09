@@ -170,6 +170,20 @@ export const recurrenceOptions = [
     },
 ];
 
+export const borderOptions = [
+    {
+        label: 'Subtle',
+        value: 'subtle',
+        icon: <Icons.Ion name="checkmark-outline" size={16} />,
+    },
+    {
+        label: 'None',
+        value: 'none',
+        icon: <Icons.Ion name="close-outline" size={16} />,
+    },
+
+];
+
 export const jumbleText = (str) => {
     // Replace each character with a random letter (except spaces)
     return str.split('').map(char =>

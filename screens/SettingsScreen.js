@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Modal, Pressable, Animated, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import PasswordBottomSheet from '../components/PasswordModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -11,7 +11,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions } from '../utils/functions';
+import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 
 export default function SettingsScreen() {
@@ -27,7 +27,10 @@ export default function SettingsScreen() {
         navigationMode,
         setNavigationMode,
         headerMode,
-        setHeaderMode
+        setHeaderMode,
+        borderMode,
+        setBorderMode,
+        isBorder
     } = useTheme();
 
     const {
@@ -140,7 +143,7 @@ export default function SettingsScreen() {
             marginBottom: 15,
             borderRadius: variables.radius.lg,
             overflow: 'hidden',
-            borderWidth: 0,
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.cardBorder,
         },
         settingBlock: {
@@ -425,7 +428,7 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
 
                         {/* Header Mode Switch */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
                             <Icons.Ion name='ellipsis-horizontal' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Header</Text>
@@ -439,6 +442,24 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue="floating"
+                            />
+                        </TouchableOpacity>
+
+                        {/* Border Mode Picker */}
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                            <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Border</Text>
+                                <Text style={styles.settingDesc}>Choose border mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={borderMode}
+                                options={borderOptions}
+                                onChange={setBorderMode}
+                                placeholder="Select Border mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="subtle"
                             />
                         </TouchableOpacity>
                     </View>

@@ -18,7 +18,7 @@ import { useData } from '../utils/DataContext';
 
 const CustomNavigation = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
-    const { variables, colors, navigationMode, headerMode } = useTheme();
+    const { variables, colors, navigationMode, headerMode, isBorder } = useTheme();
     const { userData } = useData();
     const { width } = Dimensions.get('window');
 
@@ -199,7 +199,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             menuButton: {
                 position: 'absolute',
                 right: headerMode === 'fixed' ? 40 : 80,
-                top: insets.top + 20,
+                top: insets.top + 18,
                 zIndex: 20,
             },
         });
@@ -326,6 +326,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderTopRightRadius: 16,
                 borderBottomRightRadius: 16,
                 paddingTop: insets.top + 16,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
                 paddingHorizontal: 16,
                 zIndex: 30,
                 shadowColor: '#000',
@@ -461,8 +463,9 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 paddingHorizontal: 12,
                 borderRadius: 12,
                 backgroundColor: colors.background,
-                marginHorizontal: 4,
                 marginBottom: 16,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
             },
             userAvatar: {
                 width: 40,

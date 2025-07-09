@@ -6,6 +6,7 @@ import { headerOptions } from './functions';
 const THEME_STORAGE_KEY = 'userThemePreference';
 const NAVIGATION_MODE_KEY = 'navigationModePreference';
 const HEADER_MODE_KEY = 'headerModePreference';
+const BORDER_MODE_KEY = 'borderModePreference';
 const VALID_THEMES = ['light', 'dark', 'system'];
 
 const palettes = {
@@ -161,6 +162,13 @@ const normalizeHeaderMode = (mode) => {
     return 'floating';
 };
 
+const normalizeBorderMode = (mode) => {
+    if (['none', 'subtle'].includes(mode)) {
+        return mode;
+    }
+    return 'subtle';
+};
+
 const getSystemTheme = () => {
     try {
         const systemTheme = Appearance.getColorScheme();
@@ -175,6 +183,7 @@ export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeModeState] = useState('system');
     const [navigationMode, setNavigationMode] = useState('floating');
     const [headerMode, setHeaderMode] = useState('floating');
+    const [borderMode, setBorderMode] = useState('subtle');
     const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
 
@@ -184,20 +193,23 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const [storedTheme, storedNavMode, storedHeaderMode] = await Promise.all([
+                const [storedTheme, storedNavMode, storedHeaderMode, storedBorderMode] = await Promise.all([
                     AsyncStorage.getItem(THEME_STORAGE_KEY),
                     AsyncStorage.getItem(NAVIGATION_MODE_KEY),
-                    AsyncStorage.getItem(HEADER_MODE_KEY)
+                    AsyncStorage.getItem(HEADER_MODE_KEY),
+                    AsyncStorage.getItem(BORDER_MODE_KEY),
                 ]);
 
                 if (isMounted) {
                     const loadedTheme = storedTheme && VALID_THEMES.includes(storedTheme) ? storedTheme : 'system';
                     const loadedFloatingNav = storedNavMode !== null ? storedNavMode : 'floating';
                     const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'floating';
+                    const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
 
                     setThemeModeState(loadedTheme);
                     setNavigationMode(loadedFloatingNav);
                     setHeaderMode(loadedHeaderMode);
+                    setBorderMode(loadedBorderMode);
 
                     // Set initial theme based on loaded preference
                     setTheme(loadedTheme === 'system' ? getSystemTheme() : loadedTheme);
@@ -281,6 +293,14 @@ export const ThemeProvider = ({ children }) => {
         }
     }, [headerMode]);
 
+    // Normalize border mode to ensure it is valid
+    useEffect(() => {
+        const border = normalizeBorderMode(borderMode);
+        if (border !== borderMode) {
+            setBorderMode(border);
+        }
+    }, [borderMode]);
+
     const setThemeMode = useCallback((mode) => {
         setThemeModeState(normalizeTheme(mode));
     }, []);
@@ -299,6 +319,9 @@ export const ThemeProvider = ({ children }) => {
         setNavigationMode,
         headerMode,
         setHeaderMode,
+        borderMode,
+        setBorderMode,
+        isBorder: borderMode === 'subtle',
         isLoading,
     };
 

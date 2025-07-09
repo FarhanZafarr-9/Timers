@@ -9,6 +9,7 @@ import {
     Dimensions
 } from 'react-native';
 import { Icons } from '../assets/icons';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ const ConfirmationBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
+    const { isBorder } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -85,7 +87,9 @@ const ConfirmationBottomSheet = ({
             backgroundColor: colors.settingBlock,
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 15, // Safe area bottom
+            paddingBottom: 15,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: {
                 width: 0,
@@ -142,7 +146,8 @@ const ConfirmationBottomSheet = ({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: 0.75,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         cancelButton: {
             backgroundColor: colors.card,

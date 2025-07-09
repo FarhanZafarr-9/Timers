@@ -9,39 +9,33 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
     const [quickAddVisible, setQuickAddVisible] = useState(false);
-    const { variables, colors } = useTheme();
+    const { variables, colors, isBorder } = useTheme();
 
-    // Animation refs
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
     const [mounted, setMounted] = useState(false);
 
-    // 1. ADD OPACITY ANIMATIONS (add these after your existing useRef declarations)
     const totalOpacity = useRef(new Animated.Value(0)).current;
     const rightOpacity = useRef(new Animated.Value(0)).current;
-    // quickActionsOpacity already exists - keep it
 
-    // 2. CHANGE INITIAL VALUES (update your existing useRef declarations)
-    const totalTranslate = useRef(new Animated.Value(-50)).current;  // Changed from -200 to -50
-    const rightTranslate = useRef(new Animated.Value(-50)).current;  // Changed from 200 to -50
-    const quickActionsTranslate = useRef(new Animated.Value(-50)).current; // Changed from 150 to -50
+    const totalTranslate = useRef(new Animated.Value(-50)).current;
+    const rightTranslate = useRef(new Animated.Value(-50)).current;
+    const quickActionsTranslate = useRef(new Animated.Value(-50)).current;
 
-    // 3. REPLACE YOUR CURRENT ANIMATION EFFECT with this smoother version:
     useEffect(() => {
         const value = setTimeout(() => {
             setMounted(true);
 
-            // Use stagger with parallel animations like About screen
             Animated.stagger(120, [
                 Animated.parallel([
                     Animated.spring(totalTranslate, {
                         toValue: 0,
-                        tension: 80,  // Same as About screen
-                        friction: 8,  // Same as About screen
+                        tension: 80,
+                        friction: 8,
                         useNativeDriver: true,
                     }),
                     Animated.timing(totalOpacity, {
                         toValue: 1,
-                        duration: 400,  // Same as About screen
+                        duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
@@ -102,6 +96,8 @@ export default function HomeScreen({ navigation }) {
             borderRadius: variables.radius.md,
             padding: 15,
             backgroundColor: colors.settingBlock,
+            borderColor: colors.border,
+            borderWidth: isBorder ? 0.75 : 0,
         },
         totalTimers: {
             minHeight: 160,
@@ -128,6 +124,8 @@ export default function HomeScreen({ navigation }) {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
             padding: 14,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
         },
         actionButton: {
             flexDirection: 'row',
@@ -137,6 +135,8 @@ export default function HomeScreen({ navigation }) {
             backgroundColor: colors.card,
             justifyContent: 'center',
             marginBottom: 10,
+            borderWidth: isBorder ? 0.5 : 0,
+            borderColor: colors.border,
         },
         actionText: {
             color: colors.text,
@@ -182,8 +182,8 @@ export default function HomeScreen({ navigation }) {
                                 styles.leftColumn,
                                 styles.totalTimers,
                                 {
-                                    transform: [{ translateY: totalTranslate }],  // Changed from translateX to translateY
-                                    opacity: totalOpacity  // ADD THIS
+                                    transform: [{ translateY: totalTranslate }],
+                                    opacity: totalOpacity
                                 }
                             ]}
                         >
@@ -195,8 +195,8 @@ export default function HomeScreen({ navigation }) {
                             style={[
                                 styles.rightColumn,
                                 {
-                                    transform: [{ translateY: rightTranslate }],  // Changed from translateX to translateY
-                                    opacity: rightOpacity  // ADD THIS
+                                    transform: [{ translateY: rightTranslate }],
+                                    opacity: rightOpacity
                                 }
                             ]}
                         >
