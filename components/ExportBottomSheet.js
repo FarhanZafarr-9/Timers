@@ -223,24 +223,12 @@ const ExportBottomSheet = ({
             paddingVertical: 10,
             borderRadius: variables.radius.sm,
             borderWidth: 0.75,
-            minHeight: 40,
-        },
-        filesButton: {
-            backgroundColor: colors.highlight + '20',
-            borderColor: colors.highlight,
-        },
-        galleryButton: {
-            backgroundColor: colors.highlight + '15',
-            borderColor: colors.highlight + '60',
-            borderWidth: 0.75,
-            paddingVertical: 12,
-            alignItems: 'center',
-            marginBottom: 12,
-
-        },
-        shareButton: {
             backgroundColor: colors.highlight + '10',
             borderColor: colors.border,
+            minHeight: 40,
+        },
+        galleryButton: {
+            marginBottom: 16,
         },
         actionButtonText: {
             fontSize: 14,
@@ -345,7 +333,7 @@ const ExportBottomSheet = ({
                                 </Text>
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.filesButton]}
+                                        style={styles.actionButton}
                                         onPress={() => handleExportAction(cardRef, 'card', 'save-files')}
                                         disabled={isExporting}
                                         activeOpacity={0.7}
@@ -353,8 +341,8 @@ const ExportBottomSheet = ({
                                         {renderButtonContent('save-files', 'folder-outline', 'Save to Files')}
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        style={[styles.actionButton, styles.shareButton]}
+                                    <TouchableOpacity 
+                                        style={styles.actionButton}
                                         onPress={() => handleExportAction(cardRef, 'card', 'share')}
                                         disabled={isExporting}
                                         activeOpacity={0.7}
@@ -380,7 +368,7 @@ const ExportBottomSheet = ({
                                 </Text>
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.filesButton]}
+                                        style={styles.actionButton}
                                         onPress={() => handleExportAction(sheetRef, 'detail', 'save-files')}
                                         disabled={isExporting}
                                         activeOpacity={0.7}
@@ -389,7 +377,7 @@ const ExportBottomSheet = ({
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.shareButton]}
+                                        style={styles.actionButton}
                                         onPress={() => handleExportAction(sheetRef, 'detail', 'share')}
                                         disabled={isExporting}
                                         activeOpacity={0.7}
