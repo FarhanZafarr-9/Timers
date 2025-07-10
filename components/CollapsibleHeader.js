@@ -66,7 +66,7 @@ export default function CollapsibleHeader({
         header: {
             borderColor: colors.cardBorder,
             borderRadius: borderRadius,
-            marginBottom: 16,
+            marginBottom: headerMode === 'fixed' ? 0 : 16,
             marginTop: HEADER_MARGIN_TOP,
             paddingHorizontal: 20,
             marginHorizontal: 20,
@@ -97,13 +97,13 @@ export default function CollapsibleHeader({
 
     if (headerMode === 'fixed') {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { paddingHorizontal: 15 }]}>
                 <View
                     style={[
                         styles.header,
                         {
                             height: MIN_HEADER_HEIGHT,
-                            width: '90%',
+                            width: '100%',
                             borderWidth: isBorder ? 0.75 : 0,
                             borderColor: colors.border,
                             top: 0,

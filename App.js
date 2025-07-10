@@ -45,7 +45,7 @@ function AppContent() {
 
   useEffect(() => {
     const setupNotifications = async () => {
-      
+
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
         console.warn('Notification permissions not granted');
@@ -116,7 +116,7 @@ export default function App() {
             <AppContent />
           </TimerProvider>
         </DataProvider>
-        
+
       </ThemeProvider>
     </SecurityProvider>
   );

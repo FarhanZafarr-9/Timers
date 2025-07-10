@@ -2,10 +2,14 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { TimerManager } from '../classes/TimeManager';
 import * as Notifications from 'expo-notifications';
 import uuid from 'react-native-uuid';
+import Constants from 'expo-constants';
 
 const TimerContext = createContext();
 
 const manager = new TimerManager();
+
+// Check if running in Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export const TimerProvider = ({ children }) => {
     const [timers, setTimers] = useState([]);
@@ -16,6 +20,181 @@ export const TimerProvider = ({ children }) => {
         const currentTimers = manager.getAllTimers();
         setTimers(currentTimers);
     }, []);
+
+    // Helper function to schedule notifications for a specific date
+    const scheduleNotificationsForDate = async (timerData, targetDate) => {
+        const now = new Date();
+        const timeDifferenceMs = targetDate.getTime() - now.getTime();
+
+        console.log('Scheduling notification for:', targetDate);
+        console.log('Time difference (ms):', timeDifferenceMs);
+        console.log('Time difference (seconds):', Math.floor(timeDifferenceMs / 1000));
+
+        let notificationId = null;
+        let reminderNotificationId = null;
+
+        // Only schedule notifications if the target date is in the future
+        if (timeDifferenceMs > 0) {
+            const triggerSeconds = Math.floor(timeDifferenceMs / 1000);
+
+            console.log('About to schedule notification with trigger seconds:', triggerSeconds);
+
+            // Schedule main notification only if there's at least 10 seconds remaining
+            // Note: Expo Go has issues with scheduled notifications, test on device/emulator
+            if (triggerSeconds >= 10) {
+                // Add extra delay for Expo Go compatibility
+                const actualTriggerSeconds = isExpoGo ? Math.max(triggerSeconds, 60) : triggerSeconds;
+
+                if (isExpoGo && actualTriggerSeconds > triggerSeconds) {
+                    console.warn('⚠️  Expo Go detected: Minimum 60 second delay applied. Test on device/emulator for accurate timing.');
+                }
+                console.log('Scheduling main notification...');
+                notificationId = await Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: timerData.title || "Timer Alert",
+                        body: `Timer for ${timerData.personName || 'someone'} has completed!`,
+                        sound: true,
+                        data: { timerId: timerData.id }, // Add timer ID to notification data
+                    },
+                    trigger: {
+                        seconds: actualTriggerSeconds, // Use adjusted trigger time
+                        channelId: 'timer-alerts'
+                    },
+                });
+                console.log('Main notification scheduled with ID:', notificationId, 'for', actualTriggerSeconds, 'seconds');
+
+                // Calculate reminder time
+                const reminderOffset = getReminderOffset(triggerSeconds);
+                const reminderTime = triggerSeconds - reminderOffset;
+
+                console.log('Reminder offset:', reminderOffset, 'Reminder time:', reminderTime);
+
+                // Only schedule reminder if conditions are met
+                if (reminderOffset > 0 && reminderTime >= 10 && reminderTime < triggerSeconds) {
+                    console.log('Scheduling reminder notification...');
+                    reminderNotificationId = await Notifications.scheduleNotificationAsync({
+                        content: {
+                            title: timerData.title || "Timer Reminder",
+                            body: `Timer for ${timerData.personName || 'someone'} is coming up!`,
+                            sound: true,
+                            data: { timerId: timerData.id }, // Add timer ID to notification data
+                        },
+                        trigger: {
+                            seconds: reminderTime,
+                            channelId: 'timer-alerts'
+                        },
+                    });
+                    console.log('Reminder notification scheduled with ID:', reminderNotificationId);
+                }
+            } else {
+                console.log('Trigger time too short, not scheduling notification');
+            }
+        } else {
+            console.log('Target date is in the past, not scheduling notification');
+        }
+
+        return { notificationId, reminderNotificationId };
+    };
+
+    // Helper function to schedule recurring notifications
+    const scheduleRecurringNotifications = async (timerData) => {
+        if (!timerData.isRecurring || !timerData.recurrenceInterval) {
+            return await scheduleNotificationsForDate(timerData, new Date(timerData.date));
+        }
+
+        const now = new Date();
+        const originalDate = new Date(timerData.date);
+
+        console.log('Original date:', originalDate);
+        console.log('Current time:', now);
+        console.log('Recurrence interval:', timerData.recurrenceInterval);
+
+        // Parse recurrence interval
+        let count = 1, unit = '';
+        if (typeof timerData.recurrenceInterval === 'string' && timerData.recurrenceInterval.split(' ').length > 1) {
+            [count, unit] = timerData.recurrenceInterval.split(' ');
+            count = parseInt(count, 10) || 1;
+            unit = unit.toLowerCase().endsWith('s') ? unit.toLowerCase().slice(0, -1) : unit.toLowerCase();
+        }
+
+        console.log('Parsed count:', count, 'unit:', unit);
+
+        // Find the next occurrence
+        let nextDate = new Date(originalDate);
+        const addMap = {
+            second: (date, n) => { date.setSeconds(date.getSeconds() + n); return date; },
+            minute: (date, n) => { date.setMinutes(date.getMinutes() + n); return date; },
+            hour: (date, n) => { date.setHours(date.getHours() + n); return date; },
+            day: (date, n) => { date.setDate(date.getDate() + n); return date; },
+            week: (date, n) => { date.setDate(date.getDate() + n * 7); return date; },
+            month: (date, n) => { date.setMonth(date.getMonth() + n); return date; },
+            year: (date, n) => { date.setFullYear(date.getFullYear() + n); return date; },
+        };
+
+        // Advance to next occurrence if original date has passed
+        if (originalDate <= now && addMap[unit]) {
+            console.log('Original date has passed, advancing to next occurrence');
+            while (nextDate <= now) {
+                console.log('Advancing from:', nextDate);
+                nextDate = addMap[unit](nextDate, count);
+                console.log('Advanced to:', nextDate);
+            }
+        }
+
+        console.log('Final scheduled date:', nextDate);
+
+        // Schedule notification for the next occurrence
+        const notifications = await scheduleNotificationsForDate(timerData, nextDate);
+
+        // Store the next occurrence date for the timer card logic
+        timerData.nextDate = nextDate.getTime();
+
+        return notifications;
+    };
+
+    // Handle notification responses for recurring timers
+    const handleNotificationResponse = useCallback(async (response) => {
+        const { timerId } = response.notification.request.content.data || {};
+
+        if (timerId) {
+            console.log('Handling notification response for timer:', timerId);
+
+            // Find the timer
+            const timer = manager.getTimer(timerId);
+
+            if (timer?.isRecurring && timer.isCountdown) {
+                console.log('Rescheduling recurring timer:', timer.title);
+
+                try {
+                    // Schedule the next notification
+                    const notifications = await scheduleRecurringNotifications(timer);
+
+                    // Update the timer with new notification IDs
+                    const updatedTimer = {
+                        ...timer,
+                        notificationId: notifications.notificationId,
+                        reminderNotificationId: notifications.reminderNotificationId
+                    };
+
+                    // Update the timer in storage
+                    await manager.editTimer(updatedTimer);
+
+                    // Sync with state
+                    syncTimers();
+
+                    console.log('Successfully rescheduled recurring timer');
+                } catch (error) {
+                    console.error('Error rescheduling recurring timer:', error);
+                }
+            }
+        }
+    }, [syncTimers]);
+
+    // Set up notification response listener
+    useEffect(() => {
+        const subscription = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+        return () => subscription.remove();
+    }, [handleNotificationResponse]);
 
     // Load initial timers
     useEffect(() => {
@@ -35,7 +214,6 @@ export const TimerProvider = ({ children }) => {
     }, [syncTimers]);
 
     function isTimerDuplicate(existingTimer, newTimer) {
-        // Compare all relevant fields except id
         return (
             existingTimer.title === newTimer.title &&
             existingTimer.date.toString() === newTimer.date.toString() &&
@@ -43,7 +221,6 @@ export const TimerProvider = ({ children }) => {
             existingTimer.isCountdown === newTimer.isCountdown &&
             existingTimer.isRecurring === newTimer.isRecurring &&
             existingTimer.recurrenceInterval === newTimer.recurrenceInterval
-            // Add more fields if needed
         );
     }
 
@@ -57,7 +234,6 @@ export const TimerProvider = ({ children }) => {
                     isTimerDuplicate(existing, timer)
                 );
                 if (isDuplicate) continue;
-
 
                 if (existingIds.has(timer.id)) {
                     timer = { ...timer, id: uuid.v4() };
@@ -96,51 +272,9 @@ export const TimerProvider = ({ children }) => {
             let reminderNotificationId = null;
 
             if (timerData.isCountdown) {
-                const targetDate = new Date(timerData.date);
-                const now = new Date();
-                const timeDifferenceMs = targetDate - now;
-
-                // Only schedule notifications if the target date is in the future
-                if (timeDifferenceMs > 0) {
-                    const triggerSeconds = Math.floor(timeDifferenceMs / 1000);
-
-                    // Schedule main notification only if there's at least 10 seconds remaining
-                    if (triggerSeconds >= 10) {
-                        notificationId = await Notifications.scheduleNotificationAsync({
-                            content: {
-                                title: timerData.title || "Timer Alert",
-                                body: `Timer for ${timerData.personName || 'someone'} has completed!`,
-                                sound: true,
-                            },
-                            trigger: {
-                                seconds: triggerSeconds,
-                                channelId: 'timer-alerts'
-                            },
-                        });
-
-                        // Calculate reminder time
-                        const reminderOffset = getReminderOffset(triggerSeconds);
-                        const reminderTime = triggerSeconds - reminderOffset;
-
-                        // Only schedule reminder if:
-                        // 1. There's a positive reminder offset
-                        // 2. The reminder would happen at least 10 seconds from now
-                        // 3. The reminder would happen before the main notification
-                        if (reminderOffset > 0 && reminderTime >= 10 && reminderTime < triggerSeconds) {
-                            reminderNotificationId = await Notifications.scheduleNotificationAsync({
-                                content: {
-                                    title: timerData.title || "Timer Reminder",
-                                    body: `Timer for ${timerData.personName || 'someone'} is coming up!`,
-                                    sound: true,
-                                },
-                                trigger: {
-                                    seconds: reminderTime,
-                                    channelId: 'timer-alerts'
-                                },
-                            });
-                        }
-                    }
-                }
+                const notifications = await scheduleRecurringNotifications(timerData);
+                notificationId = notifications.notificationId;
+                reminderNotificationId = notifications.reminderNotificationId;
             }
 
             const timerToAdd = {
@@ -172,44 +306,9 @@ export const TimerProvider = ({ children }) => {
             let reminderNotificationId = null;
 
             if (timerData.isCountdown) {
-                const targetDate = new Date(timerData.date);
-                const now = new Date();
-                const timeDifferenceMs = targetDate - now;
-
-                if (timeDifferenceMs > 0) {
-                    const triggerSeconds = Math.floor(timeDifferenceMs / 1000);
-
-                    if (triggerSeconds >= 10) {
-                        notificationId = await Notifications.scheduleNotificationAsync({
-                            content: {
-                                title: timerData.title || "Timer Alert",
-                                body: `Timer for ${timerData.personName || 'someone'} has completed!`,
-                                sound: true,
-                            },
-                            trigger: {
-                                seconds: triggerSeconds,
-                                channelId: 'timer-alerts'
-                            },
-                        });
-
-                        const reminderOffset = getReminderOffset(triggerSeconds);
-                        const reminderTime = triggerSeconds - reminderOffset;
-
-                        if (reminderOffset > 0 && reminderTime >= 10 && reminderTime < triggerSeconds) {
-                            reminderNotificationId = await Notifications.scheduleNotificationAsync({
-                                content: {
-                                    title: timerData.title || "Timer Reminder",
-                                    body: `Timer for ${timerData.personName || 'someone'} is coming up!`,
-                                    sound: true,
-                                },
-                                trigger: {
-                                    seconds: reminderTime,
-                                    channelId: 'timer-alerts'
-                                },
-                            });
-                        }
-                    }
-                }
+                const notifications = await scheduleRecurringNotifications(timerData);
+                notificationId = notifications.notificationId;
+                reminderNotificationId = notifications.reminderNotificationId;
             }
 
             const timerToUpdate = {
@@ -236,7 +335,7 @@ export const TimerProvider = ({ children }) => {
                 await Notifications.cancelScheduledNotificationAsync(timer.reminderNotificationId);
             }
             await manager.removeTimer(id);
-            syncTimers(); // Sync state after removing
+            syncTimers();
         } catch (error) {
             console.error('Error removing timer:', error);
         }
@@ -254,7 +353,7 @@ export const TimerProvider = ({ children }) => {
                 }
             }
             await manager.clearAllTimers();
-            syncTimers(); // Sync state after clearing
+            syncTimers();
         } catch (error) {
             console.error('Error clearing all timers:', error);
         }
@@ -263,7 +362,7 @@ export const TimerProvider = ({ children }) => {
     const initializeTimers = async () => {
         try {
             await manager.initializeTimers();
-            syncTimers(); // Sync state after initialization
+            syncTimers();
         } catch (error) {
             console.error('Error initializing timers:', error);
         }

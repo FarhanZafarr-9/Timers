@@ -16,11 +16,15 @@
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
-    "expo": "53.0.18",
+    "blur": "^1.0.5",
+    "expo": "53.0.19",
     "expo-document-picker": "~13.1.6",
     "expo-file-system": "~18.1.10",
+    "expo-image-picker": "~16.1.4",
     "expo-local-authentication": "~16.0.5",
+    "expo-media-library": "~17.1.7",
     "expo-notifications": "~0.31.4",
+    "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
@@ -32,9 +36,7 @@
     "react-native-uuid": "^2.0.3",
     "react-native-view-shot": "^4.0.3",
     "react-native-wheel-picker-expo": "^0.5.4",
-    "expo-sharing": "~13.1.5",
-    "expo-media-library": "~17.1.7",
-    "expo-image-picker": "~16.1.4"
+    "expo-blur": "~14.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

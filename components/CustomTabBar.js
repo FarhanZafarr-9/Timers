@@ -199,7 +199,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             menuButton: {
                 position: 'absolute',
                 right: headerMode === 'fixed' ? 40 : 80,
-                top: insets.top + 18,
+                top: insets.top + 25,
                 zIndex: 20,
             },
         });
