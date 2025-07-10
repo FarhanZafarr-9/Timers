@@ -446,7 +446,7 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
 
                         {/* Border Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
                             <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Border</Text>
@@ -661,7 +661,6 @@ export default function SettingsScreen() {
                     </View>
                 </Animated.View>
 
-                // Replace your existing modal code with:
                 <ConfirmationBottomSheet
                     visible={confirmVisible}
                     onClose={() => setConfirmVisible(false)}

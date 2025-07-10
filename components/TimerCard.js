@@ -6,6 +6,8 @@ import { jumbleText, maskText } from '../utils/functions';
 import ViewShot from 'react-native-view-shot';
 import ExportBottomSheet from './ExportBottomSheet';
 import { useTheme } from '../utils/ThemeContext';
+import { BlurView } from 'expo-blur';
+
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -170,6 +172,7 @@ const TimerCard = ({
             fontSize: 16,
             fontWeight: 'bold',
             paddingLeft: 6,
+            height: 25
         },
         priorityIndicator: {
             flexDirection: 'row',
@@ -222,7 +225,7 @@ const TimerCard = ({
             justifyContent: 'flex-end',
         },
         bottomSheet: {
-            backgroundColor: colors.card + 'fa',
+            backgroundColor: colors.card,
             borderTopLeftRadius: variables.radius.lg,
             borderTopRightRadius: variables.radius.lg,
             paddingHorizontal: 20,
@@ -251,6 +254,7 @@ const TimerCard = ({
         overlayPersonName: {
             color: colors.textDesc,
             fontSize: 14,
+            fontWeight: '500',
             marginBottom: 16,
             height: 20
         },
@@ -261,6 +265,8 @@ const TimerCard = ({
             marginBottom: 16,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+            position: 'relative',
+            overflow: 'hidden',
         },
         timeLabel: {
             color: colors.textDesc,
@@ -363,11 +369,12 @@ const TimerCard = ({
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: 4,
-            marginTop: 8,
+            marginVertical: 8,
+            paddingBottom: 8,
         },
         chip: {
             backgroundColor: colors.highlight + '15',
-            paddingVertical: 4,
+            paddingVertical: 6,
             paddingHorizontal: 16,
             borderRadius: variables.radius.sm,
             borderWidth: isBorder ? 0.75 : 0,
@@ -375,8 +382,8 @@ const TimerCard = ({
         },
         chipText: {
             color: colors.text,
-            fontSize: 13,
-            fontWeight: '500',
+            fontSize: 16,
+            fontWeight: '600',
             height: 20
         },
     });
@@ -789,152 +796,167 @@ const TimerCard = ({
                 onRequestClose={closeOverlay}
             >
                 <TouchableWithoutFeedback onPress={closeOverlay}>
-                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-                        <TouchableWithoutFeedback onPress={() => { }}>
-                            <Animated.View
-                                style={[
-                                    styles.bottomSheet,
-                                    {
-                                        transform: [{ translateY: slideAnim }],
-                                    },
-                                ]}
-                            >
-                                <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
-                                    <View style={styles.handle} />
+                    <BlurView intensity={120}
+                        tint="dark"
+                        style={{ flex: 1 }}
+                    >
+                        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+                            <TouchableWithoutFeedback onPress={() => { }}>
+                                <Animated.View
+                                    style={[
+                                        styles.bottomSheet,
+                                        {
+                                            transform: [{ translateY: slideAnim }],
+                                        },
+                                    ]}
+                                >
+                                    <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
+                                        <View style={styles.handle} />
 
 
 
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                        {/* Title and Person */}
-                                        <Text style={styles.overlayTitle}>
-                                            {privacyMode === 'off' ? timer.title :
-                                                privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
-                                        </Text>
-
-                                        <Text style={styles.detailValue}>
-                                            {getFormattedDate()}
-
-                                        </Text>
-                                    </View>
-
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                        {timer.personName && (
-                                            <Text style={styles.overlayPersonName}>
-                                                For: {privacyMode === 'off' ? timer.personName :
-                                                    privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
+                                            {/* Title and Person */}
+                                            <Text style={styles.overlayTitle}>
+                                                {privacyMode === 'off' ? timer.title :
+                                                    privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
                                             </Text>
-                                        )}
 
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                                            <Text style={styles.detailValue}>
+                                                {getFormattedDate()}
 
-                                            {timer.isRecurring && (
-                                                <View style={styles.statusIndicator}>
-                                                    <Icons.Material
-                                                        name="autorenew"
-                                                        size={12}
-                                                        color={colors.highlight}
-                                                    />
-                                                    <Text style={styles.statusText}>Recurring</Text>
-                                                </View>
-                                            )}
-                                            {timer.isRecurring && getRecurrenceCounts() > 0 && (
-                                                <View style={styles.statusIndicator}>
+                                            </Text>
+                                        </View>
 
-                                                    <Text style={styles.statusText}>{getRecurrenceCounts()}</Text>
-                                                </View>
-                                            )}
-                                            <View style={styles.statusIndicator}>
-
-                                                {timer.priority && <View
-                                                    style={[
-                                                        styles.priorityDot,
-                                                        {
-                                                            backgroundColor:
-                                                                timer.priority === 'high'
-                                                                    ? 'hsla(0, 84.20%, 60.20%, 0.30)'
-                                                                    : timer.priority === 'normal'
-                                                                        ? 'hsla(134, 39.02%, 50.20%, 0.30)'
-                                                                        : 'hsla(210, 100%, 50.20%, 0.30)',
-                                                            borderColor:
-                                                                timer.priority === 'high'
-                                                                    ? '#ef4444'
-                                                                    : timer.priority === 'normal'
-                                                                        ? '#22c55e'
-                                                                        : '#3b82f6',
-                                                        },
-                                                    ]}
-                                                />}
-                                                <Text style={styles.statusText}>
-                                                    {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
+                                            {timer.personName && (
+                                                <Text style={styles.overlayPersonName}>
+                                                    For: {privacyMode === 'off' ? timer.personName :
+                                                        privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
                                                 </Text>
+                                            )}
+
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+
+                                                {timer.isRecurring && (
+                                                    <View style={styles.statusIndicator}>
+                                                        <Icons.Material
+                                                            name="autorenew"
+                                                            size={12}
+                                                            color={colors.highlight}
+                                                        />
+                                                        <Text style={styles.statusText}>Recurring</Text>
+                                                    </View>
+                                                )}
+                                                {timer.isRecurring && getRecurrenceCounts() > 0 && (
+                                                    <View style={styles.statusIndicator}>
+
+                                                        <Text style={styles.statusText}>{getRecurrenceCounts()}</Text>
+                                                    </View>
+                                                )}
+                                                <View style={styles.statusIndicator}>
+
+                                                    {timer.priority && <View
+                                                        style={[
+                                                            styles.priorityDot,
+                                                            {
+                                                                backgroundColor:
+                                                                    timer.priority === 'high'
+                                                                        ? 'hsla(0, 84.20%, 60.20%, 0.30)'
+                                                                        : timer.priority === 'normal'
+                                                                            ? 'hsla(134, 39.02%, 50.20%, 0.30)'
+                                                                            : 'hsla(210, 100%, 50.20%, 0.30)',
+                                                                borderColor:
+                                                                    timer.priority === 'high'
+                                                                        ? '#ef4444'
+                                                                        : timer.priority === 'normal'
+                                                                            ? '#22c55e'
+                                                                            : '#3b82f6',
+                                                            },
+                                                        ]}
+                                                    />}
+                                                    <Text style={styles.statusText}>
+                                                        {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
-                                    </View>
 
-                                    {/* Time Section {renderDetailedTimeDisplay()} */}
-                                    <View style={styles.timeSection}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        {/* Time Section {renderDetailedTimeDisplay()} */}
+                                        <View
+                                            style={[
+                                                styles.timeSection,
+                                                (() => {
+                                                    const parts = getTimeParts(timer);
+                                                    const nonZeroCount = parts.filter(p => p !== 0).length;
+                                                    const nonZeroOverTen = parts.filter(p => p >= 10).length;
+                                                    return { paddingBottom: (nonZeroCount > 5 && nonZeroOverTen > 2) ? 35 : 0 };
+                                                })()
+                                            ]}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 
-                                            <Text style={styles.timeLabel}>
-                                                {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                                                <Text style={styles.timeLabel}>
+                                                    {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                                                </Text>
+                                                {timer.isCountdown && <Text
+                                                    style={{
+                                                        color: colors.textDesc,
+                                                        fontSize: 12,
+                                                        fontWeight: '600',
+                                                        opacity: 0.8,
+                                                        marginLeft: 8,
+                                                        marginBottom: 2
+                                                    }}
+                                                >
+                                                    {(100 - progressPct).toFixed(4)} %
+                                                </Text>}
+                                            </View>
+                                            <Text style={styles.timeValue}>
+
+                                                {renderTimeChips()}
                                             </Text>
-                                            {timer.isCountdown && <Text
-                                                style={{
-                                                    color: colors.textDesc,
-                                                    fontSize: 12,
-                                                    fontWeight: '600',
-                                                    opacity: 0.8,
-                                                    marginLeft: 8,
-                                                    marginBottom: 2
-                                                }}
-                                            >
-                                                {(100 - progressPct).toFixed(4)} %
-                                            </Text>}
                                         </View>
-                                        <Text style={styles.timeValue}>
 
-                                            {renderTimeChips()}
-                                        </Text>
+                                    </ViewShot>
+
+                                    {/* Action Buttons */}
+                                    <View style={styles.actionsSection}>
+                                        <TouchableOpacity
+                                            onPress={handleEdit}
+                                            style={[styles.actionButton, styles.editButton]}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Icons.Material name="edit" size={20} color={colors.highlight} />
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            onPress={() => setShowExportModal(true)}
+                                            style={[styles.actionButton, styles.exportButton]}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Icons.Material name="file-upload" size={20} color={colors.highlight} />
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            onPress={handleDuplicate}
+                                            style={[styles.actionButton, styles.exportButton]}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
+                                        </TouchableOpacity>
                                     </View>
-
-                                </ViewShot>
-
-                                {/* Action Buttons */}
-                                <View style={styles.actionsSection}>
                                     <TouchableOpacity
-                                        onPress={handleEdit}
-                                        style={[styles.actionButton, styles.editButton]}
+                                        onPress={handleDelete}
+                                        style={[styles.actionButton, styles.deleteButton]}
                                         activeOpacity={0.7}
                                     >
-                                        <Icons.Material name="edit" size={20} color={colors.highlight} />
+                                        <Icons.Material name="delete" size={22} color="#ef4444" />
                                     </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setShowExportModal(true)}
-                                        style={[styles.actionButton, styles.exportButton]}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Icons.Material name="file-upload" size={20} color={colors.highlight} />
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={handleDuplicate}
-                                        style={[styles.actionButton, styles.exportButton]}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
-                                    </TouchableOpacity>
-                                </View>
-                                <TouchableOpacity
-                                    onPress={handleDelete}
-                                    style={[styles.actionButton, styles.deleteButton]}
-                                    activeOpacity={0.7}
-                                >
-                                    <Icons.Material name="delete" size={22} color="#ef4444" />
-                                </TouchableOpacity>
-                            </Animated.View>
-                        </TouchableWithoutFeedback>
-                    </Animated.View>
+                                </Animated.View>
+                            </TouchableWithoutFeedback>
+                        </Animated.View>
+                    </BlurView>
                 </TouchableWithoutFeedback>
             </Modal>
 
