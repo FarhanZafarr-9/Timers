@@ -131,7 +131,7 @@ export default function HomeScreen({ navigation }) {
             flexDirection: 'row',
             alignItems: 'center',
             paddingVertical: 12,
-            borderRadius: variables.radius.sm,
+            borderRadius: variables.radius.lg,
             backgroundColor: colors.card,
             justifyContent: 'center',
             marginBottom: 10,

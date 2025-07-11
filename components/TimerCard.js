@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
@@ -6,8 +6,6 @@ import { jumbleText, maskText } from '../utils/functions';
 import ViewShot from 'react-native-view-shot';
 import ExportBottomSheet from './ExportBottomSheet';
 import { useTheme } from '../utils/ThemeContext';
-import { BlurView } from 'expo-blur';
-
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -30,390 +28,234 @@ const TimerCard = ({
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const { isBorder } = useTheme();
+    const titleText = timer.title;
+    const nameText = timer.personName;
 
+    const jumbledTitleText = useMemo(() => {
+        return privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title);
+    }, [timer.title, privacyMode]);
 
-    // Self-ticking state
-    const [now, setNow] = useState(Date.now());
-    const [progressPct, setProgressPct] = useState(0);
+    const jumbledNameText = useMemo(() => {
+        return privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName);
+    }, [timer.personName, privacyMode]);
+
+    // Optimized timer state that updates every 100ms
+    const [timerState, setTimerState] = useState({
+        now: Date.now(),
+        progressPct: 0,
+        timeParts: [0, 0, 0, 0, 0, 0],
+        formattedDate: '',
+        status: 'ongoing',
+        recurrenceCount: 0,
+        detailedTime: '0 seconds'
+    });
 
     const cardRef = useRef();
     const sheetRef = useRef();
+    const timerRef = useRef(timer);
+    timerRef.current = timer;
 
-    useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 100);
-        return () => clearInterval(interval);
-    }, []);
+    // Memoized styles to prevent recreation on every render
+    const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
 
-    useEffect(() => {
-        setProgressPct(calculateProgress());
+    // Calculate all timer-related values at once
+    const calculateTimerState = useCallback((now) => {
+        const timer = timerRef.current;
+        let targetDate = timer.date;
+        let nextDate = timer.nextDate;
+        let recurrenceCount = 0;
 
-        // --- Recurring timer auto-advance ---
-        if (
-            timer.isCountdown &&
-            timer.isRecurring &&
-            typeof timer.recurrenceInterval === 'string'
-        ) {
-            let targetDate = timer.date;
-            if (targetDate < now) {
-                // Calculate the next occurrence
-                let next = new Date(timer.date);
-                let count = 1, unit = '';
-                if (typeof timer.recurrenceInterval === 'string' && timer.recurrenceInterval.split(' ').length > 1) {
-                    [count, unit] = timer.recurrenceInterval.split(' ');
-                    count = parseInt(count, 10) || 1;
-                    // Normalize unit: remove trailing 's' if present
-                    unit = unit.toLowerCase().endsWith('s') ? unit.toLowerCase().slice(0, -1) : unit.toLowerCase();
-                }
-                const addMap = {
-                    second: (date, n) => date.setSeconds(date.getSeconds() + n),
-                    minute: (date, n) => date.setMinutes(date.getMinutes() + n),
-                    hour: (date, n) => date.setHours(date.getHours() + n),
-                    day: (date, n) => date.setDate(date.getDate() + n),
-                    week: (date, n) => date.setDate(date.getDate() + n * 7),
-                    month: (date, n) => date.setMonth(date.getMonth() + n),
-                    year: (date, n) => date.setFullYear(date.getFullYear() + n),
-                };
-                if (addMap[unit]) {
-                    do {
-                        addMap[unit](next, count);
-                    } while (next.getTime() < now);
-                }
-                // Update timer.nextDate
-                timer.nextDate = next.getTime();
+        // Handle recurring timers
+        if (timer.isRecurring) {
+            if (timer.date < now) {
+                // Calculate next occurrence if we've passed the original date
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
+                recurrenceCount = result.recurrenceCount;
             }
         }
-    }, [now]);
 
-    function calculateProgress() {
-        if (!timer.isCountdown) return 0;
+        const timeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
+        const progressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
+        const status = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
+            ? 'completed'
+            : 'ongoing';
 
-        const nowDate = new Date(now);
-        const targetDate = new Date(timer.date < Date.now() ? timer.nextDate : timer.date);
+        return {
+            now,
+            progressPct,
+            timeParts,
+            formattedDate: getFormattedDate({ ...timer, date: targetDate, nextDate }, now),
+            status,
+            recurrenceCount,
+            detailedTime: getDetailedTimeDisplay({ ...timer, date: targetDate, nextDate }, now)
+        };
+    }, []);
 
-        // Calculate the previous occurrence of this recurring timer
-        let prevOccurrence = new Date(targetDate);
-
-        // Normalize recurrence unit (remove trailing 's' if present)
-        let recurringType = '';
-        let recurrenceCount = 1;
-        if (
-            timer.recurrenceInterval &&
-            typeof timer.recurrenceInterval === 'string' &&
-            timer.recurrenceInterval.split(' ').length > 1
-        ) {
-            const [count, unitRaw] = timer.recurrenceInterval.split(' ');
-            recurrenceCount = parseInt(count, 10) || 1;
-            recurringType = unitRaw.toLowerCase().endsWith('s')
-                ? unitRaw.toLowerCase().slice(0, -1)
-                : unitRaw.toLowerCase();
+    function calculateNextOccurrence(timer, now) {
+        if (!timer.isRecurring || !timer.recurrenceInterval) {
+            return {
+                nextDate: timer.date,
+                recurrenceCount: 0
+            };
         }
 
-        // Use a mapping object for subtraction
-        const subtractMap = {
-            second: (date, n) => date.setSeconds(date.getSeconds() - n),
-            minute: (date, n) => date.setMinutes(date.getMinutes() - n),
-            hour: (date, n) => date.setHours(date.getHours() - n),
-            day: (date, n) => date.setDate(date.getDate() - n),
-            week: (date, n) => date.setDate(date.getDate() - n * 7),
-            month: (date, n) => {
-                date.setMonth(date.getMonth() - n);
-                // Handle month-end dates
-                if (date.getDate() !== targetDate.getDate()) {
-                    date.setDate(0); // Go to last day of previous month
-                }
-            },
-            year: (date, n) => {
-                date.setFullYear(date.getFullYear() - n);
-                // Handle leap year edge case for Feb 29
-                if (date.getMonth() === 1 && date.getDate() === 29) {
-                    if (!isLeapYear(date.getFullYear())) {
-                        date.setDate(28);
-                    }
-                }
-            },
+        const [countStr, unitRaw] = timer.recurrenceInterval.split(' ');
+        const count = parseInt(countStr, 10) || 1;
+        const unit = unitRaw.toLowerCase().endsWith('s')
+            ? unitRaw.toLowerCase().slice(0, -1)
+            : unitRaw.toLowerCase();
+
+        const addMap = {
+            second: (date, n) => date.setSeconds(date.getSeconds() + n),
+            minute: (date, n) => date.setMinutes(date.getMinutes() + n),
+            hour: (date, n) => date.setHours(date.getHours() + n),
+            day: (date, n) => date.setDate(date.getDate() + n),
+            week: (date, n) => date.setDate(date.getDate() + n * 7),
+            month: (date, n) => date.setMonth(date.getMonth() + n),
+            year: (date, n) => date.setFullYear(date.getFullYear() + n),
         };
 
-        if (subtractMap[recurringType]) {
-            subtractMap[recurringType](prevOccurrence, recurrenceCount);
+        let nextDate = new Date(timer.date);
+        let recurrenceCount = 0;
+
+        while (nextDate.getTime() < now) {
+            addMap[unit]?.(nextDate, count);
+            recurrenceCount++;
+
+            // Safety check to prevent infinite loops
+            if (recurrenceCount > 10000) break;
         }
 
-        const totalDuration = targetDate.getTime() - prevOccurrence.getTime();
-        const elapsed = nowDate.getTime() - prevOccurrence.getTime();
-
-        const progress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
-        return progress;
+        return {
+            nextDate: nextDate.getTime(),
+            recurrenceCount: recurrenceCount - 1 
+        };
     }
 
-    function isLeapYear(year) {
-        return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-    }
+    useEffect(() => {
+        let mounted = true;
+        let lastUpdateTime = 0;
+        const updateInterval = 100;
 
-    const titleText = timer.title.length > 15 ? timer.title.slice(0, 15) + '...' : timer.title;
-    const nameText = timer.personName.length > 15 ? timer.personName.slice(0, 15) + '...' : timer.personName;
+        const updateTimer = () => {
+            if (!mounted) return;
 
-    // Create styles
-    const createStyles = () => StyleSheet.create({
-        timerItem: {
-            backgroundColor: colors.cardLighter,
-            padding: 12,
-            borderRadius: variables.radius.md,
-            marginBottom: 10,
-            borderWidth: 0.75,
-            borderColor: searchText === '' || privacyMode !== 'off' ? colors.border : colors.highlight + '3a',
-        },
-        header: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
-        },
-        timerTitle: {
-            color: colors.textDesc,
-            fontSize: 16,
-            fontWeight: 'bold',
-            paddingLeft: 6,
-            height: 25
-        },
-        priorityIndicator: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        priorityDot: {
-            width: 10,
-            height: 10,
-            borderRadius: variables.radius.circle,
-            borderWidth: isBorder ? 0.75 : 0,
-        },
-        timerQuickInfo: {
-            color: colors.text,
-            fontSize: 14,
-            fontWeight: 'bold',
-            letterSpacing: 1,
-            backgroundColor: colors.highlight + '10',
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-            justifyContent: 'center',
-            alignItems: 'center',
-            textAlign: 'center',
-            height: 40,
-            padding: 8,
-            paddingHorizontal: 12,
-            borderRadius: variables.radius.sm,
-        },
-        namePill: {
-            backgroundColor: colors.highlight + '10',
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            marginHorizontal: 8,
-            borderRadius: variables.radius.sm,
-            alignSelf: 'flex-start',
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: 'bold',
-        },
-        midSection: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: 8,
-        },
-        overlay: {
-            flex: 1,
-            backgroundColor: colors.background + '80',
-            justifyContent: 'flex-end',
-        },
-        bottomSheet: {
-            backgroundColor: colors.card,
-            borderTopLeftRadius: variables.radius.lg,
-            borderTopRightRadius: variables.radius.lg,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom: 40,
-            minHeight: 280,
-            maxHeight: screenHeight * 0.9,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-        },
-        handle: {
-            width: 40,
-            height: 4,
-            backgroundColor: colors.border,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginBottom: 20,
-        },
-        overlayTitle: {
-            color: colors.text,
-            fontSize: 20,
-            fontWeight: 'bold',
-            marginBottom: 8,
-            height: 28,
-        },
-        overlayPersonName: {
-            color: colors.textDesc,
-            fontSize: 14,
-            fontWeight: '500',
-            marginBottom: 16,
-            height: 20
-        },
-        timeSection: {
-            backgroundColor: colors.highlight + '10',
-            padding: 16,
-            borderRadius: variables.radius.md,
-            marginBottom: 16,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-            position: 'relative',
-            overflow: 'hidden',
-        },
-        timeLabel: {
-            color: colors.textDesc,
-            fontSize: 12,
-            marginBottom: 4,
-            height: 20
-        },
-        timeValue: {
-            color: colors.text,
-            fontSize: 16,
-            height: 55,
-            fontWeight: '600',
-            paddingVertical: 5
-        },
-        detailsSection: {
-            backgroundColor: colors.highlight + '10',
-            padding: 16,
-            borderRadius: variables.radius.md,
-            marginBottom: 20,
-        },
-        detailRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
-        },
-        detailLabel: {
-            color: colors.textDesc,
-            fontSize: 14,
-        },
-        detailValue: {
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: '500',
-            height: 30,
-            backgroundColor: colors.highlight + '10',
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: variables.radius.sm,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-        },
-        actionsSection: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            gap: 12,
-            marginBottom: 12,
-        },
-        actionButton: {
-            flex: 1,
-            paddingVertical: 6,
-            borderRadius: variables.radius.sm,
-            alignItems: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-        },
-        editButton: {
-            backgroundColor: colors.highlight + '15',
-        },
-        deleteButton: {
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            borderColor: 'rgba(239, 68, 68, 0.5)',
-            minHeight: 40,
-            marginBottom: 20,
-        },
-        exportButton: {
-            backgroundColor: colors.highlight + '15',
-        },
-        actionButtonText: {
-            color: colors.text,
-            fontSize: 14,
-            fontWeight: '600',
-            textAlign: 'center',
-        },
-        exportButtonText: {
-            color: colors.highlight,
-            fontSize: 16,
-            fontWeight: '600',
-            textAlign: 'center',
-        },
-        statusIndicator: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.highlight + '10',
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: variables.radius.sm,
-            gap: 8,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-        },
-        statusText: {
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: '500',
-            height: 15,
-        },
-        chipContainer: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 4,
-            marginVertical: 8,
-            paddingBottom: 8,
-        },
-        chip: {
-            backgroundColor: colors.highlight + '15',
-            paddingVertical: 6,
-            paddingHorizontal: 16,
-            borderRadius: variables.radius.sm,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-        },
-        chipText: {
-            color: colors.text,
-            fontSize: 16,
-            fontWeight: '600',
-            height: 20
-        },
-    });
+            const now = Date.now();
+            if (now - lastUpdateTime >= updateInterval) {
+                lastUpdateTime = now;
+                setTimerState(calculateTimerState(now));
+            }
+            requestAnimationFrame(updateTimer);
+        };
 
-    // Calculate time difference
-    function getTimeParts() {
-        let targetDate = timer.isCountdown
-            ? (timer.isRecurring && timer.date < Date.now() ? timer.nextDate : timer.date)
-            : timer.date;
-        let diff = timer.isCountdown
-            ? Math.max(0, targetDate - now)
-            : Math.max(0, now - targetDate);
+        const frameId = requestAnimationFrame(updateTimer);
+        return () => {
+            mounted = false;
+            cancelAnimationFrame(frameId);
+        };
+    }, [calculateTimerState]);
 
-        const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
-        diff -= y * 365 * 24 * 60 * 60 * 1000;
-        const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
-        diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
-        const d = Math.floor(diff / (24 * 60 * 60 * 1000));
-        diff -= d * 24 * 60 * 60 * 1000;
-        const h = Math.floor(diff / (60 * 60 * 1000));
-        diff -= h * 60 * 60 * 1000;
-        const m = Math.floor(diff / (60 * 1000));
-        diff -= m * 60 * 1000;
-        const s = Math.floor(diff / 1000);
+    // Memoized render functions
+    const renderTimeChips = useMemo(() => {
+        return () => {
+            const { timeParts, status } = timerState;
+            const [years, months, days, hours, minutes, seconds] = timeParts;
 
-        return [y, mo, d, h, m, s];
-    }
+            const timePartsArray = [
+                { value: years, label: 'y', id: 'years', fullLabel: 'Years' },
+                { value: months, label: 'mo', id: 'months', fullLabel: 'Months' },
+                { value: days, label: 'd', id: 'days', fullLabel: 'Days' },
+                { value: hours, label: 'h', id: 'hours', fullLabel: 'Hours' },
+                { value: minutes, label: 'm', id: 'minutes', fullLabel: 'Minutes' },
+                { value: seconds, label: 's', id: 'seconds', fullLabel: 'Seconds' },
+            ];
+            const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
 
-    function getChippedTime(unit) {
-        const [years, months, days, hours, minutes, seconds] = getTimeParts();
+            if (nonZeroParts.length === 0 || status === 'completed') {
+                return (
+                    <View style={styles.chipContainer}>
+                        <Text style={styles.chipText}>Completed</Text>
+                    </View>
+                );
+            }
+
+            if (activeChip) {
+                const chip = timePartsArray.find(part => part.id === activeChip);
+                if (!chip) return null;
+                return (
+                    <View style={styles.chipContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.chip,
+                                { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
+                            ]}
+                            onPress={() => setActiveChip(null)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
+                                {getChippedTime(chip.id, timeParts)} {chip.fullLabel}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                );
+            }
+
+            return (
+                <View style={styles.chipContainer}>
+                    {nonZeroParts.map(part => (
+                        <TouchableOpacity
+                            key={part.id}
+                            style={styles.chip}
+                            onPress={() => setActiveChip(part.id)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.chipText}>{part.value}{part.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            );
+        };
+    }, [activeChip, colors.highlight, styles, timerState.timeParts, timerState.status]);
+
+    const renderTimeDisplay = useMemo(() => {
+        return () => {
+            const { timeParts, status } = timerState;
+            const [years, months, days, hours, minutes, seconds] = timeParts;
+
+            const timePartsArray = [
+                { value: years, label: 'y', id: 'years' },
+                { value: months, label: 'mo', id: 'months' },
+                { value: days, label: 'd', id: 'days' },
+                { value: hours, label: 'h', id: 'hours' },
+                { value: minutes, label: 'm', id: 'minutes' },
+                { value: seconds, label: 's', id: 'seconds' },
+            ];
+
+            const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+            const prefix = status === 'completed' ? 'Completed' : '';
+
+            return (
+                <>
+                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
+                    {prefix === 'Completed' ? null : (
+                        nonZeroParts.length > 0
+                            ? nonZeroParts.map((part, idx) => (
+                                <Text style={{ fontSize: 14 }} key={part.id}>
+                                    {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
+                                </Text>
+                            ))
+                            : <Text style={{ fontSize: 14 }}>0s</Text>
+                    )}
+                </>
+            );
+        };
+    }, [timerState.timeParts, timerState.status]);
+
+    // Helper functions moved outside to prevent recreation
+    const getChippedTime = (unit, timeParts) => {
+        const [years, months, days, hours, minutes, seconds] = timeParts;
         const totalMs =
             years * 365 * 24 * 60 * 60 * 1000 +
             months * 30.44 * 24 * 60 * 60 * 1000 +
@@ -423,90 +265,254 @@ const TimerCard = ({
             seconds * 1000;
 
         switch (unit) {
-            case 'years':
-                return (totalMs / (365 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'months':
-                return (totalMs / (30.44 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'days':
-                return (totalMs / (24 * 60 * 60 * 1000)).toFixed(2);
-            case 'hours':
-                return (totalMs / (60 * 60 * 1000)).toFixed(2);
-            case 'minutes':
-                return (totalMs / (60 * 1000)).toFixed(2);
-            case 'seconds':
-                return (totalMs / 1000).toFixed(0);
-            default:
-                return '';
+            case 'years': return (totalMs / (365 * 24 * 60 * 60 * 1000)).toFixed(2);
+            case 'months': return (totalMs / (30.44 * 24 * 60 * 60 * 1000)).toFixed(2);
+            case 'days': return (totalMs / (24 * 60 * 60 * 1000)).toFixed(2);
+            case 'hours': return (totalMs / (60 * 60 * 1000)).toFixed(2);
+            case 'minutes': return (totalMs / (60 * 1000)).toFixed(2);
+            case 'seconds': return (totalMs / 1000).toFixed(0);
+            default: return '';
         }
-    }
-
-    function renderTimeChips() {
-        const [years, months, days, hours, minutes, seconds] = getTimeParts();
-
-        const timePartsArray = [
-            { value: years, label: 'y', id: 'years', fullLabel: 'Years' },
-            { value: months, label: 'mo', id: 'months', fullLabel: 'Months' },
-            { value: days, label: 'd', id: 'days', fullLabel: 'Days' },
-            { value: hours, label: 'h', id: 'hours', fullLabel: 'Hours' },
-            { value: minutes, label: 'm', id: 'minutes', fullLabel: 'Minutes' },
-            { value: seconds, label: 's', id: 'seconds', fullLabel: 'Seconds' },
-        ];
-        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-        // If an active chip is set, show only that chip with the full time in that unit
-        if (activeChip) {
-            const chip = timePartsArray.find(part => part.id === activeChip);
-            if (!chip) return null;
-            return (
-                <View style={styles.chipContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.chip,
-                            { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
-                        ]}
-                        onPress={() => setActiveChip(null)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
-                            {getChippedTime(chip.id)} {chip.fullLabel}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
-        // Otherwise, show all non-zero chips
-        return (
-            <View style={styles.chipContainer}>
-                {nonZeroParts.map(part => (
-                    <TouchableOpacity
-                        key={part.id}
-                        style={styles.chip}
-                        onPress={() => setActiveChip(part.id)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.chipText}>{part.value}{part.label}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        );
-    }
-
-    // Format date
-    function getFormattedDate() {
-        return new Date(
-            timer.isRecurring && timer.date < Date.now()
-                ? timer.nextDate
-                : timer.date
-        ).toLocaleString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
     };
+
+    // Create styles function (moved to useMemo)
+    function createStyles() {
+        return StyleSheet.create({
+            timerItem: {
+                backgroundColor: colors.settingBlock,
+                padding: 12,
+                borderRadius: variables.radius.md,
+                marginBottom: 10,
+                borderWidth: 0.75,
+                borderColor: searchText === '' || privacyMode !== 'off' ? colors.border : colors.highlight + '3a',
+            },
+            header: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+            },
+            timerTitle: {
+                color: colors.textDesc,
+                fontSize: 16,
+                fontWeight: 'bold',
+                paddingLeft: 6,
+                height: 25
+            },
+            priorityIndicator: {
+                flexDirection: 'row',
+                alignItems: 'center',
+            },
+            priorityDot: {
+                width: 10,
+                height: 10,
+                borderRadius: variables.radius.circle,
+                borderWidth: isBorder ? 0.75 : 0,
+            },
+            timerQuickInfo: {
+                color: colors.text,
+                fontSize: 14,
+                fontWeight: 'bold',
+                letterSpacing: 1,
+                backgroundColor: colors.highlight + '10',
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                height: 40,
+                padding: 8,
+                paddingHorizontal: 12,
+                borderRadius: variables.radius.sm,
+            },
+            namePill: {
+                backgroundColor: colors.highlight + '10',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                marginHorizontal: 8,
+                borderRadius: variables.radius.sm,
+                alignSelf: 'flex-start',
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+                color: colors.text,
+                fontSize: 12,
+                fontWeight: 'bold',
+            },
+            midSection: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 8,
+            },
+            overlay: {
+                flex: 1,
+                backgroundColor: colors.background + '80',
+                justifyContent: 'flex-end',
+            },
+            bottomSheet: {
+                backgroundColor: colors.modalBg,
+                borderTopLeftRadius: variables.radius.lg,
+                borderTopRightRadius: variables.radius.lg,
+                paddingHorizontal: 20,
+                paddingTop: 20,
+                paddingBottom: 40,
+                minHeight: 280,
+                maxHeight: screenHeight * 0.9,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+            },
+            handle: {
+                width: 40,
+                height: 4,
+                backgroundColor: colors.border,
+                borderRadius: 2,
+                alignSelf: 'center',
+                marginBottom: 20,
+            },
+            overlayTitle: {
+                color: colors.text,
+                fontSize: 20,
+                fontWeight: 'bold',
+                marginBottom: 8,
+                height: 28,
+            },
+            overlayPersonName: {
+                color: colors.textDesc,
+                fontSize: 14,
+                fontWeight: '500',
+                marginBottom: 16,
+                height: 20
+            },
+            timeSection: {
+                backgroundColor: colors.settingBlock,
+                padding: 16,
+                borderRadius: variables.radius.md,
+                marginBottom: 16,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+                position: 'relative',
+                overflow: 'hidden',
+            },
+            timeLabel: {
+                color: colors.textDesc,
+                fontSize: 12,
+                marginBottom: 4,
+                height: 20
+            },
+            timeValue: {
+                color: colors.text,
+                fontSize: 16,
+                height: 55,
+                fontWeight: '600',
+                paddingVertical: 5
+            },
+            detailsSection: {
+                backgroundColor: colors.highlight + '10',
+                padding: 16,
+                borderRadius: variables.radius.md,
+                marginBottom: 20,
+            },
+            detailRow: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+            },
+            detailLabel: {
+                color: colors.textDesc,
+                fontSize: 14,
+            },
+            detailValue: {
+                color: colors.text,
+                fontSize: 12,
+                fontWeight: '500',
+                height: 30,
+                backgroundColor: colors.settingBlock,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: variables.radius.sm,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+            },
+            actionsSection: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 12,
+            },
+            actionButton: {
+                flex: 1,
+                paddingVertical: 6,
+                borderRadius: variables.radius.sm,
+                alignItems: 'center',
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+            },
+            editButton: {
+                backgroundColor: colors.settingBlock,
+            },
+            deleteButton: {
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                borderColor: 'rgba(239, 68, 68, 0.5)',
+                minHeight: 40,
+                marginBottom: 20,
+            },
+            exportButton: {
+                backgroundColor: colors.settingBlock,
+            },
+            actionButtonText: {
+                color: colors.text,
+                fontSize: 14,
+                fontWeight: '600',
+                textAlign: 'center',
+            },
+            exportButtonText: {
+                color: colors.highlight,
+                fontSize: 16,
+                fontWeight: '600',
+                textAlign: 'center',
+            },
+            statusIndicator: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.settingBlock,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: variables.radius.sm,
+                gap: 8,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+            },
+            statusText: {
+                color: colors.text,
+                fontSize: 12,
+                fontWeight: '500',
+                height: 15,
+            },
+            chipContainer: {
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 4,
+                marginVertical: 8,
+                paddingBottom: 8,
+            },
+            chip: {
+                backgroundColor: colors.highlight + '10',
+                paddingVertical: 5,
+                paddingHorizontal: 16,
+                borderRadius: variables.radius.sm,
+                borderWidth: isBorder ? 0.75 : 0,
+                borderColor: colors.border,
+            },
+            chipText: {
+                color: colors.text,
+                fontSize: 16,
+                fontWeight: '600',
+                height: 20
+            },
+        });
+    }
 
     // Optimized callbacks
     const handleEdit = useCallback(() => {
@@ -522,7 +528,7 @@ const TimerCard = ({
     const handleCardPress = useCallback(() => {
         if (!selectable) { openOverlay(); }
         if (onClick) onClick();
-    }, [onClick]);
+    }, [onClick, selectable]);
 
     const openOverlay = useCallback(() => {
         setShowOverlay(true);
@@ -538,7 +544,7 @@ const TimerCard = ({
                 useNativeDriver: true,
             }),
         ]).start();
-    }, []);
+    }, [slideAnim, fadeAnim]);
 
     const closeOverlay = useCallback(() => {
         Animated.parallel([
@@ -555,134 +561,10 @@ const TimerCard = ({
         ]).start(() => {
             setShowOverlay(false);
         });
-    }, []);
-
-    useEffect(() => {
-        if (!showOverlay) {
-            slideAnim.setValue(screenHeight);
-            fadeAnim.setValue(0);
-        }
-    }, [showOverlay]);
-
-    // Render time display for card (short, 3 parts max)
-    function renderTimeDisplay() {
-        const [years, months, days, hours, minutes, seconds] = getTimeParts();
-
-        const timePartsArray = [
-            { value: years, label: 'y', id: 'years' },
-            { value: months, label: 'mo', id: 'months' },
-            { value: days, label: 'd', id: 'days' },
-            { value: hours, label: 'h', id: 'hours' },
-            { value: minutes, label: 'm', id: 'minutes' },
-            { value: seconds, label: 's', id: 'seconds' },
-        ];
-
-        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-        let prefix = '';
-        if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
-            prefix = 'Completed';
-        } else {
-            prefix = '';
-        }
-
-
-        /*
-        if (timer.isCountdown) {
-            prefix = 'Left: ';
-        } else {
-            prefix = 'Elapsed: ';
-        }
-        */
-
-
-        return (
-            <>
-                <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
-                {prefix === 'Completed' ? null : (
-                    nonZeroParts.length > 0
-                        ? nonZeroParts.map((part, idx) => (
-                            <Text style={{ fontSize: 14 }} key={part.id}>
-                                {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
-                            </Text>
-                        ))
-                        : <Text style={{ fontSize: 14 }}>0s</Text>
-                )}
-            </>
-        );
-    }
-
-    // Render detailed time display for overlay (all parts, full words)
-    function renderDetailedTimeDisplay() {
-        const [years, months, days, hours, minutes, seconds] = getTimeParts();
-
-        const timePartsArray = [
-            { value: years, label: 'year', plural: 'years' },
-            { value: months, label: 'month', plural: 'months' },
-            { value: days, label: 'day', plural: 'days' },
-            { value: hours, label: 'hour', plural: 'hours' },
-            { value: minutes, label: 'minute', plural: 'minutes' },
-            { value: seconds, label: 'second', plural: 'seconds' },
-        ];
-
-        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-        if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
-            return 'Timer Completed';
-        }
-
-        if (nonZeroParts.length === 0) {
-            return '0 seconds';
-        }
-
-        return nonZeroParts.map((part, idx) => {
-            const label = part.value === 1 ? part.label : part.plural;
-            const separator = idx === nonZeroParts.length - 1 ? '' :
-                idx === nonZeroParts.length - 2 ? ' and ' : ', ';
-            return `${part.value} ${label}${separator}`;
-        }).join('');
-    }
-
-    function getRecurrenceCounts() {
-        if (!timer.isRecurring || !timer.recurrenceInterval || !timer.nextDate) return 0;
-        if (timer.date >= Date.now()) return 0;
-
-        let count = 1, unit = '';
-        if (typeof timer.recurrenceInterval === 'string' && timer.recurrenceInterval.split(' ').length > 1) {
-            [count, unit] = timer.recurrenceInterval.split(' ');
-            count = parseInt(count, 10) || 1;
-            // Normalize unit: remove trailing 's' if present
-            unit = unit.toLowerCase().endsWith('s') ? unit.toLowerCase().slice(0, -1) : unit.toLowerCase();
-        }
-
-        const addMap = {
-            second: (date, n) => date.setSeconds(date.getSeconds() + n),
-            minute: (date, n) => date.setMinutes(date.getMinutes() + n),
-            hour: (date, n) => date.setHours(date.getHours() + n),
-            day: (date, n) => date.setDate(date.getDate() + n),
-            week: (date, n) => date.setDate(date.getDate() + n * 7),
-            month: (date, n) => date.setMonth(date.getMonth() + n),
-            year: (date, n) => date.setFullYear(date.getFullYear() + n),
-        };
-
-        let recurrenceCount = 0;
-        let current = new Date(timer.date);
-
-        // Keep adding interval until we reach or pass nextDate
-        while (current.getTime() < timer.nextDate) {
-            addMap[unit]?.(current, count);
-            recurrenceCount++;
-            // Prevent infinite loop if something is wrong
-            if (recurrenceCount > 10000) break;
-        }
-
-        return recurrenceCount - 1; // Subtract 1 to exclude the current occurrence
-    }
-
-    const styles = createStyles();
+    }, [slideAnim, fadeAnim]);
 
     // Create card style
-    const cardStyle = {
+    const cardStyle = useMemo(() => ({
         ...styles.timerItem,
         ...(selected && {
             borderColor: 'hsla(0, 84.20%, 60.20%, 0.60)',
@@ -691,7 +573,7 @@ const TimerCard = ({
         ...(selectable && !selected && {
             borderColor: 'hsla(0, 0.00%, 38.00%, 0.60)'
         })
-    };
+    }), [selected, selectable, styles.timerItem]);
 
     return (
         <>
@@ -708,7 +590,7 @@ const TimerCard = ({
                                 />
                             ) : (
                                 <Text style={styles.timerTitle}>
-                                    {privacyMode === 'jumble' ? jumbleText(titleText) : maskText(titleText)}
+                                        {privacyMode === 'jumble' ? jumbledTitleText : maskText(titleText)}
                                 </Text>
                             )}
                             <View style={styles.priorityIndicator}>
@@ -716,16 +598,16 @@ const TimerCard = ({
                                     privacyMode === 'off' ? (
                                         <HighlightMatchText
                                             text={nameText}
-                                            textStyle={styles.namePill} search={searchText}
+                                            textStyle={styles.namePill}
+                                            search={searchText}
                                             colors={colors}
                                         />
                                     ) : (
                                         <Text style={styles.namePill}>
-                                            {privacyMode === 'jumble' ? jumbleText(nameText) : maskText(nameText)}
+                                                {privacyMode === 'jumble' ? jumbledNameText : maskText(nameText)}
                                         </Text>
                                     )
                                 )}
-
                             </View>
                         </View>
 
@@ -762,7 +644,7 @@ const TimerCard = ({
                                 >
                                     <View
                                         style={{
-                                            width: `${progressPct}%`,
+                                            width: `${timerState.progressPct}%`,
                                             height: '100%',
                                             backgroundColor: colors.highlight + 'b0',
                                             borderRadius: 8
@@ -780,7 +662,7 @@ const TimerCard = ({
                                         marginBottom: 2
                                     }}
                                 >
-                                    {progressPct.toFixed(2)} %
+                                    {timerState.progressPct.toFixed(2)} %
                                 </Text>
                             </View>
                         )}
@@ -796,67 +678,58 @@ const TimerCard = ({
                 onRequestClose={closeOverlay}
             >
                 <TouchableWithoutFeedback onPress={closeOverlay}>
-                    <BlurView intensity={120}
-                        tint="dark"
-                        style={{ flex: 1 }}
-                    >
-                        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-                            <TouchableWithoutFeedback onPress={() => { }}>
-                                <Animated.View
-                                    style={[
-                                        styles.bottomSheet,
-                                        {
-                                            transform: [{ translateY: slideAnim }],
-                                        },
-                                    ]}
-                                >
-                                    <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
-                                        <View style={styles.handle} />
+                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <Animated.View
+                                style={[
+                                    styles.bottomSheet,
+                                    {
+                                        transform: [{ translateY: slideAnim }],
+                                    },
+                                ]}
+                            >
+                                <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
+                                    <View style={styles.handle} />
 
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
+                                        {/* Title and Person */}
+                                        <Text style={styles.overlayTitle}>
+                                            {privacyMode === 'off' ? timer.title :
+                                                privacyMode === 'jumble' ? jumbledTitleText : maskText(timer.title)}
+                                        </Text>
 
+                                        <Text style={styles.detailValue}>
+                                            {timerState.formattedDate}
+                                        </Text>
+                                    </View>
 
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                            {/* Title and Person */}
-                                            <Text style={styles.overlayTitle}>
-                                                {privacyMode === 'off' ? timer.title :
-                                                    privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title)}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
+                                        {timer.personName && (
+                                            <Text style={styles.overlayPersonName}>
+                                                For: {privacyMode === 'off' ? timer.personName :
+                                                    privacyMode === 'jumble' ? jumbledNameText : maskText(timer.personName)}
                                             </Text>
+                                        )}
 
-                                            <Text style={styles.detailValue}>
-                                                {getFormattedDate()}
-
-                                            </Text>
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                            {timer.personName && (
-                                                <Text style={styles.overlayPersonName}>
-                                                    For: {privacyMode === 'off' ? timer.personName :
-                                                        privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName)}
-                                                </Text>
-                                            )}
-
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-
-                                                {timer.isRecurring && (
-                                                    <View style={styles.statusIndicator}>
-                                                        <Icons.Material
-                                                            name="autorenew"
-                                                            size={12}
-                                                            color={colors.highlight}
-                                                        />
-                                                        <Text style={styles.statusText}>Recurring</Text>
-                                                    </View>
-                                                )}
-                                                {timer.isRecurring && getRecurrenceCounts() > 0 && (
-                                                    <View style={styles.statusIndicator}>
-
-                                                        <Text style={styles.statusText}>{getRecurrenceCounts()}</Text>
-                                                    </View>
-                                                )}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                                            {timer.isRecurring && (
                                                 <View style={styles.statusIndicator}>
-
-                                                    {timer.priority && <View
+                                                    <Icons.Material
+                                                        name="autorenew"
+                                                        size={12}
+                                                        color={colors.highlight}
+                                                    />
+                                                    <Text style={styles.statusText}>Recurring</Text>
+                                                </View>
+                                            )}
+                                            {timer.isRecurring && timerState.recurrenceCount > 0 && (
+                                                <View style={styles.statusIndicator}>
+                                                    <Text style={styles.statusText}>{timerState.recurrenceCount}</Text>
+                                                </View>
+                                            )}
+                                            <View style={styles.statusIndicator}>
+                                                {timer.priority && (
+                                                    <View
                                                         style={[
                                                             styles.priorityDot,
                                                             {
@@ -874,32 +747,34 @@ const TimerCard = ({
                                                                             : '#3b82f6',
                                                             },
                                                         ]}
-                                                    />}
-                                                    <Text style={styles.statusText}>
-                                                        {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
-                                                    </Text>
-                                                </View>
+                                                    />
+                                                )}
+                                                <Text style={styles.statusText}>
+                                                    {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                                </Text>
                                             </View>
                                         </View>
+                                    </View>
 
-                                        {/* Time Section {renderDetailedTimeDisplay()} */}
-                                        <View
-                                            style={[
-                                                styles.timeSection,
-                                                (() => {
-                                                    const parts = getTimeParts(timer);
-                                                    const nonZeroCount = parts.filter(p => p !== 0).length;
-                                                    const nonZeroOverTen = parts.filter(p => p >= 10).length;
-                                                    return { paddingBottom: (nonZeroCount > 5 && nonZeroOverTen > 2) ? 35 : 0 };
+                                    {/* Time Section */}
+                                    <View
+                                        style={[
+                                            styles.timeSection,
+                                            {
+                                                paddingBottom: (() => {
+                                                    const nonZeroCount = timerState.timeParts.filter(p => p !== 0).length;
+                                                    const nonZeroOverTen = timerState.timeParts.filter(p => p >= 10).length;
+                                                    return (nonZeroCount > 5 && nonZeroOverTen > 2) ? 35 : 0;
                                                 })()
-                                            ]}
-                                        >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-
-                                                <Text style={styles.timeLabel}>
-                                                    {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
-                                                </Text>
-                                                {timer.isCountdown && <Text
+                                            }
+                                        ]}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <Text style={styles.timeLabel}>
+                                                {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                                            </Text>
+                                            {timer.isCountdown && (
+                                                <Text
                                                     style={{
                                                         color: colors.textDesc,
                                                         fontSize: 12,
@@ -909,54 +784,52 @@ const TimerCard = ({
                                                         marginBottom: 2
                                                     }}
                                                 >
-                                                    {(100 - progressPct).toFixed(4)} %
-                                                </Text>}
-                                            </View>
-                                            <Text style={styles.timeValue}>
-
-                                                {renderTimeChips()}
-                                            </Text>
+                                                    {(100 - timerState.progressPct).toFixed(4)} %
+                                                </Text>
+                                            )}
                                         </View>
-
-                                    </ViewShot>
-
-                                    {/* Action Buttons */}
-                                    <View style={styles.actionsSection}>
-                                        <TouchableOpacity
-                                            onPress={handleEdit}
-                                            style={[styles.actionButton, styles.editButton]}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Icons.Material name="edit" size={20} color={colors.highlight} />
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            onPress={() => setShowExportModal(true)}
-                                            style={[styles.actionButton, styles.exportButton]}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Icons.Material name="file-upload" size={20} color={colors.highlight} />
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            onPress={handleDuplicate}
-                                            style={[styles.actionButton, styles.exportButton]}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
-                                        </TouchableOpacity>
+                                        <Text style={styles.timeValue}>
+                                            {renderTimeChips()}
+                                        </Text>
                                     </View>
+                                </ViewShot>
+
+                                {/* Action Buttons */}
+                                <View style={styles.actionsSection}>
                                     <TouchableOpacity
-                                        onPress={handleDelete}
-                                        style={[styles.actionButton, styles.deleteButton]}
+                                        onPress={handleEdit}
+                                        style={[styles.actionButton, styles.editButton]}
                                         activeOpacity={0.7}
                                     >
-                                        <Icons.Material name="delete" size={22} color="#ef4444" />
+                                        <Icons.Material name="edit" size={20} color={colors.highlight} />
                                     </TouchableOpacity>
-                                </Animated.View>
-                            </TouchableWithoutFeedback>
-                        </Animated.View>
-                    </BlurView>
+
+                                    <TouchableOpacity
+                                        onPress={() => setShowExportModal(true)}
+                                        style={[styles.actionButton, styles.exportButton]}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Icons.Material name="file-upload" size={20} color={colors.highlight} />
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={handleDuplicate}
+                                        style={[styles.actionButton, styles.exportButton]}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={handleDelete}
+                                    style={[styles.actionButton, styles.deleteButton]}
+                                    activeOpacity={0.7}
+                                >
+                                    <Icons.Material name="delete" size={22} color="#ef4444" />
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </TouchableWithoutFeedback>
+                    </Animated.View>
                 </TouchableWithoutFeedback>
             </Modal>
 
@@ -972,5 +845,111 @@ const TimerCard = ({
         </>
     );
 };
+
+function calculateProgress(timer, now) {
+    if (!timer.isCountdown) return 0;
+
+    const nowDate = new Date(now);
+    const targetDate = new Date(timer.date < now ? timer.nextDate : timer.date);
+
+    if (!timer.isRecurring) {
+        const totalDuration = targetDate.getTime() - timer.date;
+        const elapsed = nowDate.getTime() - timer.date;
+        return Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+    }
+
+    const prevDate = new Date(targetDate);
+    const [count, unit] = timer.recurrenceInterval.split(' ');
+    const normalizedUnit = unit.toLowerCase().endsWith('s')
+        ? unit.toLowerCase().slice(0, -1)
+        : unit.toLowerCase();
+
+    const subtractMap = {
+        second: (date, n) => date.setSeconds(date.getSeconds() - n),
+        minute: (date, n) => date.setMinutes(date.getMinutes() - n),
+        hour: (date, n) => date.setHours(date.getHours() - n),
+        day: (date, n) => date.setDate(date.getDate() - n),
+        week: (date, n) => date.setDate(date.getDate() - n * 7),
+        month: (date, n) => date.setMonth(date.getMonth() - n),
+        year: (date, n) => date.setFullYear(date.getFullYear() - n),
+    };
+
+    if (subtractMap[normalizedUnit]) {
+        subtractMap[normalizedUnit](prevDate, parseInt(count, 10));
+    }
+
+    const totalDuration = targetDate.getTime() - prevDate.getTime();
+    const elapsed = nowDate.getTime() - prevDate.getTime();
+
+    return Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+}
+
+function getTimeParts(timer, now) {
+    let targetDate = timer.isCountdown
+        ? (timer.isRecurring && timer.date < now ? timer.nextDate : timer.date)
+        : timer.date;
+    let diff = timer.isCountdown
+        ? Math.max(0, targetDate - now)
+        : Math.max(0, now - targetDate);
+
+    const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
+    diff -= y * 365 * 24 * 60 * 60 * 1000;
+    const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
+    diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
+    const d = Math.floor(diff / (24 * 60 * 60 * 1000));
+    diff -= d * 24 * 60 * 60 * 1000;
+    const h = Math.floor(diff / (60 * 60 * 1000));
+    diff -= h * 60 * 60 * 1000;
+    const m = Math.floor(diff / (60 * 1000));
+    diff -= m * 60 * 1000;
+    const s = Math.floor(diff / 1000);
+
+    return [y, mo, d, h, m, s];
+}
+
+function getDetailedTimeDisplay(timer, now) {
+    const [years, months, days, hours, minutes, seconds] = getTimeParts(timer, now);
+
+    const timePartsArray = [
+        { value: years, label: 'year', plural: 'years' },
+        { value: months, label: 'month', plural: 'months' },
+        { value: days, label: 'day', plural: 'days' },
+        { value: hours, label: 'hour', plural: 'hours' },
+        { value: minutes, label: 'minute', plural: 'minutes' },
+        { value: seconds, label: 'second', plural: 'seconds' },
+    ];
+
+    const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+
+    if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
+        return 'Timer Completed';
+    }
+
+    if (nonZeroParts.length === 0) {
+        return '0 seconds';
+    }
+
+    return nonZeroParts.map((part, idx) => {
+        const label = part.value === 1 ? part.label : part.plural;
+        const separator = idx === nonZeroParts.length - 1 ? '' :
+            idx === nonZeroParts.length - 2 ? ' and ' : ', ';
+        return `${part.value} ${label}${separator}`;
+    }).join('');
+}
+
+function getFormattedDate(timer, now) {
+    return new Date(
+        timer.isRecurring && timer.date < now
+            ? timer.nextDate
+            : timer.date
+    ).toLocaleString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
 
 export default TimerCard;

@@ -3,7 +3,7 @@ import { Icons } from '../assets/icons';
 
 import { MaterialIcons } from '@expo/vector-icons';
 
-export const HEADER_MARGIN_TOP = 50;
+export const HEADER_MARGIN_TOP = 40;
 export const MAX_HEADER_HEIGHT = 66;
 export const MIN_HEADER_HEIGHT = 60;
 
@@ -124,16 +124,20 @@ export const navOptions = [
 // make an array for the header options as collapsable, fixed, and floating
 export const headerOptions = [
     {
-        label: 'Floating',
-        value: 'floating',
-        icon: <Icons.Ion name="layers-outline" size={16} />,
+        label: 'Minimized',
+        value: 'minimized',
+        icon: <Icons.Ion name="remove-outline" size={16} />
     },
     {
         label: 'Fixed',
         value: 'fixed',
         icon: <Icons.Ion name="home-outline" size={16} />,
     },
-
+    {
+        label: 'Collapsible',
+        value: 'collapsible',
+        icon: <Icons.Material name="unfold-more" size={16} />
+    },
 ];
 // add options like bi weekly, fotnightly, etc
 

@@ -1,22 +1,24 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import PasswordBottomSheet from '../components/PasswordModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import Timer from '../classes/Timer';
 import ScreenWithHeader from '../components/ScreenWithHeder';
+import Snackbar from '../components/SnackBar';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 
+
+
 export default function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
-    const [message, setMessage] = useState(null);
 
     const {
         theme,
@@ -56,6 +58,7 @@ export default function SettingsScreen() {
         return null;
     }
 
+    const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const [populateDisabled, setPopulateDisabled] = useState(false);
@@ -66,6 +69,17 @@ export default function SettingsScreen() {
     const [showExtra, setShowExtra] = useState(false);
     const DIRECTORY_KEY = 'download_directory_uri';
     const [mounted, setMounted] = useState(false);
+    const [messages, setMessages] = useState([]);
+    const [directoryUri, setDirectoryUri] = useState(null);
+
+    const addMessage = useCallback((text) => {
+        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setMessages(prev => [...prev, { id, text }]);
+    }, []);
+
+    const removeMessage = useCallback((messageId) => {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    }, []);
 
     const topTranslate = useRef(new Animated.Value(-50)).current;
     const midTranslate = useRef(new Animated.Value(-50)).current;
@@ -125,17 +139,13 @@ export default function SettingsScreen() {
         return () => clearTimeout(value);
     }, []);
 
-    const getOrRequestDirectory = async () => {
-        let uri = await AsyncStorage.getItem(DIRECTORY_KEY);
-        if (uri) return uri;
-
-        const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-        if (!permission.granted) throw new Error('Permission not granted');
-
-        uri = permission.directoryUri;
-        await AsyncStorage.setItem(DIRECTORY_KEY, uri);
-        return uri;
-    };
+    useEffect(() => {
+        const loadDirectory = async () => {
+            const uri = await AsyncStorage.getItem(DIRECTORY_KEY);
+            setDirectoryUri(uri);
+        };
+        loadDirectory();
+    }, []);
 
     const styles = StyleSheet.create({
         card: {
@@ -173,83 +183,8 @@ export default function SettingsScreen() {
             opacity: 0.85,
             height: 18,
         },
-        snackbarContainer: {
-            position: 'absolute',
-            bottom: '15%',
-            left: 0,
-            right: 0,
-            width: '100%',
-            alignItems: 'center',
-            zIndex: 10,
-            pointerEvents: 'box-none',
-        },
-        snackbar: {
-            width: '60%',
-            backgroundColor: colors.snackbarBg,
-            borderRadius: variables.radius.sm,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            elevation: 6,
-        },
-        snackbarText: {
-            color: colors.snackbarText,
-            fontSize: 14,
-            fontWeight: '600',
-            fontStyle: 'italic',
-            height: 20,
-        },
-        modalOverlay: {
-            flex: 1,
-            backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.75)',
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        modalCard: {
-            width: 300,
-            borderRadius: variables.radius.md,
-            borderWidth: 0.75,
-            borderColor: colors.border,
-            padding: 24,
-            alignItems: 'center',
-            elevation: 8,
-            backgroundColor: colors.modalBg,
-        },
-        modalText: {
-            fontSize: 16,
-            color: colors.modalText,
-            marginBottom: 18,
-            textAlign: 'center',
-            lineHeight: 22,
-            fontWeight: '500',
-            letterSpacing: 0.5,
-        },
-        modalActions: {
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginTop: 18,
-            width: '100%',
-            gap: 12,
-        },
-        modalBtn: {
-            borderRadius: variables.radius.sm,
-            paddingVertical: 8,
-            paddingHorizontal: 18,
-            borderWidth: 0.75,
-            borderColor: colors.border,
-            alignItems: 'center',
-            width: '100%',
-        },
-        modalBtnText: {
-            fontSize: 14,
-            fontWeight: 'bold',
-        },
         sectionHeader: {
-            paddingVertical: 12,
+            paddingVertical: 10,
             paddingHorizontal: 15,
         },
         sectionHeaderText: {
@@ -258,6 +193,10 @@ export default function SettingsScreen() {
             color: colors.highlight,
             textTransform: 'uppercase',
             letterSpacing: 1,
+        },
+        pathDisplay: {
+            fontSize: 12,
+            marginLeft: 12,
         },
     });
 
@@ -270,7 +209,7 @@ export default function SettingsScreen() {
     const clearTimers = async () => {
         showConfirm('Are you sure you want to clear all timers?', async () => {
             await clearAllTimers();
-            setMessage('All timers have been cleared.');
+            addMessage('All timers have been cleared.');
         });
     };
 
@@ -278,20 +217,30 @@ export default function SettingsScreen() {
         if (populateDisabled) return;
         setPopulateDisabled(true);
         await initializeTimers();
-        setMessage('Sample timers have been added.');
+        addMessage('Sample timers have been added.');
         setTimeout(() => setPopulateDisabled(false), 2000);
     };
 
     const exportToJson = async () => {
         try {
-            const json = JSON.stringify(timers, null, 2);
-            const directoryUri = await getOrRequestDirectory();
+            if (!directoryUri) {
+                // If no directory is selected, prompt to choose one first
+                addMessage('Please select an export folder first');
+                const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permission.granted) {
+                    addMessage('Export cancelled - no folder selected');
+                    return;
+                }
+                const uri = permission.directoryUri;
+                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
+                setDirectoryUri(uri);
+                addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`);
+            }
 
+            const json = JSON.stringify(timers, null, 2);
             const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = now.getFullYear();
-            const fileName = `export-(${day}/${month}/${year})`;
+            const fileName = `timers-export-${now.toISOString().split('T')[0]}.json`;
+
             const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
                 directoryUri,
                 fileName,
@@ -302,10 +251,10 @@ export default function SettingsScreen() {
                 encoding: FileSystem.EncodingType.UTF8,
             });
 
-            setMessage('Timers exported successfully');
+            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}/${fileName}`);
         } catch (err) {
             console.log('[EXPORT ERROR]', err);
-            setMessage('Export failed.');
+            addMessage('Export failed: ' + (err.message || ''));
         }
     };
 
@@ -325,62 +274,71 @@ export default function SettingsScreen() {
                 if (Array.isArray(loadedTimers)) {
                     const timers = loadedTimers.map(obj => new Timer(obj));
                     setTimersAndSave(timers);
-                    setMessage('Timers loaded from JSON.');
+                    addMessage('Timers loaded from JSON.');
                 } else {
-                    setMessage('Invalid JSON format.');
+                    addMessage('Invalid JSON format.');
                 }
             } else {
-                setMessage('No file selected.');
+                addMessage('No file selected.');
             }
         } catch (e) {
-            setMessage('Failed to load timers.');
+            addMessage('Failed to load timers.');
         }
     };
 
-    useEffect(() => {
-        if (message) {
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                useNativeDriver: true,
-                friction: 5,
-            }).start();
+    const formatDirectoryPath = (uri) => {
+        if (!uri) return '';
 
-            const timer = setTimeout(() => {
-                Animated.timing(scaleAnim, {
-                    toValue: 0.8,
-                    duration: 200,
-                    useNativeDriver: true,
-                }).start(() => setMessage(null));
-            }, 2000);
+        try {
+            let path = decodeURIComponent(uri);
 
-            return () => clearTimeout(timer);
+            // Remove common prefixes like 'primary:' or 'tree/primary:'
+            path = path.replace(/^.*?(primary:|tree\/primary:)/i, '');
+
+            // Replace any remaining URL-encoded spaces
+            path = path.replace(/%20/g, ' ');
+
+            // Split into parts by /
+            let parts = path.split('/').filter(Boolean);
+
+            // If too long, show last 2-3 with '...'
+            if (parts.length > 3) {
+                parts = ['...', ...parts.slice(-3)];
+            }
+
+            // Join with ' > '
+            return parts.join(' > ');
+        } catch (e) {
+            console.warn('Error formatting path:', e);
+            return uri;
         }
-    }, [message]);
+    };
 
+    const PathDisplay = ({ path, style }) => {
+        if (!path) return null;
+        const formatted = formatDirectoryPath(path);
+        return <Text style={style}>{formatted}</Text>;
+    };
+    
     return (
         <ScreenWithHeader
             headerIcon={<Icons.Ion name="settings" color={colors.highlight} />}
             headerTitle="Settings"
-            borderRadius={variables.radius.md}
+            borderRadius={variables.radius.lg}
             paddingMargin={10}
             colors={colors}
-            contentContainerStyle={{ paddingBottom: 95 }}
+            contentContainerStyle={{ paddingBottom: 95, overflow: 'visible' }}
             useFlatList={false}
         >
             {mounted && <>
-                {message && (
-                    <View style={styles.snackbarContainer} pointerEvents="box-none">
-                        <Animated.View
-                            style={[
-                                styles.snackbar,
-                                { transform: [{ scale: scaleAnim }] }
-                            ]}
-                            pointerEvents="none"
-                        >
-                            <Text style={styles.snackbarText}>{message}</Text>
-                        </Animated.View>
-                    </View>
-                )}
+                {messages.map((msg, idx) => (
+                    <Snackbar
+                        key={msg.id}
+                        text={msg.text}
+                        onClose={() => removeMessage(msg.id)}
+                        style={{ bottom: 200 + (messages.length - 1 - idx) * 48 }}
+                    />
+                ))}
 
                 {/* APPEARANCE SETTINGS */}
                 <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
@@ -441,7 +399,7 @@ export default function SettingsScreen() {
                                 placeholder="Select header mode"
                                 colors={colors}
                                 variables={variables}
-                                defaultValue="floating"
+                                defaultValue="minimized"
                             />
                         </TouchableOpacity>
 
@@ -480,7 +438,7 @@ export default function SettingsScreen() {
                             <TouchableOpacity
                                 style={styles.settingBlock}
                                 onPress={() => {
-                                    setMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
+                                    addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
                                     toggleFingerprint();
                                 }}
                             >
@@ -492,7 +450,7 @@ export default function SettingsScreen() {
                                 <Switch
                                     value={!!isFingerprintEnabled}
                                     onValueChange={() => {
-                                        setMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
+                                        addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
                                         toggleFingerprint();
                                     }}
                                     trackColor={{
@@ -538,7 +496,7 @@ export default function SettingsScreen() {
                                         setPasswordModalVisible(true);
                                     } else {
                                         clearPassword();
-                                        setMessage('Password lock disabled.');
+                                        addMessage('Password lock disabled.');
                                     }
                                 }}
                                 trackColor={{
@@ -646,7 +604,51 @@ export default function SettingsScreen() {
                             <Icons.Ion name='download' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Export Timers</Text>
-                                <Text style={styles.settingDesc}>Save all timers as a JSON file</Text>
+                                <Text style={styles.settingDesc}>
+                                    {directoryUri ? 'Save to :  ' : 'Save all timers as a JSON file'}
+                                    {directoryUri && (
+                                        <PathDisplay
+                                            path={formatDirectoryPath(directoryUri)}
+                                            style={[styles.settingDesc, { color: colors.textDesc, marginLeft: 12 }]}
+                                            maxLength={20}
+                                        />
+                                    )}
+                                </Text>
+                                
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Change Export Directory */}
+                        <TouchableOpacity
+                            style={styles.settingBlock}
+                            onPress={async () => {
+                                try {
+                                    const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                                    if (permission.granted) {
+                                        const uri = permission.directoryUri;
+                                        await AsyncStorage.setItem(DIRECTORY_KEY, uri);
+                                        setDirectoryUri(uri);
+                                        addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`);
+                                    }
+                                } catch (err) {
+                                    addMessage('Failed to change directory');
+                                }
+                            }}
+                        >
+                            <Icons.Ion name='folder-open-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Change Export Folder</Text>
+                                <Text style={styles.settingDesc}>
+                                    {directoryUri ? 'Current folder :  ' : 'No folder selected'}
+                                    {directoryUri && (
+                                        <PathDisplay
+                                            path={formatDirectoryPath(directoryUri)}
+                                            style={[styles.settingDesc, { color: colors.textDesc }]}
+                                            maxLength={25}
+                                        />
+                                    )}
+                                </Text>
+                                
                             </View>
                         </TouchableOpacity>
 
@@ -683,7 +685,7 @@ export default function SettingsScreen() {
                         onSave={(newPassword) => {
                             savePassword(newPassword);
                             setPasswordModalVisible(false);
-                            setMessage('Password updated.');
+                            addMessage('Password updated.');
                         }}
                         currentPassword={password}
                         mode={passwordModalMode}
