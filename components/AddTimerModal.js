@@ -279,7 +279,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
         },
         bottomSheet: {
             height: BOTTOM_SHEET_HEIGHT,
-            backgroundColor: colors.cardLighter,
+            backgroundColor: colors.modalBg,
             borderTopLeftRadius: variables.radius.lg,
             borderTopRightRadius: variables.radius.lg,
             shadowColor: '#000',
@@ -385,20 +385,24 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             borderColor: colors.border,
             padding: 10,
             borderRadius: variables.radius.sm,
+            justifyContent: 'center',
+            alignItems: 'center'
         },
         cancelButton: {
-            backgroundColor: colors.card,
+            backgroundColor: colors.highlight + '20',
             borderWidth: isBorder ? 0.5 : 0,
             borderColor: colors.border,
             padding: 10,
             borderRadius: variables.radius.sm,
+            justifyContent: 'center',
+            alignItems: 'center'
         },
         buttonText: {
             color: colors.text,
             fontSize: 14,
             textAlign: 'center',
             fontWeight: 'bold',
-            height: 20,
+            height: 18,
         },
         inputRow: {
             flexDirection: 'row',

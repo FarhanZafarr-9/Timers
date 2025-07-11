@@ -156,10 +156,10 @@ const normalizeNavigationMode = (mode) => {
 };
 
 const normalizeHeaderMode = (mode) => {
-    if (['collapsible', 'fixed', 'floating'].includes(mode)) {
+    if (['collapsible', 'fixed', 'minimized'].includes(mode)) {
         return mode;
     }
-    return 'floating';
+    return 'minimized';
 };
 
 const normalizeBorderMode = (mode) => {
@@ -182,7 +182,7 @@ const getSystemTheme = () => {
 export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeModeState] = useState('system');
     const [navigationMode, setNavigationMode] = useState('floating');
-    const [headerMode, setHeaderMode] = useState('floating');
+    const [headerMode, setHeaderMode] = useState('minimized');
     const [borderMode, setBorderMode] = useState('subtle');
     const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
@@ -203,7 +203,7 @@ export const ThemeProvider = ({ children }) => {
                 if (isMounted) {
                     const loadedTheme = storedTheme && VALID_THEMES.includes(storedTheme) ? storedTheme : 'system';
                     const loadedFloatingNav = storedNavMode !== null ? storedNavMode : 'floating';
-                    const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'floating';
+                    const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'minimized';
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
 
                     setThemeModeState(loadedTheme);

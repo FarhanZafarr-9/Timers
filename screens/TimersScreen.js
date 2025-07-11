@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import TimerCard from '../components/TimerCard';
 import AddTimerModal from '../components/AddTimerModal';
 import HeaderControls from '../components/HeaderControls';
@@ -322,7 +322,7 @@ export default function TimersScreen({ route }) {
             <ScreenWithHeader
                 headerIcon={<Icons.Ion name="timer-outline" size={18} color={colors.highlight} />}
                 headerTitle={isCountdown ? "Countdown Timers" : "Countup Timers"}
-                borderRadius={variables.radius.md}
+                borderRadius={variables.radius.lg}
                 paddingMargin={0}
                 useFlatList={true}
                 flatListProps={{

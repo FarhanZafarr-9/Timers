@@ -107,7 +107,7 @@ const HeaderControls = ({
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.cardLighter,
+            backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
             borderWidth: 1,
             borderColor: isFocused ? colors.highlight + '40' : colors.border,
