@@ -45,7 +45,7 @@ export default function PasswordBottomSheet({
     mode = 'set',
     variables,
 }) {
-    const { colors, isBorder } = useTheme();
+    const { colors, isBorder, headerMode } = useTheme();
     const { getResetCode, setResetCodeValue } = useSecurity();
 
     const [translateY] = useState(new Animated.Value(screenHeight));
@@ -120,7 +120,7 @@ export default function PasswordBottomSheet({
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {
@@ -173,7 +173,7 @@ export default function PasswordBottomSheet({
         },
         inputGroup: {
             marginBottom: 20,
-            
+
         },
         inputLabel: {
             fontSize: 14,
@@ -198,7 +198,7 @@ export default function PasswordBottomSheet({
             color: colors.text,
             paddingVertical: 12,
             paddingHorizontal: 4,
-            
+
         },
         eyeBtn: {
             padding: 8,

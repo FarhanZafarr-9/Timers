@@ -28,7 +28,7 @@ const ConfirmationBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
-    const { isBorder } = useTheme();
+    const { isBorder, headerMode } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -80,7 +80,7 @@ const ConfirmationBottomSheet = ({
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {

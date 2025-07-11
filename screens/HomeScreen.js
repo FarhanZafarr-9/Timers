@@ -167,10 +167,11 @@ export default function HomeScreen({ navigation }) {
 
     return (
         <ScreenWithHeader
-            headerIcon={<Icons.Ion name="timer" color={colors.highlight} />}
+            headerIcon={<Icons.Ion name="time" color={colors.highlight} />}
             headerTitle="Timers"
             borderRadius={variables.radius.md}
             paddingMargin={15}
+            paddingX={20}
         >
             {mounted && (
                 <>

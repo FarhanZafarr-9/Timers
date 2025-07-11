@@ -320,8 +320,8 @@ export default function TimersScreen({ route }) {
     return (
         <>
             <ScreenWithHeader
-                headerIcon={<Icons.Ion name="timer-outline" size={18} color={colors.highlight} />}
-                headerTitle={isCountdown ? "Countdown Timers" : "Countup Timers"}
+                headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down':'arrow-up'} size={18} color={colors.highlight} />}
+                headerTitle={isCountdown ? "Countdowns" : "Countups"}
                 borderRadius={variables.radius.lg}
                 paddingMargin={0}
                 useFlatList={true}

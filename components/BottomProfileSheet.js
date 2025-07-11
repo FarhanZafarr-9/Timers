@@ -31,7 +31,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
     const [localProfession, setLocalProfession] = useState(userData.profession || '');
     const [localProfilePic, setLocalProfilePic] = useState(userData.profilePic || null);
     const [errorMsg, setErrorMsg] = useState('');
-    const { isBorder } = useTheme();
+    const { isBorder, headerMode } = useTheme();
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -144,7 +144,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {

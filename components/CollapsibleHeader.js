@@ -10,8 +10,9 @@ export default function CollapsibleHeader({
     colors,
     pageLength = null,
     borderRadius = 12,
+    paddingX=15
 }) {
-    const { headerMode, isBorder } = useTheme();
+    const { headerMode, isBorder, variables } = useTheme();
     const forceCollapsed = shouldForceCollapsed(pageLength);
     const snapThreshold = 45;
 
@@ -56,29 +57,22 @@ export default function CollapsibleHeader({
 
     const bgColor = snappedCollapseAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [
-            `${colors.background}`,
-            `${colors.settingBlock}`,
-        ],
+        outputRange: [`${colors.background}`, `${colors.card}`],
     });
 
     const styles = StyleSheet.create({
         header: {
-            borderColor: colors.cardBorder,
             borderRadius: borderRadius,
+            borderColor: colors.cardBorder,
             marginBottom: headerMode !== 'collapsible' ? 0 : 16,
-            marginTop: HEADER_MARGIN_TOP,
-            paddingHorizontal: 20,
-            marginHorizontal: 20,
+            marginTop: headerMode === 'fixed' ? 0 : HEADER_MARGIN_TOP,
             overflow: 'hidden',
             alignSelf: 'center',
             backgroundColor: colors.settingBlock,
-        },
-        row: {
             flexDirection: 'row',
+            alignItems: headerMode === 'fixed' ? 'flex-end' :'center',
+            paddingBottom: headerMode === 'fixed' ? 15 : 0,
             gap: 12,
-            alignItems: 'center',
-            flex: 1,
         },
         title: {
             fontWeight: 'bold',
@@ -89,20 +83,22 @@ export default function CollapsibleHeader({
             alignItems: 'center',
             position: 'relative',
             zIndex: 100,
-            backgroundColor: headerMode === 'fixed' ? colors.settingBlock : colors.background,
-            height: MAX_HEADER_HEIGHT + HEADER_MARGIN_TOP,
+            backgroundColor: headerMode === 'fixed' ? 'transparent' : colors.background,
+            height: headerMode === 'fixed' ? MIN_HEADER_HEIGHT + 15 : MAX_HEADER_HEIGHT + HEADER_MARGIN_TOP,
+            paddingTop: headerMode === 'fixed' ? 0: 10,
         },
     });
 
     if (headerMode === 'minimized') {
         return (
-            <View style={[styles.container, { paddingHorizontal: 15 }]}>
+            <View style={[styles.container, { paddingHorizontal: paddingX, paddingBottom: 10}]}>
                 <View
                     style={[
                         styles.header,
                         {
                             height: MIN_HEADER_HEIGHT,
                             width: '100%',
+                            paddingHorizontal: 25,
                             borderWidth: isBorder ? 0.75 : 0,
                             borderColor: colors.border,
                             top: 0,
@@ -112,26 +108,15 @@ export default function CollapsibleHeader({
                         },
                     ]}
                 >
-                    <View style={styles.row}>
-                        <View style={{ transform: [{ scale: 0.71428 }], justifyContent: 'center', alignItems: 'center' }}>
-                            {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
-                        </View>
-                        <View>
-                            <Animated.Text
-                                style={[
-                                    styles.title,
-                                    {
-                                        fontSize: 16,
-                                        marginLeft: 0,
-                                        color: colors.text,
-                                    },
-                                ]}
-                                numberOfLines={1}
-                            >
-                                {title}
-                            </Animated.Text>
-                        </View>
+                    <View style={{ transform: [{ scale: 0.71428 }], justifyContent: 'center', alignItems: 'center' }}>
+                        {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
                     </View>
+                    <Animated.Text
+                        style={[styles.title, { fontSize: 16, marginLeft: 0, color: colors.text }]}
+                        numberOfLines={1}
+                    >
+                        {title}
+                    </Animated.Text>
                 </View>
             </View>
         );
@@ -139,65 +124,54 @@ export default function CollapsibleHeader({
 
     else if (headerMode === 'fixed') {
         return (
-            <View style={[styles.container, { paddingHorizontal: 15 }]}>
+            <View style={[styles.container,{backgroundColor: colors.background}]}>
                 <View
                     style={[
                         styles.header,
                         {
-                            height: MIN_HEADER_HEIGHT,
+                            height: MIN_HEADER_HEIGHT + 15,
                             width: '100%',
                             top: 0,
                             zIndex: 100,
-                            backgroundColor: colors.settingBlock,
+                            backgroundColor: colors.cardLighter,
                             alignSelf: 'center',
+                            paddingHorizontal: 25,
                         },
                     ]}
                 >
-                    <View style={styles.row}>
-                        <View style={{ transform: [{ scale: 0.71428 }], justifyContent: 'center', alignItems: 'center' }}>
-                            {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
-                        </View>
-                        <View>
-                            <Animated.Text
-                                style={[
-                                    styles.title,
-                                    {
-                                        fontSize: 16,
-                                        marginLeft: 0,
-                                        color: colors.text,
-                                    },
-                                ]}
-                                numberOfLines={1}
-                            >
-                                {title}
-                            </Animated.Text>
-                        </View>
+                    <View style={{ transform: [{ scale: 0.71428 }], justifyContent: 'center', alignItems: 'center' }}>
+                        {React.cloneElement(icon, { size: 24, paddingTop: 0 })}
                     </View>
+                    <Animated.Text
+                        style={[styles.title, { fontSize: 16, marginLeft: 0, color: colors.text }]}
+                        numberOfLines={1}
+                    >
+                        {title}
+                    </Animated.Text>
                 </View>
             </View>
         );
     }
 
-    else {return (
-        <Animated.View
-            style={[
-                styles.header,
-                animatedHeaderStyle,
-                {
-                    position: 'absolute',
-                    borderWidth: animatedBorderWidth,
-                    top: 0,
-                    zIndex: 100,
-                    alignSelf: 'center',
-                    backgroundColor: bgColor,
-                },
-            ]}
-        >
-            <View style={styles.row}>
-                <Animated.View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Animated.View style={{ transform: [{ scale: iconScale }] }}>
-                        {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
-                    </Animated.View>
+    else {
+        return (
+            <Animated.View
+                style={[
+                    styles.header,
+                    animatedHeaderStyle,
+                    {
+                        position: 'absolute',
+                        borderWidth: animatedBorderWidth,
+                        top: 0,
+                        zIndex: 100,
+                        alignSelf: 'center',
+                        backgroundColor: bgColor,
+                        paddingHorizontal: 25,
+                    },
+                ]}
+            >
+                <Animated.View style={{ transform: [{ scale: iconScale }], justifyContent: 'center', alignItems: 'center' }}>
+                    {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
                 </Animated.View>
                 <Animated.Text
                     style={[
@@ -212,7 +186,7 @@ export default function CollapsibleHeader({
                 >
                     {title}
                 </Animated.Text>
-            </View>
-        </Animated.View>
-    );}
+            </Animated.View>
+        );
+    }
 }

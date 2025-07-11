@@ -32,7 +32,7 @@ const BottomSheetPicker = ({
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
-    const { isBorder } = useTheme();
+    const { isBorder, headerMode } = useTheme();
 
     const showBottomSheet = () => {
         setVisible(true);
@@ -86,7 +86,7 @@ const BottomSheetPicker = ({
         },
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {
@@ -188,15 +188,16 @@ const BottomSheetPicker = ({
             textAlign: 'center',
         },
         actionButtons: {
+            flexDirection: 'row',
             paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 8,
             borderTopWidth: 0.75,
             borderTopColor: colors.border,
-            gap: 12,
+            gap: '4%',
         },
         actionButton: {
-            width: '100%',
+            width: '48%',
             paddingVertical: 12,
             paddingHorizontal: 20,
             borderRadius: 12,

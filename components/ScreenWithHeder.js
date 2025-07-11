@@ -41,6 +41,7 @@ export default function ScreenWithHeader({
                 colors={colors}
                 pageLength={contentHeight}
                 borderRadius={borderRadius}
+                paddingX={paddingX}
             />
 
             {useFlatList ? (

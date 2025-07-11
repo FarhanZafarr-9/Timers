@@ -36,7 +36,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
     const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 660 : 550);
 
-    const { variables, colors, isBorder } = useTheme();
+    const { variables, colors, isBorder, headerMode } = useTheme();
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -274,7 +274,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {
@@ -443,7 +443,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             onRequestClose={onClose}
             statusBarTranslucent
         >
-            <Animated.View style={[styles.overlay, { opacity }]}>
+            <Animated.View style={[styles.overlay, { opacity: opacity }]}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <View style={{ flex: 1 }} />
                 </TouchableWithoutFeedback>

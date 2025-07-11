@@ -251,7 +251,7 @@ export default function SettingsScreen() {
                 encoding: FileSystem.EncodingType.UTF8,
             });
 
-            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}/${fileName}`);
+            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}`);
         } catch (err) {
             console.log('[EXPORT ERROR]', err);
             addMessage('Export failed: ' + (err.message || ''));
@@ -319,7 +319,7 @@ export default function SettingsScreen() {
         const formatted = formatDirectoryPath(path);
         return <Text style={style}>{formatted}</Text>;
     };
-    
+
     return (
         <ScreenWithHeader
             headerIcon={<Icons.Ion name="settings" color={colors.highlight} />}
@@ -329,6 +329,7 @@ export default function SettingsScreen() {
             colors={colors}
             contentContainerStyle={{ paddingBottom: 95, overflow: 'visible' }}
             useFlatList={false}
+            paddingX={20}
         >
             {mounted && <>
                 {messages.map((msg, idx) => (
@@ -336,7 +337,7 @@ export default function SettingsScreen() {
                         key={msg.id}
                         text={msg.text}
                         onClose={() => removeMessage(msg.id)}
-                        style={{ bottom: 200 + (messages.length - 1 - idx) * 48 }}
+                        style={{ bottom: 300 + (messages.length - 1 - idx) * 48 }}
                     />
                 ))}
 
@@ -614,7 +615,7 @@ export default function SettingsScreen() {
                                         />
                                     )}
                                 </Text>
-                                
+
                             </View>
                         </TouchableOpacity>
 
@@ -648,7 +649,7 @@ export default function SettingsScreen() {
                                         />
                                     )}
                                 </Text>
-                                
+
                             </View>
                         </TouchableOpacity>
 
@@ -677,7 +678,6 @@ export default function SettingsScreen() {
                     variables={variables}
                 />
 
-                {/* Password Modal - Only render when visible */}
                 {passwordModalVisible && (
                     <PasswordBottomSheet
                         visible={passwordModalVisible}

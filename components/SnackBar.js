@@ -21,7 +21,7 @@ const Snackbar = ({ text, onClose, style }) => {
         snackbar: {
             width: '80%',
             backgroundColor: colors.settingBlock,
-            borderRadius: variables.radius.md,
+            borderRadius: variables.radius.circle,
             paddingHorizontal: 16,
             paddingVertical: 12,
             alignItems: 'center',
