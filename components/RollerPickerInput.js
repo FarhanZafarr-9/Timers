@@ -11,6 +11,7 @@ import {
     Easing
 } from 'react-native';
 import WheelPickerExpo from 'react-native-wheel-picker-expo';
+import { useTheme } from '../utils/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -30,7 +31,8 @@ const WheelPicker = ({
     const backdropOpacity = useRef(new Animated.Value(0)).current;
     const [isVisible, setIsVisible] = useState(visible);
     const [initialized, setInitialized] = useState(false);
-
+    const { headerMode } = useTheme();
+    
     const BOTTOM_SHEET_HEIGHT = 380;
     const translateY = useRef(new Animated.Value(BOTTOM_SHEET_HEIGHT)).current;
 
@@ -105,7 +107,7 @@ const WheelPicker = ({
     const styles = StyleSheet.create({
         overlay: {
             ...StyleSheet.absoluteFillObject,
-            backgroundColor: colors.background + '80',
+            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {

@@ -27,7 +27,7 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { isBorder } = useTheme();
+    const { isBorder, headerMode } = useTheme();
     const titleText = timer.title;
     const nameText = timer.personName;
 
@@ -130,7 +130,7 @@ const TimerCard = ({
 
         return {
             nextDate: nextDate.getTime(),
-            recurrenceCount: recurrenceCount - 1 
+            recurrenceCount: recurrenceCount - 1
         };
     }
 
@@ -346,7 +346,7 @@ const TimerCard = ({
             },
             overlay: {
                 flex: 1,
-                backgroundColor: colors.background + '80',
+                backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
                 justifyContent: 'flex-end',
             },
             bottomSheet: {
@@ -590,7 +590,7 @@ const TimerCard = ({
                                 />
                             ) : (
                                 <Text style={styles.timerTitle}>
-                                        {privacyMode === 'jumble' ? jumbledTitleText : maskText(titleText)}
+                                    {privacyMode === 'jumble' ? jumbledTitleText : maskText(titleText)}
                                 </Text>
                             )}
                             <View style={styles.priorityIndicator}>
@@ -604,7 +604,7 @@ const TimerCard = ({
                                         />
                                     ) : (
                                         <Text style={styles.namePill}>
-                                                {privacyMode === 'jumble' ? jumbledNameText : maskText(nameText)}
+                                            {privacyMode === 'jumble' ? jumbledNameText : maskText(nameText)}
                                         </Text>
                                     )
                                 )}

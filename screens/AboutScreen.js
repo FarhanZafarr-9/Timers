@@ -89,7 +89,6 @@ export default function AboutScreen() {
 
     const styles = StyleSheet.create({
         content: {
-            paddingHorizontal: 20,
             gap: 16,
         },
         card: {
@@ -119,13 +118,13 @@ export default function AboutScreen() {
         },
         versionText: {
             marginTop: 14,
-            fontSize: 14,
+            fontSize: 12,
             color: colors.textDesc,
             backgroundColor: colors.card,
             textAlign: 'center',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: variables.radius.xs,
+            paddingHorizontal: 14,
+            paddingVertical: 6,
+            borderRadius: variables.radius.lg,
             alignSelf: 'flex-start',
         },
         description: {
@@ -180,7 +179,7 @@ export default function AboutScreen() {
             borderRadius={variables.radius.md}
             paddingMargin={20}
             colors={colors}
-            paddingX={0}
+            paddingX={20}
         >
             <View style={styles.content}>
                 {/* Top Card */}

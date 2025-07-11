@@ -3,7 +3,7 @@ import { Icons } from '../assets/icons';
 
 import { MaterialIcons } from '@expo/vector-icons';
 
-export const HEADER_MARGIN_TOP = 40;
+export const HEADER_MARGIN_TOP = 50;
 export const MAX_HEADER_HEIGHT = 66;
 export const MIN_HEADER_HEIGHT = 60;
 
