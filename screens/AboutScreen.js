@@ -192,9 +192,9 @@ export default function AboutScreen() {
             headerIcon={<Icons.Ion name="information-circle" color={colors.highlight} />}
             headerTitle="About"
             borderRadius={variables.radius.md}
-            paddingMargin={20}
+            paddingMargin={15}
             colors={colors}
-            paddingX={20}
+            paddingX={15}
         >
             <View style={styles.content}>
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>

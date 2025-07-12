@@ -171,7 +171,7 @@ export default function HomeScreen({ navigation }) {
             headerTitle="Timers"
             borderRadius={variables.radius.md}
             paddingMargin={15}
-            paddingX={20}
+            paddingX={15}
         >
             {mounted && (
                 <>

@@ -54,23 +54,31 @@ function AppContent() {
 
 
   if ((showSplash && !splashDone) || loading) {
-    return <SplashScreen visible colors={colors} variables={variables} />;
+    return (
+      <>
+        <StatusBar hidden />
+        <SplashScreen visible colors={colors} variables={variables} />
+      </>
+    );
   }
 
   return (
     <>
-      <NavigationContainer>
-        <Tab.Navigator
-          tabBar={(props) => <CustomTabBar {...props} />}
-          screenOptions={{ headerShown: false }}
-        >
-          <Tab.Screen name="Home" component={HomeScreen} />
-          <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
-          <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
-          <Tab.Screen name="Settings" component={SettingsScreen} />
-          <Tab.Screen name="About" component={AboutScreen} />
-        </Tab.Navigator>
-      </NavigationContainer>
+      <StatusBar hidden />
+      <AuthComponent>
+        <NavigationContainer>
+          <Tab.Navigator
+            tabBar={(props) => <CustomTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
+          >
+            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
+            <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
+            <Tab.Screen name="Settings" component={SettingsScreen} />
+            <Tab.Screen name="About" component={AboutScreen} />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </AuthComponent>
       <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} />
     </>
   );

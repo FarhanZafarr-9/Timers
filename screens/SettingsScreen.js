@@ -14,8 +14,7 @@ import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
-
-
+import ModernSwitch from '../components/ModernSwitch';
 
 export default function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
@@ -325,11 +324,11 @@ export default function SettingsScreen() {
             headerIcon={<Icons.Ion name="settings" color={colors.highlight} />}
             headerTitle="Settings"
             borderRadius={variables.radius.lg}
-            paddingMargin={10}
+            paddingMargin={15}
             colors={colors}
             contentContainerStyle={{ paddingBottom: 95, overflow: 'visible' }}
             useFlatList={false}
-            paddingX={20}
+            paddingX={15}
         >
             {mounted && <>
                 {messages.map((msg, idx) => (
@@ -448,7 +447,7 @@ export default function SettingsScreen() {
                                     <Text style={styles.settingTitle}>Fingerprint Unlock</Text>
                                     <Text style={styles.settingDesc}>Enable fingerprint authentication</Text>
                                 </View>
-                                <Switch
+                                <ModernSwitch
                                     value={!!isFingerprintEnabled}
                                     onValueChange={() => {
                                         addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
@@ -459,7 +458,7 @@ export default function SettingsScreen() {
                                         true: colors.switchTrackActive,
                                     }}
                                     thumbColor={isFingerprintEnabled ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scale: 0.9 }] }}
+                                    style={{ transform: [{ scaleY: 1 }] }}
                                 />
                             </TouchableOpacity>
                         ) : null}
@@ -488,7 +487,7 @@ export default function SettingsScreen() {
 
                                 </TouchableOpacity>
                             </View>
-                            <Switch
+                            <ModernSwitch
                                 value={!!isPasswordLockEnabled}
                                 onValueChange={(val) => {
                                     if (loading) return;
@@ -505,7 +504,7 @@ export default function SettingsScreen() {
                                     true: colors.switchTrackActive,
                                 }}
                                 thumbColor={isPasswordLockEnabled ? colors.switchThumbActive : colors.switchThumb}
-                                style={{ transform: [{ scale: 0.9 }] }}
+                                style={{ transform: [{ scale: 1 }] }}
                             />
                         </TouchableOpacity>
                         {isPasswordLockEnabled && <TouchableOpacity

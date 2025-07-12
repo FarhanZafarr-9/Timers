@@ -61,7 +61,7 @@ const palettes = {
         switchTrack: '#444',
         switchTrackActive: '#888',
         switchThumb: '#e0e0e0',
-        switchThumbActive: '#bbbbbb',
+        switchThumbActive: '#ededed',
         border: '#55555555',
         divider: '#232323',
         highlight: '#fefefe',
