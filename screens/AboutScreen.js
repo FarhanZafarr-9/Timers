@@ -1,79 +1,60 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking, Button } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import BottomSheetChangelog from '../components/BottomSheetChnageLog';
+import BottomSheetPicker from '../components/BottomSheetPicker';
+import { appVersion } from '../utils/functions';
+import { showToast } from '../utils/functions';
+import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
 
 export default function AboutScreen() {
     const { variables, colors, isBorder } = useTheme();
     const [showChangelog, setShowChangelog] = useState(false);
-
+    const [selectedTestTime, setSelectedTestTime] = useState(null);
+    const [expanded, setExpanded] = useState(0);
     // Animations
     const topCardAnim = useRef(new Animated.Value(-50)).current;
     const descCardAnim = useRef(new Animated.Value(-50)).current;
     const creditsCardAnim = useRef(new Animated.Value(-50)).current;
     const buttonsAnim = useRef(new Animated.Value(-50)).current;
 
-    // Opacity animations
     const topOpacityAnim = useRef(new Animated.Value(0)).current;
     const descOpacityAnim = useRef(new Animated.Value(0)).current;
     const creditsOpacityAnim = useRef(new Animated.Value(0)).current;
     const buttonsOpacityAnim = useRef(new Animated.Value(0)).current;
 
+    // Test notification time options
+    const testTimeOptions = [
+        { value: 5, label: '5 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
+        { value: 10, label: '10 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
+        { value: 15, label: '15 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
+        { value: 30, label: '30 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
+        { value: 45, label: '45 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
+        { value: 60, label: '1 minute', icon: <Icons.Ion name="timer-outline" size={16} /> },
+        { value: 120, label: '2 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
+        { value: 300, label: '5 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
+        { value: 600, label: '10 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
+    ];
+
     useEffect(() => {
         Animated.stagger(120, [
             Animated.parallel([
-                Animated.spring(topCardAnim, {
-                    toValue: 0,
-                    tension: 80,
-                    friction: 8,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(topOpacityAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
+                Animated.spring(topCardAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                Animated.timing(topOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
             Animated.parallel([
-                Animated.spring(descCardAnim, {
-                    toValue: 0,
-                    tension: 80,
-                    friction: 8,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(descOpacityAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
+                Animated.spring(descCardAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                Animated.timing(descOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
             Animated.parallel([
-                Animated.spring(creditsCardAnim, {
-                    toValue: 0,
-                    tension: 80,
-                    friction: 8,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(creditsOpacityAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
+                Animated.spring(creditsCardAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                Animated.timing(creditsOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
             Animated.parallel([
-                Animated.spring(buttonsAnim, {
-                    toValue: 0,
-                    tension: 80,
-                    friction: 8,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(buttonsOpacityAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
+                Animated.spring(buttonsAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                Animated.timing(buttonsOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
         ]).start();
     }, []);
@@ -89,10 +70,22 @@ export default function AboutScreen() {
         Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     };
 
+    const handleScheduleTestNotification = () => {
+        if (selectedTestTime) {
+            const selectedOption = testTimeOptions.find(opt => opt.value === selectedTestTime);
+            scheduleNotification(
+                selectedTestTime,
+                `Hello from ${selectedOption.label}! 👋`,
+                `This notification was scheduled for ${selectedOption.label}`
+            );
+            showToast(`Test notification scheduled for ${selectedOption.label}`, 'success');
+        } else {
+            showToast('Please select a test time first', 'warning');
+        }
+    };
+
     const styles = StyleSheet.create({
-        content: {
-            gap: 16,
-        },
+        content: { gap: 16 },
         card: {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
@@ -100,62 +93,30 @@ export default function AboutScreen() {
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
-        row: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
+        row: { flexDirection: 'row', alignItems: 'center' },
         appIcon: {
-            width: 72,
-            height: 72,
-            borderRadius: variables.radius.md,
-            marginRight: 16,
-            resizeMode: 'cover',
-            borderWidth: 0.75,
-            borderColor: colors.cardBorder,
+            width: 72, height: 72, borderRadius: variables.radius.md, marginRight: 16, resizeMode: 'cover',
+            borderWidth: 0.75, borderColor: colors.cardBorder,
         },
-        appName: {
-            fontSize: 22,
-            color: colors.textTitle,
-            fontWeight: 'bold',
-        },
+        appName: { fontSize: 22, color: colors.textTitle, fontWeight: 'bold' },
         versionText: {
-            marginTop: 14,
-            fontSize: 12,
-            color: colors.textDesc,
-            backgroundColor: colors.card,
-            textAlign: 'center',
-            paddingHorizontal: 14,
-            paddingVertical: 6,
-            borderRadius: variables.radius.lg,
-            alignSelf: 'flex-start',
+            marginTop: 14, fontSize: 12, color: colors.textDesc, backgroundColor: colors.card,
+            textAlign: 'center', paddingHorizontal: 14, paddingVertical: 6, borderRadius: variables.radius.lg,
+            alignSelf: 'flex-start', borderWidth: isBorder ? 0.75 : 0, borderColor: colors.border
         },
-        description: {
-            color: colors.text,
-            fontSize: 14,
-            lineHeight: 22,
-        },
+        description: { color: colors.text, fontSize: 14, lineHeight: 22 },
         quote: {
-            color: colors.textSecondary,
-            fontSize: 16,
-            fontStyle: 'italic',
-            borderLeftColor: colors.highlight,
-            borderLeftWidth: 3,
-            paddingLeft: 8,
-            marginVertical: 24,
+            color: colors.textSecondary, fontSize: 16, fontStyle: 'italic',
+            borderLeftColor: colors.highlight, borderLeftWidth: 3, paddingLeft: 8, marginVertical: 24,
         },
-        credits: {
-            textAlign: 'center',
-            color: colors.textSecondary,
-            fontSize: 14,
-        },
+        credits: { textAlign: 'center', color: colors.textSecondary, fontSize: 14 },
         buttonsContainer: {
             flexDirection: 'row',
+            flexWrap: 'wrap',
             justifyContent: 'space-between',
-            marginTop: 8,
             gap: 12,
         },
         actionButton: {
-            flex: 1,
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
             padding: 12,
@@ -164,13 +125,65 @@ export default function AboutScreen() {
             justifyContent: 'center',
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+            minWidth: 120,
+            flexGrow: 1,
+            flexBasis: '48%',
         },
-        buttonText: {
-            marginLeft: 8,
+        fullWidthButton: {
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.md,
+            padding: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
+            marginTop: 12,
+            width: '100%',
+        },
+        buttonText: { marginLeft: 8, fontSize: 14, fontWeight: '600', color: colors.text, height: 20 },
+        testSection: {
+            marginTop: 20,
+            padding: 16,
+            backgroundColor: colors.card,
+            borderRadius: variables.radius.md,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
+        },
+        testSectionTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.textTitle,
+            marginBottom: 12,
+        },
+        testControls: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+        },
+        pickerContainer: {
+            flex: 1,
+        },
+        testButton: {
+            backgroundColor: colors.primary || colors.highlight,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: variables.radius.sm,
+            minWidth: 80,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        testButtonText: {
+            color: colors.background,
             fontSize: 14,
             fontWeight: '600',
-            color: colors.text,
-            height: 20
+        },
+        testButtonDisabled: {
+            backgroundColor: colors.border,
+            opacity: 0.5,
+        },
+        testButtonTextDisabled: {
+            color: colors.textSecondary,
         },
     });
 
@@ -184,30 +197,17 @@ export default function AboutScreen() {
             paddingX={20}
         >
             <View style={styles.content}>
-                {/* Top Card */}
-                <Animated.View style={[
-                    styles.card,
-                    styles.row,
-                    {
-                        transform: [{ translateY: topCardAnim }],
-                        opacity: topOpacityAnim
-                    }
-                ]}>
+                <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>ChronoX</Text>
-                        <Text style={styles.versionText}>v1.0</Text>
+                        <TouchableOpacity onPress={() => setExpanded(expanded === 5 ? 0 : expanded + 1)}>
+                            <Text style={styles.versionText}>v{appVersion} - beta</Text>
+                        </TouchableOpacity>
                     </View>
                 </Animated.View>
 
-                {/* Description Card */}
-                <Animated.View style={[
-                    styles.card,
-                    {
-                        transform: [{ translateY: descCardAnim }],
-                        opacity: descOpacityAnim
-                    }
-                ]}>
+                <Animated.View style={[styles.card, { transform: [{ translateY: descCardAnim }], opacity: descOpacityAnim }]}>
                     <Text style={[styles.description, { textAlign: 'justify' }]}>
                         Designed for remembering important moments. Whether you're timing an event or counting down to a special occasion, Timers has you covered.
                         {'\n\n'}As a wise man once said:
@@ -215,63 +215,90 @@ export default function AboutScreen() {
                     <Text style={styles.quote}>"Create what you wish existed."</Text>
                 </Animated.View>
 
-                {/* Credits Card */}
-                <Animated.View style={[
-                    styles.card,
-                    {
-                        transform: [{ translateY: creditsCardAnim }],
-                        opacity: creditsOpacityAnim
-                    }
-                ]}>
+                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim }]}>
                     <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
 
-                {/* Action Buttons */}
-                <Animated.View style={[
-                    {
-                        transform: [{ translateY: buttonsAnim }],
-                        opacity: buttonsOpacityAnim
-                    }
-                ]}>
+                <Animated.View style={{ transform: [{ translateY: buttonsAnim }], opacity: buttonsOpacityAnim }}>
+
+
+
                     <View style={styles.buttonsContainer}>
-                        {/* GitHub Repo Button */}
-                        <TouchableOpacity
-                            style={styles.actionButton}
-                            onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}
-                        >
+
+                        <TouchableOpacity style={styles.actionButton} onPress={() => setShowChangelog(true)}>
+                            <Icons.Ion name="document-text-outline" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Show Changelog</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}>
                             <Icons.Ion name="logo-github" size={18} color={colors.text} />
                             <Text style={styles.buttonText}>Repository</Text>
                         </TouchableOpacity>
 
-                        {/* Creator's GitHub Button */}
-                        <TouchableOpacity
-                            style={styles.actionButton}
-                            onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9')}
-                        >
+                        <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9')}>
                             <Icons.Ion name="person" size={18} color={colors.text} />
                             <Text style={styles.buttonText}>Creator</Text>
                         </TouchableOpacity>
 
-                        {/* Report Bug Button */}
-                        <TouchableOpacity
-                            style={styles.actionButton}
-                            onPress={handleReportBug}
-                        >
+                        <TouchableOpacity style={styles.actionButton} onPress={handleReportBug}>
                             <Icons.Ion name="bug" size={18} color={colors.text} />
                             <Text style={styles.buttonText}>Report Bug</Text>
                         </TouchableOpacity>
+
                     </View>
 
-                    <TouchableOpacity style={[styles.actionButton, { marginTop: 20 }]} onPress={() => setShowChangelog(true)} >
-                        <Icons.Ion name="document-text-outline" size={18} color={colors.text} />
-                        <Text style={styles.buttonText}>Show Changelog</Text>
-                    </TouchableOpacity>
-                    <BottomSheetChangelog
-                        visible={showChangelog}
-                        onClose={() => setShowChangelog(false)}
-                        forced={true}
-                    />
+
+
+                    {expanded === 5 &&
+                        (<>
+
+                            <TouchableOpacity
+                                style={[styles.fullWidthButton, { backgroundColor: colors.highlight, marginTop: 20 }]}
+                                onPress={clearAllScheduledNotifications}
+                            >
+                                <Icons.Ion name="trash-outline" size={18} color={colors.background} />
+                                <Text style={[styles.buttonText, { color: colors.background }]}>Clear All Notifications</Text>
+                            </TouchableOpacity>
+
+
+                            <View style={styles.testSection}>
+                                <Text style={styles.testSectionTitle}>Test Notifications</Text>
+                                <View style={styles.testControls}>
+                                    <View style={styles.pickerContainer}>
+                                        <BottomSheetPicker
+                                            value={selectedTestTime}
+                                            options={testTimeOptions}
+                                            onChange={setSelectedTestTime}
+                                            placeholder="Select test time"
+                                            title="Select Test Time"
+                                            colors={colors}
+                                            variables={variables}
+                                            pillsPerRow={3}
+                                            defaultValue={null}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.testButton,
+                                            !selectedTestTime && styles.testButtonDisabled
+                                        ]}
+                                        onPress={handleScheduleTestNotification}
+                                        disabled={!selectedTestTime}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[
+                                            styles.testButtonText,
+                                            !selectedTestTime && styles.testButtonTextDisabled
+                                        ]}>
+                                            Test
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </>)}
                 </Animated.View>
+
+                <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </View>
         </ScreenWithHeader>
     );

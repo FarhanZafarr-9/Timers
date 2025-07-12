@@ -206,7 +206,101 @@ export const showToast = (msg) => {
     }
 };
 
+export const appVersion = '1.0.14';
+
 export const changelog = [
+    {
+        version: "1.0.14",
+        date: "2025-07-12",
+        title: "Changelog spacing & alignment",
+        major: false,
+        changes: [
+            "Fixed wrapped line alignment",
+            "Added vertical spacing",
+            "Improved line height"
+        ]
+    },
+    {
+        version: "1.0.13",
+        date: "2025-07-12",
+        title: "Notification Bug fixed Finally! 🎉",
+        major: false,
+        changes: [
+            "💥 Fixed the scheduling bug where notifications were not delayed correctly.",
+            "🔍 Root cause: was missing the property inside trigger: 'type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL', which is required for Expo to understand it's a time interval trigger.",
+            "🛠️ Added the missing 'type' field to the trigger object, ensuring the notification waits for the specified seconds before firing.",
+            "🚀 Refactored the notification scheduling function to be dynamic, now accepts time (in seconds), title, and message as parameters.",
+            "✨ Updated how the function is called throughout the app to pass these dynamic values, improving flexibility.",
+            "🧹 Cleaned up redundant old notification code and made the data payload simpler."
+        ]
+    },
+    {
+        version: "1.0.12",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (7)",
+        major: false,
+        changes: [
+            "Changed setup and calling notificaions logic",
+        ]
+    },
+    {
+        version: "1.0.11",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (6)",
+        major: false,
+        changes: [
+            "Added more intervals for testing",
+            "Added timer interval testing",
+            "Disabled show alert"
+        ]
+    },
+    {
+        version: "1.0.10",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (5)",
+        major: false,
+        changes: [
+            "Added timer interval testing",
+            "Tried to Fix a class bug "
+        ]
+    },
+    {
+        version: "1.0.9",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (4)",
+        major: false,
+        changes: [
+            "Added timer interval testing",
+            "Tried to Fix a class bug "
+        ]
+    },
+    {
+        version: "1.0.8",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (3)",
+        major: false,
+        changes: [
+            "Tried to Fix a class bug "
+        ]
+    },
+    {
+        version: "1.0.7",
+        date: "2025-07-12",
+        title: "Notification Bug fix Probably (2)",
+        major: false,
+        changes: [
+            "Tried to Fix a class bug "
+        ]
+    },
+    {
+        version: "1.0.6",
+        date: "2025-07-12",
+        title: "Notification Bug fix",
+        major: false,
+        changes: [
+            "Tried to Fix a class bug "
+        ]
+    },
     {
         version: "1.0.5",
         date: "2025-07-12",
@@ -249,7 +343,7 @@ export const changelog = [
     }
 ];
 
-export const appVersion = '1.0.5';
+
 
 /*
 function check        { npm run check }

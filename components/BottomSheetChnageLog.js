@@ -100,7 +100,7 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
             alignItems: 'center',
             paddingHorizontal: 20,
             paddingBottom: 10,
-            borderBottomWidth: 0.5,
+            borderBottomWidth: 1.5,
             borderBottomColor: colors.border,
         },
         titleText: {
@@ -121,8 +121,16 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
         changeItem: {
             flexDirection: 'row',
             alignItems: 'flex-start',
-            marginBottom: 8,
+            marginBottom: 12,
             paddingHorizontal: 20,
+        },
+        changeTextContainer: {
+            flex: 1,
+        },
+        changeText: {
+            fontSize: 15,
+            color: colors.text,
+            lineHeight: 22,
         },
         bullet: {
             width: 6,
@@ -131,12 +139,6 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
             borderRadius: 3,
             marginTop: 6,
             marginRight: 10,
-        },
-        changeText: {
-            fontSize: 15,
-            color: colors.text,
-            flexShrink: 1,
-            height: 20
         },
         majorNotice: {
             marginTop: 10,
@@ -204,9 +206,11 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
                         )}
 
                         {latest.changes.map((change, idx) => (
-                            <View key={idx} style={styles.changeItem}>
+                            <View style={styles.changeItem}>
                                 <View style={styles.bullet} />
-                                <Text style={styles.changeText}>{change}</Text>
+                                <View style={styles.changeTextContainer}>
+                                    <Text style={styles.changeText}>{change}</Text>
+                                </View>
                             </View>
                         ))}
 

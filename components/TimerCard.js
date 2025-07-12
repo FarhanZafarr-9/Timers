@@ -284,7 +284,7 @@ const TimerCard = ({
                 borderRadius: variables.radius.md,
                 marginBottom: 10,
                 borderWidth: 0.75,
-                borderColor: searchText === '' || privacyMode !== 'off' ? colors.border : colors.highlight + '3a',
+                borderColor: !isBorder ? 0 : (searchText === '' || privacyMode !== 'off') ? colors.border : colors.highlight + '3a',
             },
             header: {
                 flexDirection: 'row',

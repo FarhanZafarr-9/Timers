@@ -66,7 +66,7 @@ export default function SettingsScreen() {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState(() => () => { });
     const [confirmText, setConfirmText] = useState('');
-    const [showExtra, setShowExtra] = useState(false);
+    const [showExtra, setShowExtra] = useState(0);
     const DIRECTORY_KEY = 'download_directory_uri';
     const [mounted, setMounted] = useState(false);
     const [messages, setMessages] = useState([]);
@@ -565,7 +565,7 @@ export default function SettingsScreen() {
                     </View>
                 </Animated.View>
 
-                <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowExtra(!showExtra)} activeOpacity={1}>
+                <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowExtra(showExtra === 3 ? 0 : showExtra + 1)} activeOpacity={1}>
                     <Text style={styles.sectionHeaderText}>Timer Management</Text>
                 </TouchableOpacity>
 
@@ -577,7 +577,7 @@ export default function SettingsScreen() {
                     <View style={styles.card}>
 
                         {/* Populate Timers */}
-                        {showExtra &&
+                        {showExtra === 3 &&
                             <TouchableOpacity
                                 style={styles.settingBlock}
                                 onPress={populateTimers}
