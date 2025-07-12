@@ -206,7 +206,7 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
                         )}
 
                         {latest.changes.map((change, idx) => (
-                            <View style={styles.changeItem}>
+                            <View key={idx} style={styles.changeItem}>
                                 <View style={styles.bullet} />
                                 <View style={styles.changeTextContainer}>
                                     <Text style={styles.changeText}>{change}</Text>

@@ -41,30 +41,28 @@ const HeaderControls = ({
 
     const styles = StyleSheet.create({
         container: {
-            paddingBottom: 12,
-            paddingTop: 12,
+            borderRadius: variables.radius.circle ,
             marginVertical: 12,
+            backgroundColor: colors.settingBlock,
+            borderWidth: isBorder ? 1 : 0,
+            borderColor: isFocused ? colors.highlight + '40' : colors.border,
         },
         row: {
             flexDirection: 'row',
             alignItems: 'center',
-            height: 44,
+            height: 48,
         },
         searchContainer: {
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.settingBlock,
-            borderRadius: variables.radius.md,
-            borderWidth: 1,
-            borderColor: isFocused ? colors.highlight + '40' : colors.border,
-            height: 44,
+            height: 48,
             paddingHorizontal: 12,
         },
         searchInput: {
             flex: 1,
             color: colors.text,
-            height: 42,
+            height: 48,
             fontSize: 16,
             paddingVertical: 0,
             paddingHorizontal: 8,
@@ -74,15 +72,14 @@ const HeaderControls = ({
             borderRadius: 12,
         },
         toggleButton: {
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            backgroundColor: colors.cardLighter,
+            width: 48,
+            height: 48,
+            borderTopRightRadius: variables.radius.xl,
+            borderBottomRightRadius: variables.radius.xl,
+            backgroundColor: colors.highlight + '20',
             justifyContent: 'center',
             alignItems: 'center',
             marginLeft: 8,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
         },
 
     });
@@ -127,7 +124,7 @@ const HeaderControls = ({
                         <MaterialIcons
                             name="tune"
                             size={20}
-                            color={colors.text}
+                            color={colors.textDesc}
                         />
                     </TouchableOpacity>
                 </View>
@@ -137,7 +134,7 @@ const HeaderControls = ({
                 visible={sheetVisible}
                 onClose={() => setSheetVisible(false)}
                 onAdd={onAdd}
-                onBatchToggle={onBatchDelete} // maps directly to your existing prop
+                onBatchToggle={onBatchDelete}
                 isSelectable={isSelectable}
                 sortValue={sortMethod}
                 onSortChange={onSortChange}

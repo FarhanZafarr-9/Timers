@@ -206,9 +206,21 @@ export const showToast = (msg) => {
     }
 };
 
-export const appVersion = '1.0.14';
+export const appVersion = '1.0.15';
 
 export const changelog = [
+    {
+        version: "1.0.15",
+        date: "2025-07-12",
+        title: "Material Switch & UI tweaks",
+        major: false,
+        changes: [
+            "Replaced switch with smooth Material You switch",
+            "Improved thumb spacing and transitions",
+            "Adjusted shadow for flatter Material look",
+            "Minor UI consistency fixes across settings"
+        ]
+    },
     {
         version: "1.0.14",
         date: "2025-07-12",
