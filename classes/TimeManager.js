@@ -11,13 +11,26 @@ export class TimerManager {
     async loadFromStorage() {
         try {
             const loadedTimers = await loadTimers();
-            // Convert loaded data to Timer instances
-            this.timers = loadedTimers.map(timerData => new Timer(timerData));
+            // Convert loaded data to Timer instances WITHOUT scheduling notifications
+            this.timers = loadedTimers.map(timerData => new Timer(timerData, { skipNotificationScheduling: true }));
+
+            // Schedule notifications for all loaded timers
+            this.scheduleNotificationsForAllTimers();
+
             //console.log('Timers loaded into memory:', this.timers.length);
         } catch (error) {
             //console.error('Error loading timers from storage:', error);
             this.timers = [];
         }
+    }
+
+    // Schedule notifications for all timers
+    scheduleNotificationsForAllTimers() {
+        this.timers.forEach(timer => {
+            if (timer.scheduleNotification) {
+                timer.scheduleNotification();
+            }
+        });
     }
 
     // Save timers to storage
@@ -50,6 +63,15 @@ export class TimerManager {
                 id: timerData.id || uuid.v4(),
                 ...timerData,
             });
+
+            // Only schedule notification if the timer date is in the future
+            const timerDate = new Date(newTimer.date);
+            const now = new Date();
+
+            if (timerDate > now && newTimer.scheduleNotification) {
+                newTimer.scheduleNotification();
+            }
+
             this.timers.push(newTimer);
             await this.saveToStorage();
             return newTimer;
@@ -62,6 +84,14 @@ export class TimerManager {
     // Remove a timer by ID
     async removeTimer(id) {
         try {
+            const timerToRemove = this.timers.find(timer => timer.id === id);
+            if (timerToRemove) {
+                // Cancel any existing notifications before removing
+                if (timerToRemove.cancelNotification) {
+                    timerToRemove.cancelNotification();
+                }
+            }
+
             const initialLength = this.timers.length;
             this.timers = this.timers.filter((timer) => timer.id !== id);
 
@@ -83,9 +113,24 @@ export class TimerManager {
         try {
             const index = this.timers.findIndex((t) => t.id === timerData.id);
             if (index !== -1) {
+                const oldTimer = this.timers[index];
+
+                // Cancel old notifications before updating
+                if (oldTimer.cancelNotification) {
+                    oldTimer.cancelNotification();
+                }
+
                 // Remove nextDate so Timer constructor recalculates it
                 const { nextDate, ...rest } = { ...this.timers[index], ...timerData };
                 const updatedTimer = new Timer(rest);
+
+                // Only schedule notification if the timer date is in the future
+                const timerDate = new Date(updatedTimer.date);
+                const now = new Date();
+
+                if (timerDate > now && updatedTimer.scheduleNotification) {
+                    updatedTimer.scheduleNotification();
+                }
 
                 this.timers[index] = updatedTimer;
                 //console.log('Timer edited:', this.timers[index]);
@@ -104,6 +149,13 @@ export class TimerManager {
     // Clear all timers
     async clearAllTimers() {
         try {
+            // Cancel all notifications before clearing
+            this.timers.forEach(timer => {
+                if (timer.cancelNotification) {
+                    timer.cancelNotification();
+                }
+            });
+
             this.timers = [];
             await this.saveToStorage();
             //console.log('All timers cleared');
@@ -175,7 +227,7 @@ export class TimerManager {
             for (let i = 0; i < total; i++) {
                 const isCountdown = i < 5;
                 const baseIndex = existingTimers.length + (isCountdown ? i + 1 : 20 + i - 5 + 1);
-                const isRecurring = true;
+                const isRecurring = isCountdown ? true : false;
 
                 let recurrenceInterval = null;
                 if (isRecurring) {
@@ -216,30 +268,78 @@ export class TimerManager {
         }
     };
 
-    // Calculate the next occurrence for recurring timers
-    calculateNextDate(currentDate, recurrenceInterval) {
+    // Advance a recurring timer to its next occurrence
+    async advanceRecurringTimer(timerId) {
         try {
-            const date = new Date(currentDate);
-            switch (recurrenceInterval.unit) {
-                case 'days':
-                    date.setDate(date.getDate() + recurrenceInterval.value);
-                    break;
-                case 'weeks':
-                    date.setDate(date.getDate() + recurrenceInterval.value * 7);
-                    break;
-                case 'months':
-                    date.setMonth(date.getMonth() + recurrenceInterval.value);
-                    break;
-                case 'years':
-                    date.setFullYear(date.getFullYear() + recurrenceInterval.value);
-                    break;
-                default:
-                    throw new Error('Invalid recurrence interval unit');
+            const timer = this.getTimer(timerId);
+            if (!timer || !timer.isRecurring) {
+                return false;
             }
-            return date.toISOString();
+
+            const now = new Date();
+            const { nextDate } = this.calculateNextOccurrence(timer, now);
+
+            // Update the timer with the new date
+            const updatedTimerData = {
+                ...timer,
+                date: new Date(nextDate)
+            };
+
+            await this.editTimer(updatedTimerData);
+            return true;
         } catch (error) {
-            console.error('Error calculating next date:', error);
+            console.error('Error advancing recurring timer:', error);
             throw error;
         }
+    }
+
+    // Get expired timers that need to be advanced
+    getExpiredRecurringTimers() {
+        const now = new Date();
+        return this.timers.filter(timer => {
+            return timer.isRecurring &&
+                timer.isCountdown &&
+                new Date(timer.date) <= now;
+        });
+    }
+    calculateNextOccurrence(timer, now = new Date()) {
+        if (!timer.isRecurring || !timer.recurrenceInterval) {
+            return {
+                nextDate: timer.date,
+                recurrenceCount: 0
+            };
+        }
+
+        const [countStr, unitRaw] = timer.recurrenceInterval.split(' ');
+        const count = parseInt(countStr, 10) || 1;
+        const unit = unitRaw.toLowerCase().endsWith('s')
+            ? unitRaw.toLowerCase().slice(0, -1)
+            : unitRaw.toLowerCase();
+
+        const addMap = {
+            second: (date, n) => date.setSeconds(date.getSeconds() + n),
+            minute: (date, n) => date.setMinutes(date.getMinutes() + n),
+            hour: (date, n) => date.setHours(date.getHours() + n),
+            day: (date, n) => date.setDate(date.getDate() + n),
+            week: (date, n) => date.setDate(date.getDate() + n * 7),
+            month: (date, n) => date.setMonth(date.getMonth() + n),
+            year: (date, n) => date.setFullYear(date.getFullYear() + n),
+        };
+
+        let nextDate = new Date(timer.date);
+        let recurrenceCount = 0;
+
+        while (nextDate.getTime() < now.getTime()) {
+            addMap[unit]?.(nextDate, count);
+            recurrenceCount++;
+
+            // Safety check to prevent infinite loops
+            if (recurrenceCount > 10000) break;
+        }
+
+        return {
+            nextDate: nextDate.getTime(),
+            recurrenceCount: recurrenceCount - 1
+        };
     }
 }

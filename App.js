@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from './screens/HomeScreen';
@@ -11,7 +11,6 @@ import { StatusBar } from 'expo-status-bar';
 
 import { SecurityProvider, useSecurity } from './utils/SecurityContext';
 import AuthComponent from './utils/AuthComponent';
-import * as Notifications from 'expo-notifications';
 import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from './utils/ThemeContext';
 import { DataProvider } from './utils/DataContext';
@@ -19,97 +18,60 @@ import SplashScreen from './screens/SplashScreen';
 import { useCheckForUpdate } from './utils/useCheckForUpdate';
 import BottomSheetChangelog from './components/BottomSheetChnageLog';
 
-const Tab = createBottomTabNavigator();
+import { initializeNotifications } from './utils/Notificationhelper';
+import * as Notifications from 'expo-notifications';
 
-async function setupNotificationChannel() {
-  await Notifications.setNotificationChannelAsync('timer-alerts', {
-    name: 'Timer Alerts',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: true,
-    vibrationPattern: [0, 250, 250, 250],
-  });
-}
+const Tab = createBottomTabNavigator();
 
 function AppContent() {
   const { variables, colors } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
-
   const [splashDone, setSplashDone] = useState(false);
   const [showChangelog, setShowChangelog] = useCheckForUpdate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2500);
-
+    const timer = setTimeout(() => setShowSplash(false), 2500);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    const setupNotifications = async () => {
+    initializeNotifications();
 
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn('Notification permissions not granted');
-        return;
-      }
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📱 Notification received:', notification);
+    });
 
-      await setupNotificationChannel();
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('👆 Notification tapped:', response);
+    });
 
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowBanner: true,
-          shouldShowList: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
     };
-
-    setupNotifications();
   }, []);
 
+
   if ((showSplash && !splashDone) || loading) {
-    return (
-      <>
-        <StatusBar hidden />
-        <SplashScreen visible={(showSplash && !splashDone) || loading} colors={colors} variables={variables} />
-      </>
-    );
+    return <SplashScreen visible colors={colors} variables={variables} />;
   }
 
   return (
     <>
-      <StatusBar hidden />
-      <Toast
-        position="bottom"
-        bottomOffset={20}
-        visibilityTime={2000}
-        autoHide={true}
-        topOffset={0}
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-        textStyle={{ color: 'white', fontSize: 16, fontWeight: '500' }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 10 }}
-      />
-      <AuthComponent>
-        <NavigationContainer>
-          <Tab.Navigator
-            tabBar={(props) => <CustomTabBar {...props} />}
-            screenOptions={{ headerShown: false }}
-          >
-            <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
-            <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
-            <Tab.Screen name="Settings" component={SettingsScreen} />
-            <Tab.Screen name="About" component={AboutScreen} />
-          </Tab.Navigator>
-        </NavigationContainer>
-      </AuthComponent>
-      <BottomSheetChangelog
-        visible={showChangelog}
-        onClose={() => setShowChangelog(false)}
-      />
+      <NavigationContainer>
+        <Tab.Navigator
+          tabBar={(props) => <CustomTabBar {...props} />}
+          screenOptions={{ headerShown: false }}
+        >
+          <Tab.Screen name="Home" component={HomeScreen} />
+          <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
+          <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
+          <Tab.Screen name="Settings" component={SettingsScreen} />
+          <Tab.Screen name="About" component={AboutScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+      <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} />
     </>
   );
 }
@@ -123,7 +85,6 @@ export default function App() {
             <AppContent />
           </TimerProvider>
         </DataProvider>
-
       </ThemeProvider>
     </SecurityProvider>
   );

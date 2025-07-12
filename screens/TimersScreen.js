@@ -255,18 +255,18 @@ export default function TimersScreen({ route }) {
         actionButton: {
             flexDirection: 'row',
             alignItems: 'center',
-            paddingVertical: 8,
-            borderRadius: variables.radius.sm,
+            paddingVertical: 12,
+            borderRadius: variables.radius.md,
             backgroundColor: colors.cardLighter,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.cardBorder,
             justifyContent: 'center',
             marginTop: 16,
-            paddingHorizontal: 35,
+            paddingHorizontal: 45,
         },
         actionText: {
             color: colors.text,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: '600',
         },
     }), [colors, variables]);
