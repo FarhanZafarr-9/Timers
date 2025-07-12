@@ -3,7 +3,7 @@ import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 
 const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
     // Animated values for sliding
-    const logoSlide = useRef(new Animated.Value(-250)).current; // Start above
+    const logoSlide = useRef(new Animated.Value(-550)).current; // Start above
     const textSlide = useRef(new Animated.Value(250)).current;  // Start below
 
     useEffect(() => {
@@ -95,7 +95,7 @@ const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
                 styles.quote,
                 { transform: [{ translateY: textSlide }] }
             ]}>
-                "Create what you wish existed"
+                "Create what you wish existed."
             </Animated.Text>
             <Animated.Text style={[
                 styles.credits,

@@ -16,6 +16,8 @@ import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from './utils/ThemeContext';
 import { DataProvider } from './utils/DataContext';
 import SplashScreen from './screens/SplashScreen';
+import { useCheckForUpdate } from './utils/useCheckForUpdate';
+import BottomSheetChangelog from './components/BottomSheetChnageLog';
 
 const Tab = createBottomTabNavigator();
 
@@ -34,6 +36,7 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
 
   const [splashDone, setSplashDone] = useState(false);
+  const [showChangelog, setShowChangelog] = useCheckForUpdate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -103,6 +106,10 @@ function AppContent() {
           </Tab.Navigator>
         </NavigationContainer>
       </AuthComponent>
+      <BottomSheetChangelog
+        visible={showChangelog}
+        onClose={() => setShowChangelog(false)}
+      />
     </>
   );
 }

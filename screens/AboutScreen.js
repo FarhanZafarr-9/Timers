@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking, Button } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
+import BottomSheetChangelog from '../components/BottomSheetChnageLog';
 
 export default function AboutScreen() {
     const { variables, colors, isBorder } = useTheme();
+    const [showChangelog, setShowChangelog] = useState(false);
 
     // Animations
     const topCardAnim = useRef(new Animated.Value(-50)).current;
@@ -259,6 +261,16 @@ export default function AboutScreen() {
                             <Text style={styles.buttonText}>Report Bug</Text>
                         </TouchableOpacity>
                     </View>
+
+                    <TouchableOpacity style={[styles.actionButton, { marginTop: 20 }]} onPress={() => setShowChangelog(true)} >
+                        <Icons.Ion name="document-text-outline" size={18} color={colors.text} />
+                        <Text style={styles.buttonText}>Show Changelog</Text>
+                    </TouchableOpacity>
+                    <BottomSheetChangelog
+                        visible={showChangelog}
+                        onClose={() => setShowChangelog(false)}
+                        forced={true}
+                    />
                 </Animated.View>
             </View>
         </ScreenWithHeader>
