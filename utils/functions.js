@@ -121,7 +121,6 @@ export const navOptions = [
     },
 ];
 
-// make an array for the header options as collapsable, fixed, and floating
 export const headerOptions = [
     {
         label: 'Minimized',
@@ -139,7 +138,6 @@ export const headerOptions = [
         icon: <Icons.Material name="unfold-more" size={16} />
     },
 ];
-// add options like bi weekly, fotnightly, etc
 
 export const recurrenceOptions = [
     {
@@ -207,6 +205,41 @@ export const showToast = (msg) => {
         Alert.alert('Error', msg);
     }
 };
+
+export const changelog = [
+    {
+        version: "1.0.4",
+        date: "2025-07-12",
+        title: "New Dark Mode Enhancements",
+        major: false,
+        changes: [
+            "Improved dark mode contrast",
+            "Faster theme switching"
+        ]
+    },
+    {
+        version: "1.0.3",
+        date: "2025-07-12",
+        title: "New Dark Mode Enhancements",
+        major: false,
+        changes: [
+            "Improved dark mode contrast",
+            "Faster theme switching"
+        ]
+    },
+    {
+        version: "1.0.2",
+        date: "2025-07-11",
+        title: "Performance Update",
+        major: true,
+        changes: [
+            "Major optimizations",
+            "Minor UI improvements"
+        ]
+    }
+];
+
+export const appVersion = '1.0.4';
 
 /*
 function check        { npm run check }

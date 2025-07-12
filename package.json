@@ -36,7 +36,8 @@
     "react-native-uuid": "^2.0.3",
     "react-native-view-shot": "^4.0.3",
     "react-native-wheel-picker-expo": "^0.5.4",
-    "expo-blur": "~14.1.5"
+    "expo-blur": "~14.1.5",
+    "expo-updates": "~0.28.17"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

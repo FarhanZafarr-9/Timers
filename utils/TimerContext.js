@@ -98,59 +98,64 @@ export const TimerProvider = ({ children }) => {
 
     // Helper function to schedule recurring notifications
     const scheduleRecurringNotifications = async (timerData) => {
-        if (!timerData.isRecurring || !timerData.recurrenceInterval) {
-            return await scheduleNotificationsForDate(timerData, new Date(timerData.date));
-        }
-
         const now = new Date();
-        const originalDate = new Date(timerData.date);
+        const effectiveDate = timerData.getEffectiveDate();
 
-        console.log('Original date:', originalDate);
-        console.log('Current time:', now);
-        console.log('Recurrence interval:', timerData.recurrenceInterval);
+        console.log('Scheduling for effective date:', effectiveDate);
 
-        // Parse recurrence interval
-        let count = 1, unit = '';
-        if (typeof timerData.recurrenceInterval === 'string' && timerData.recurrenceInterval.split(' ').length > 1) {
-            [count, unit] = timerData.recurrenceInterval.split(' ');
-            count = parseInt(count, 10) || 1;
-            unit = unit.toLowerCase().endsWith('s') ? unit.toLowerCase().slice(0, -1) : unit.toLowerCase();
-        }
+        let notificationId = null;
+        let reminderNotificationId = null;
 
-        console.log('Parsed count:', count, 'unit:', unit);
+        // Only schedule if effective date is in the future
+        if (effectiveDate > now) {
+            // Calculate how many seconds until the main notification
+            const timeDifferenceSec = Math.floor((effectiveDate.getTime() - now.getTime()) / 1000);
+            console.log('Time until next occurrence (seconds):', timeDifferenceSec);
 
-        // Find the next occurrence
-        let nextDate = new Date(originalDate);
-        const addMap = {
-            second: (date, n) => { date.setSeconds(date.getSeconds() + n); return date; },
-            minute: (date, n) => { date.setMinutes(date.getMinutes() + n); return date; },
-            hour: (date, n) => { date.setHours(date.getHours() + n); return date; },
-            day: (date, n) => { date.setDate(date.getDate() + n); return date; },
-            week: (date, n) => { date.setDate(date.getDate() + n * 7); return date; },
-            month: (date, n) => { date.setMonth(date.getMonth() + n); return date; },
-            year: (date, n) => { date.setFullYear(date.getFullYear() + n); return date; },
-        };
+            // Schedule main notification
+            notificationId = await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: timerData.title || "Timer Alert",
+                    body: `Timer for ${ timerData.personName || 'someone' } has completed!`,
+                sound: true,
+                data: { timerId: timerData.id },
+            },
+        trigger: {
+            date: effectiveDate,
+                channelId: 'timer-alerts'
+        },
+    });
+    console.log('Main recurring notification scheduled with ID:', notificationId);
 
-        // Advance to next occurrence if original date has passed
-        if (originalDate <= now && addMap[unit]) {
-            console.log('Original date has passed, advancing to next occurrence');
-            while (nextDate <= now) {
-                console.log('Advancing from:', nextDate);
-                nextDate = addMap[unit](nextDate, count);
-                console.log('Advanced to:', nextDate);
+    // Check if we should schedule a reminder
+    const reminderOffset = getReminderOffset(timeDifferenceSec);
+    if (reminderOffset > 0) {
+        const reminderDate = new Date(effectiveDate.getTime() - reminderOffset * 1000);
+        if (reminderDate > now) {
+            console.log('Scheduling reminder notification at:', reminderDate);
+            reminderNotificationId = await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: timerData.title || "Timer Reminder",
+                    body: `Timer for ${ timerData.personName || 'someone' } is coming up!`,
+                sound: true,
+                data: { timerId: timerData.id },
+                    },
+        trigger: {
+            date: reminderDate,
+                channelId: 'timer-alerts'
+        },
+    });
+    console.log('Reminder notification scheduled with ID:', reminderNotificationId);
+} else {
+    console.log('Reminder date already passed, skipping reminder.');
             }
         }
+    } else {
+    console.log('Effective date is in the past, skipping scheduling.');
+}
 
-        console.log('Final scheduled date:', nextDate);
-
-        // Schedule notification for the next occurrence
-        const notifications = await scheduleNotificationsForDate(timerData, nextDate);
-
-        // Store the next occurrence date for the timer card logic
-        timerData.nextDate = nextDate.getTime();
-
-        return notifications;
-    };
+return { notificationId, reminderNotificationId };
+};
 
     // Handle notification responses for recurring timers
     const handleNotificationResponse = useCallback(async (response) => {
