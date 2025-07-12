@@ -208,6 +208,16 @@ export const showToast = (msg) => {
 
 export const changelog = [
     {
+        version: "1.0.5",
+        date: "2025-07-12",
+        title: "Notification Bug fixes",
+        major: false,
+        changes: [
+            "TimerContext works fine now",
+            "Fixed a class bug "
+        ]
+    },
+    {
         version: "1.0.4",
         date: "2025-07-12",
         title: "New Dark Mode Enhancements",
@@ -239,7 +249,7 @@ export const changelog = [
     }
 ];
 
-export const appVersion = '1.0.4';
+export const appVersion = '1.0.5';
 
 /*
 function check        { npm run check }
