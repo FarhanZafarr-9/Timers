@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TextInput, Image, TouchableOpacity, Animated } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback, View, Text, ActivityIndicator, StyleSheet, TextInput, Image, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { useSecurity } from './SecurityContext';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import { showToast } from './functions';
 import { AppState } from 'react-native';
-import PasswordBottomSheet from '../components/PasswordModal'; // Import the password modal
+import PasswordBottomSheet from '../components/PasswordModal';
+
+const { width, height } = Dimensions.get('window');
 
 const AuthComponent = ({ children }) => {
     const { variables, colors, isBorder } = useTheme();
+    const [isFocused, setIsFocused] = useState(false);
 
     const {
         passwordModalVisible,
@@ -26,9 +29,8 @@ const AuthComponent = ({ children }) => {
         getTimeUntilLockout,
         shouldUseLockout,
         lockoutMode,
-        lastActiveTime,
         updateLastActiveTime,
-        savePassword // Add this for password reset functionality
+        savePassword
     } = useSecurity();
 
     const [authenticated, setAuthenticated] = useState(false);
@@ -36,26 +38,113 @@ const AuthComponent = ({ children }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState(null);
     const [showPasswordInput, setShowPasswordInput] = useState(false);
-    const [showResetModal, setShowResetModal] = useState(false); // State for reset modal
-    const [wasAccessedFromRecents, setWasAccessedFromRecents] = useState(false); // Track if accessed from recents
-
-    // Animation values
-    const topSlide = useRef(new Animated.Value(-120)).current;
-    const bottomSlide = useRef(new Animated.Value(120)).current;
-
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [wasAccessedFromRecents, setWasAccessedFromRecents] = useState(false);
     const [appState, setAppState] = useState(AppState.currentState);
+
+    const [hasMounted, setHasMounted] = useState(false);
+
+    const topCardAnimY = useRef(new Animated.Value(-200)).current;
+    const topCardOpacity = useRef(new Animated.Value(0)).current;
+    const middleCardAnimY = useRef(new Animated.Value(height)).current;
+    const bottomCardAnimY = useRef(new Animated.Value(height)).current;
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!hasMounted) return;
+
+        let targetY, targetOpacity;
+
+        if (isFocused) {
+            targetY = -100;
+            targetOpacity = 0;
+        } else {
+            targetY = 0;
+            targetOpacity = 1;
+        }
+
+        Animated.parallel([
+            Animated.timing(topCardAnimY, {
+                toValue: targetY,
+                duration: 300,
+                useNativeDriver: true
+            }),
+            Animated.timing(topCardOpacity, {
+                toValue: targetOpacity,
+                duration: 300,
+                useNativeDriver: true
+            })
+        ]).start();
+    }, [isFocused, hasMounted]);
+
+    useEffect(() => {
+        if (!hasMounted) return;
+
+        let targetY;
+
+        if (isFocused) {
+            targetY = -(height * 0.25);
+        } else {
+            targetY = 0;
+        }
+
+        Animated.timing(middleCardAnimY, {
+            toValue: targetY,
+            duration: 300,
+            useNativeDriver: true
+        }).start();
+    }, [isFocused, hasMounted, height]);
+
+    useEffect(() => {
+        if (!hasMounted) return;
+
+        let targetValue;
+
+        if (isFocused) {
+            targetValue = 0;
+        } else if (showPasswordInput) {
+            targetValue = height * 0.35;
+        } else {
+            targetValue = height * 0.42;
+        }
+
+        Animated.timing(bottomCardAnimY, {
+            toValue: targetValue,
+            duration: 300,
+            useNativeDriver: true
+        }).start();
+    }, [showPasswordInput, isFocused, height, hasMounted]);
+
+    const handleFocus = () => {
+        if (!hasMounted) return;
+        setIsFocused(true);
+    };
+
+    const handleBlur = () => {
+        if (!hasMounted) return;
+        setIsFocused(false);
+    };
+
+    useEffect(() => {
+        if (wasAccessedFromRecents && hasMounted) {
+            setIsFocused(false);
+            setShowPasswordInput(false);
+        }
+    }, [wasAccessedFromRecents, hasMounted]);
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState) => {
-            if (
-                appState.match(/inactive|background/) &&
-                nextAppState === 'active'
-            ) {
-                // Check if this is a recent access (app was backgrounded recently)
+            if (appState.match(/inactive|background/) && nextAppState === 'active') {
                 const timeUntilLockout = getTimeUntilLockout();
                 setWasAccessedFromRecents(timeUntilLockout > 0);
 
-                // If the app is NOT locked and NOT in lockout, update last active time
+                // Reset UI state when coming back from background
+                setIsFocused(false);
+                setShowPasswordInput(false);
+
                 if (!isAppLocked && (!shouldUseLockout || !shouldUseLockout())) {
                     updateLastActiveTime && updateLastActiveTime();
                 }
@@ -67,32 +156,13 @@ const AuthComponent = ({ children }) => {
         return () => subscription.remove();
     }, [appState, isAppLocked, shouldUseLockout, updateLastActiveTime, getTimeUntilLockout]);
 
-    // Animate in on mount
-    useEffect(() => {
-        Animated.parallel([
-            Animated.spring(topSlide, {
-                toValue: 0,
-                useNativeDriver: true,
-                friction: 7,
-            }),
-            Animated.spring(bottomSlide, {
-                toValue: 0,
-                useNativeDriver: true,
-                friction: 7,
-            }),
-        ]).start();
-    }, []);
-
-    // Update time remaining every second when locked
     useEffect(() => {
         let interval;
         if (isAppLocked && shouldUseLockout()) {
             interval = setInterval(() => {
                 const remaining = getTimeUntilLockout();
                 setTimeRemaining(remaining);
-                if (remaining <= 0) {
-                    clearInterval(interval);
-                }
+                if (remaining <= 0) clearInterval(interval);
             }, 1000);
         }
         return () => clearInterval(interval);
@@ -107,122 +177,9 @@ const AuthComponent = ({ children }) => {
 
     useEffect(() => {
         setInput('');
-        setShowPasswordInput(false); // Reset password input visibility when auth requirements change
+        setShowPasswordInput(false);
     }, [isPasswordLockEnabled, isFingerprintEnabled, isSensorAvailable, password]);
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-        },
-        content: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 32,
-            backgroundColor: colors.background,
-        },
-        authText: {
-            fontSize: 18,
-            color: colors.text,
-            textAlign: 'center',
-            fontWeight: '400',
-            letterSpacing: 0.5,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            marginVertical: 28,
-        },
-        button: {
-            borderRadius: variables.radius.sm,
-            paddingVertical: 10,
-            paddingHorizontal: 34,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.highlight,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.border,
-            marginTop: 12,
-        },
-        input: {
-            backgroundColor: colors.card,
-            color: colors.text,
-            padding: 10,
-            marginBottom: 12,
-            borderWidth: isBorder ? 0 : .75,
-            borderColor: colors.border,
-            fontSize: 16,
-        },
-        appIcon: {
-            width: 90,
-            height: 90,
-            borderRadius: 20,
-            marginBottom: 12,
-            alignSelf: 'center',
-        },
-        row: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 18,
-        },
-        iconButton: {
-            padding: 10,
-            borderRadius: variables.radius.sm,
-            backgroundColor: colors.highlight,
-            marginRight: 10,
-            borderWidth: isBorder ? 0.75 : 0,
-            borderColor: colors.highlight + '63',
-        },
-        lockoutMessage: {
-            fontSize: 14,
-            color: colors.textDesc,
-            marginTop: 10,
-            textAlign: 'center',
-            height: 20,
-        },
-        timeRemaining: {
-            fontSize: 16,
-            color: colors.text,
-            fontWeight: 'bold',
-            marginTop: 5,
-        },
-        resetLink: {
-            alignSelf: 'center',
-            marginTop: 12,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-        },
-        resetText: {
-            fontSize: 14,
-            color: colors.highlight,
-            fontWeight: '500',
-            textAlign: 'center',
-            textDecorationLine: 'underline',
-        },
-        buttonRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            marginTop: 12,
-        },
-        halfButton: {
-            flex: 0.48,
-            borderRadius: variables.radius.sm,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
-        },
-        primaryButton: {
-            backgroundColor: colors.highlight,
-            borderColor: colors.border,
-        },
-        secondaryButton: {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-        },
-    });
-
-    // Format time remaining for display
     const formatTime = (ms) => {
         if (!ms) return '00:00';
         const seconds = Math.floor(ms / 1000) % 60;
@@ -230,7 +187,6 @@ const AuthComponent = ({ children }) => {
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    // Handler for fingerprint authentication
     const handleFingerprintAuth = async () => {
         const ok = await authenticate();
         if (ok) {
@@ -241,258 +197,410 @@ const AuthComponent = ({ children }) => {
         }
     };
 
-    // Handler for password authentication
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+        },
+        topCard: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.modalBg,
+            borderRadius: 24,
+            padding: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderColor: colors.border,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderTopWidth: 0,
+        },
+        securityImage: {
+            width: 60,
+            height: 60,
+            borderRadius: variables.radius.lg,
+            marginRight: 16,
+            marginTop: 0,
+            marginBottom: 0,
+        },
+
+        topTextContainer: {
+            flex: 1,
+        },
+        titleText: {
+            fontSize: 24,
+            color: colors.text,
+            fontWeight: '600',
+            textAlign: 'center',
+        },
+        subtitleText: {
+            fontSize: 16,
+            color: colors.textDesc,
+            fontWeight: '400',
+            lineHeight: 24,
+            textAlign: 'left',
+        },
+        backgroundContent: {
+            flex: 1,
+            alignItems: 'center',
+            paddingTop: height * 0.15,
+            paddingHorizontal: 32,
+        },
+        appIcon: {
+            width: 80,
+            height: 80,
+            borderRadius: 20,
+            marginBottom: 24,
+            alignSelf: 'center',
+        },
+        timeContainer: {
+            backgroundColor: colors.card,
+            borderRadius: 16,
+            paddingVertical: 16,
+            paddingHorizontal: 24,
+            marginTop: 24,
+            alignItems: 'center',
+        },
+        timeRemaining: {
+            fontSize: 32,
+            color: colors.highlight,
+            fontWeight: '700',
+            fontFamily: 'monospace',
+        },
+        timeLabel: {
+            fontSize: 14,
+            color: colors.textDesc,
+            marginTop: 4,
+        },
+        bottomCard: {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.modalBg,
+            borderColor: colors.border,
+            borderWidth: isBorder ? 0.75 : 0,
+            borderBottomWidth: 0,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 24,
+            paddingTop: 32,
+            paddingBottom: 40,
+            minHeight: height * 0.55,
+            shadowColor: '#000',
+            shadowOffset: {
+                width: 0,
+                height: -2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+        },
+        inputContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.highlight + '08',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingHorizontal: 16,
+            height: 52,
+            marginBottom: 16,
+        },
+        input: {
+            flex: 1,
+            fontSize: 16,
+            color: colors.text,
+            paddingVertical: 0,
+        },
+        eyeButton: {
+            padding: 8,
+        },
+        primaryButton: {
+            backgroundColor: colors.highlight,
+            borderRadius: variables.radius.md,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        secondaryButton: {
+            backgroundColor: colors.background,
+            borderRadius: variables.radius.md,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        buttonText: {
+            fontSize: 16,
+            fontWeight: '600',
+            height: 20,
+        },
+        primaryButtonText: {
+            color: colors.background,
+            height: 22,
+            marginLeft: 10,
+            marginTop: 2
+        },
+        secondaryButtonText: {
+            color: colors.text,
+        },
+        buttonRow: {
+            flexDirection: 'row',
+            gap: 12,
+        },
+        halfButton: {
+            flex: 1,
+            borderRadius: variables.radius.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderColor: colors.border,
+            borderWidth: isBorder ? 0.75 : 0,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: colors.background,
+        },
+        loadingText: {
+            fontSize: 16,
+            color: colors.text,
+            marginTop: 16,
+        },
+        fingerprintIcon: {
+            marginRight: 8,
+        },
+        topHeader: {
+            alignItems: 'center',
+            paddingTop: height * 0.1,
+            paddingHorizontal: 32,
+        },
+        middleContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingTop: height * 0.5,
+        },
+        middleCard: {
+            width: width * 0.8,
+            aspectRatio: 1,
+            borderRadius: variables.radius.lg,
+            backgroundColor: colors.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            borderWidth: isBorder ? 0.75 : 0,
+            borderColor: colors.border,
+            position: 'relative',
+        },
+        gridLine: {
+            position: 'absolute',
+            backgroundColor: colors.highlight + '10'
+        },
+        cardOverlay: {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '20%',
+            backgroundColor: colors.card + 'E6',
+            borderBottomLeftRadius: variables.radius.lg,
+            borderBottomRightRadius: variables.radius.lg,
+        },
+        textContainer: {
+            position: 'absolute',
+            bottom: 24,
+            left: 24,
+            right: 24,
+            zIndex: 1,
+        },
+        middleTitle: {
+            fontSize: 20,
+            fontWeight: '600',
+            color: colors.text,
+            marginBottom: 4,
+        },
+        middleDesc: {
+            fontSize: 13,
+            color: colors.textDesc,
+            textAlign: 'left',
+            lineHeight: 16,
+        },
+    });
+
     const handlePasswordAuth = () => {
         if (checkPassword(input)) {
+            setIsFocused(false);
             unlockApp();
             setAuthenticated(true);
             setInput('');
             setShowPasswordInput(false);
+
         } else {
             showToast('Incorrect password');
         }
     };
 
-    // Handler for bypassing lockout when accessed from recents
     const handleBypassLockout = () => {
         unlockApp();
         setAuthenticated(true);
         setWasAccessedFromRecents(false);
     };
 
-    // Handler for opening reset modal
-    const handleForgotPassword = () => {
-        setShowResetModal(true);
-    };
+    const handleForgotPassword = () => setShowResetModal(true);
 
-    // Handler for saving new password from reset
-    const handleResetPasswordSave = async (newPassword, resetCode) => {
+    const handleResetPasswordSave = async (newPassword) => {
         try {
             await savePassword(newPassword);
             setShowResetModal(false);
             showToast('Password reset successfully!');
-            // After successful reset, unlock the app
             await unlockApp();
             setAuthenticated(true);
-        } catch (error) {
+        } catch {
             showToast('Failed to reset password. Please try again.');
         }
     };
 
-    if (passwordModalVisible || justSetPassword) {
+    if (passwordModalVisible || justSetPassword) return children;
+    if (authenticated && !isAppLocked) {
         return children;
     }
-
     if (loading) {
         return (
-            <View style={styles.container}>
-                <View style={styles.content}>
-                    <ActivityIndicator
-                        size="large"
-                        color={colors.highlight}
-                        style={{ marginBottom: 18 }}
-                    />
-                    <Text style={styles.authText}>Authenticating...</Text>
-                </View>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.highlight} />
+                <Text style={styles.loadingText}>Authenticating...</Text>
             </View>
         );
     }
 
-    // Lockout screen with animation
-    if (isAppLocked && shouldUseLockout() && !showPasswordInput) {
-        return (
+    return (
+        <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsFocused(false); }}>
             <View style={styles.container}>
-                <View style={styles.content}>
-                    <Animated.View style={{ transform: [{ translateY: topSlide }] }}>
-                        <Image
-                            source={require('../assets/logo.png')}
-                            style={styles.appIcon}
-                        />
-                        <Text style={styles.authText}>App Locked</Text>
-                        <Text style={styles.lockoutMessage}>
-                            {lockoutMode === '0' ?
-                                'The app is locked immediately after backgrounding.' : timeRemaining ?
-                                    'The app will be locked automatically in:' : 'The app is locked due to inactivity.'}
-                        </Text>
-                        {lockoutMode !== '0' && timeRemaining && (
-                            <Text style={styles.timeRemaining}>
-                                {formatTime(timeRemaining)}
-                            </Text>
-                        )}
-                    </Animated.View>
-                    <Animated.View style={{ transform: [{ translateY: bottomSlide }] }}>
-                        {/* Show different buttons based on whether accessed from recents and time remaining */}
-                        {wasAccessedFromRecents && timeRemaining > 0 ? (
-                            <TouchableOpacity
-                                style={[styles.button, { marginTop: 20 }]}
-                                onPress={handleBypassLockout}
-                            >
-                                <Text style={{ color: colors.card, fontWeight: 'bold', height: 20 }}>
-                                    Enter
-                                </Text>
-                            </TouchableOpacity>
-                        ) : (
-                            (isPasswordLockEnabled || (isFingerprintEnabled && isSensorAvailable)) && (
+                {/* CHANGE 11: Updated top card - removed logo and desc */}
+                <Animated.View style={[styles.topCard, {
+                    transform: [{ translateY: topCardAnimY }],
+                    opacity: topCardOpacity,
+                    paddingTop: 40,
+                    paddingBottom: 20
+                }]}>
+                    <Text style={styles.titleText}>Welcome Back</Text>
+                </Animated.View>
+
+                <Animated.View style={{
+                    transform: [{ translateY: middleCardAnimY }]
+                }}>
+                    {/* CHANGE 12: Updated middle card with new content structure */}
+                    <View style={styles.middleContainer}>
+                        <View style={styles.middleCard}>
+                            {/* Draw vertical lines */}
+                            {[...Array(15)].map((_, i) => (
+                                <View key={`v-${i}`} style={[styles.gridLine, {
+                                    left: `${(i + 1) * 6.66}%`,
+                                    height: '100%',
+                                    width: 1
+                                }]} />
+                            ))}
+                            {/* Draw horizontal lines */}
+                            {[...Array(15)].map((_, i) => (
+                                <View key={`h-${i}`} style={[styles.gridLine, {
+                                    top: `${(i + 1) * 6.66}%`,
+                                    width: '100%',
+                                    height: 1
+                                }]} />
+                            ))}
+                            <Icons.Ion name="shield-checkmark" size={126} color={colors.highlight} style={{ marginBottom: 80 }} />
+
+                            <View style={styles.cardOverlay} />
+                            <View style={styles.textContainer}>
+                                <Text style={styles.middleTitle}>Security</Text>
+                                <Text style={styles.middleDesc}>Authenticate to continue</Text>
+                            </View>
+                        </View>
+                    </View>
+                </Animated.View>
+
+                {/* Bottom card */}
+                <Animated.View style={[
+                    styles.bottomCard,
+                    { transform: [{ translateY: bottomCardAnimY }] }
+                ]}>
+                    {isAppLocked && shouldUseLockout() && !showPasswordInput ? (
+                        <>
+                            {lockoutMode !== '0' && timeRemaining && (
+                                <View style={styles.timeContainer}>
+                                    <Text style={styles.timeRemaining}>{formatTime(timeRemaining)}</Text>
+                                    <Text style={styles.timeLabel}>Time Remaining</Text>
+                                </View>
+                            )}
+                            {wasAccessedFromRecents && timeRemaining > 0 ? (
+                                <TouchableOpacity style={styles.primaryButton} onPress={handleBypassLockout} activeOpacity={0.8}>
+                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>Enter App</Text>
+                                </TouchableOpacity>
+                            ) : (
                                 <TouchableOpacity
-                                    style={[styles.button, { marginTop: 20 }]}
+                                    style={styles.primaryButton}
                                     onPress={() => {
-                                        if (isFingerprintEnabled && isSensorAvailable) {
-                                            handleFingerprintAuth();
-                                        } else if (isPasswordLockEnabled) {
-                                            setShowPasswordInput(true);
-                                        }
+                                        if (isFingerprintEnabled && isSensorAvailable) handleFingerprintAuth();
+                                        else if (isPasswordLockEnabled) setShowPasswordInput(true);
                                     }}
+                                    activeOpacity={0.8}
                                 >
-                                    <Text style={{ color: colors.card, fontWeight: 'bold', height: 20 }}>
-                                        {isFingerprintEnabled && isSensorAvailable ?
-                                            'Unlock with Fingerprint' :
-                                            'Enter Password'}
+                                    <Icons.Ion
+                                        name={isFingerprintEnabled && isSensorAvailable ? 'finger-print' : 'lock-closed'}
+                                        size={20}
+                                        color={colors.background}
+                                    />
+                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>
+                                        {isFingerprintEnabled && isSensorAvailable ? 'Unlock with Fingerprint' : 'Enter Password'}
                                     </Text>
                                 </TouchableOpacity>
-                            )
-                        )}
-                    </Animated.View>
-                </View>
-            </View>
-        );
-    }
-
-    if ((!authenticated && (isPasswordLockEnabled || (isFingerprintEnabled && isSensorAvailable))) || showPasswordInput) {
-        return (
-            <View style={styles.container}>
-                <View style={styles.content}>
-                    <Animated.View style={{ transform: [{ translateY: topSlide }] }}>
-                        <Image
-                            source={require('../assets/logo.png')}
-                            style={styles.appIcon}
-                        />
-                        <Text style={styles.authText}>Authenticate to continue</Text>
-                    </Animated.View>
-                    <Animated.View style={{ transform: [{ translateY: bottomSlide }] }}>
-                        <View style={styles.row}>
-                            {isPasswordLockEnabled ? (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.card,
-                                    borderRadius: variables.radius.sm,
-                                    borderWidth: 1,
-                                    borderColor: colors.border,
-                                    marginBottom: 12,
-                                    paddingHorizontal: 12,
-                                    width: '100%'
-                                }}>
-                                    <TextInput
-                                        style={[styles.input, {
-                                            flex: 1,
-                                            marginBottom: 0,
-                                            borderWidth: 0,
-                                            backgroundColor: 'transparent',
-                                            paddingRight: 0
-                                        }]}
-                                        placeholder="Password"
-                                        placeholderTextColor={colors.textDesc}
-                                        secureTextEntry={!showPassword}
-                                        value={input}
-                                        onChangeText={setInput}
-                                        onSubmitEditing={handlePasswordAuth}
-                                        returnKeyType="done"
-                                        textContentType="password"
-                                        autoComplete="password"
-                                        keyboardType="default"
-                                        enablesReturnKeyAutomatically={true}
-                                        autoFocus={true}
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => setShowPassword(v => !v)}
-                                        style={{ padding: 8 }}
-                                    >
-                                        <Icons.Ion
-                                            name={showPassword ? 'eye' : 'eye-off'}
-                                            size={20}
-                                            color={colors.textDesc}
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                isFingerprintEnabled && isSensorAvailable && (
-                                    <TouchableOpacity
-                                        style={[styles.button, { flexDirection: 'row', marginTop: 0 }]}
-                                        onPress={handleFingerprintAuth}
-                                        activeOpacity={1}
-                                    >
-                                        <Icons.Ion
-                                            name="finger-print"
-                                            size={24}
-                                            color={colors.background}
-                                            style={{ marginRight: 8 }}
-                                        />
-                                        <Text style={{
-                                            color: colors.background,
-                                            fontWeight: 'bold',
-                                            fontSize: 14,
-                                            alignContent: 'center',
-                                            textAlign: 'center',
-                                            height: 20,
-                                        }}>
-                                            Authenticate with Fingerprint
-                                        </Text>
-                                    </TouchableOpacity>
-                                )
                             )}
-                        </View>
+                        </>
+                    ) : (showPasswordInput || isPasswordLockEnabled) && (
+                        <>
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your password"
+                                    placeholderTextColor={colors.textDesc}
+                                    secureTextEntry={!showPassword}
+                                    value={input}
+                                    onChangeText={setInput}
+                                    onSubmitEditing={handlePasswordAuth}
+                                    returnKeyType="done"
+                                    textContentType="password"
+                                    autoComplete="password"
+                                    keyboardType="default"
+                                    enablesReturnKeyAutomatically
+                                    onFocus={handleFocus}
+                                    onBlur={handleBlur}
 
-                        {/* Show password auth button and reset link for password mode */}
-                        {isPasswordLockEnabled && (
-                            <>
-                                <View style={styles.buttonRow}>
-                                    <TouchableOpacity
-                                        style={[styles.halfButton, styles.primaryButton]}
-                                        onPress={handlePasswordAuth}
-                                    >
-                                        <Text style={{
-                                            color: colors.card,
-                                            fontWeight: 'bold',
-                                            fontSize: 14,
-                                            textAlign: 'center'
-                                        }}>
-                                            Enter
-                                        </Text>
-                                    </TouchableOpacity>
+                                />
+                                <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={{ padding: 8 }} activeOpacity={0.7}>
+                                    <Icons.Ion name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textDesc} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity style={[styles.halfButton, styles.secondaryButton]} onPress={handleForgotPassword} activeOpacity={0.8}>
+                                    <Text style={[styles.buttonText, styles.secondaryButtonText]}>Reset</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.halfButton, styles.primaryButton]} onPress={handlePasswordAuth} activeOpacity={0.8}>
+                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>Unlock</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </>
+                    )}
+                </Animated.View>
 
-                                    <TouchableOpacity
-                                        style={[styles.halfButton, styles.secondaryButton]}
-                                        onPress={handleForgotPassword}
-                                    >
-                                        <Text style={{
-                                            color: colors.text,
-                                            fontWeight: '500',
-                                            fontSize: 14,
-                                            textAlign: 'center'
-                                        }}>
-                                            Reset
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </>
-                        )}
-                    </Animated.View>
-                </View>
-
-                {/* Password Reset Modal */}
-                <PasswordBottomSheet
-                    visible={showResetModal}
-                    onClose={() => setShowResetModal(false)}
-                    onSave={handleResetPasswordSave}
-                    currentPassword={password}
-                    mode="reset"
-                    variables={variables}
-                />
+                <PasswordBottomSheet visible={showResetModal} onClose={() => setShowResetModal(false)} onSave={handleResetPasswordSave} currentPassword={password} mode="reset" variables={variables} />
             </View>
-        );
-    }
-
-    return children;
-}
+        </TouchableWithoutFeedback>
+    );
+};
 
 export default AuthComponent;

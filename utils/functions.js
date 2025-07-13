@@ -206,9 +206,25 @@ export const showToast = (msg) => {
     }
 };
 
-export const appVersion = '1.0.15';
+export const appVersion = '1.0.16';
 
 export const changelog = [
+    {
+        "version": "1.0.16",
+        "date": "2025-07-13",
+        "title": "Auth Animations & UI",
+        "major": false,
+        "changes": [
+            "Added animated top card slide and fade on focus",
+            "Middle card now smoothly moves up on keyboard",
+            "Bottom card transitions from offscreen with states",
+            "Initial mount sets top, middle, bottom animations",
+            "Handled app state to reset auth UI after background",
+            "Tweaked password and fingerprint unlock flows",
+            "Improved overlay and grid visuals on middle card",
+            "Simplified layout for cleaner look and faster auth"
+        ]
+    },
     {
         version: "1.0.15",
         date: "2025-07-12",
