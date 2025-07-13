@@ -238,23 +238,32 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             flexDirection: 'row',
             justifyContent: 'flex-end',
             marginTop: 8,
-            gap: 12,
+            gap: '4%',
+            borderTopWidth: 1.75,
+            paddingTop: 18,
+            borderColor: colors.border
         },
         cancelButton: {
-            paddingVertical: 8,
+            paddingVertical: 10,
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.card,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+            width: '48%',
+            justifyContent: 'center',
+            alignItems: 'center'
         },
         saveButton: {
-            paddingVertical: 8,
+            paddingVertical: 10,
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.highlight,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+            width: '48%',
+            justifyContent: 'center',
+            alignItems: 'center'
         },
         cancelText: {
             color: colors.text,

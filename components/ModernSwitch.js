@@ -8,11 +8,11 @@ const ModernSwitch = ({
     thumbColor = '#fff',
     style
 }) => {
-    const offsetX = useRef(new Animated.Value(value ? 22 : 2)).current;
+    const offsetX = useRef(new Animated.Value(value ? 32 : 2.5)).current;
 
     useEffect(() => {
         Animated.timing(offsetX, {
-            toValue: value ? 22 : 2.5,
+            toValue: value ? 32 : 2.5,
             duration: 200,
             useNativeDriver: false,
         }).start();
@@ -44,7 +44,7 @@ const ModernSwitch = ({
 
 const styles = StyleSheet.create({
     container: {
-        width: 50,
+        width: 60,
         height: 28,
         borderRadius: 14,
         paddingHorizontal: 2,

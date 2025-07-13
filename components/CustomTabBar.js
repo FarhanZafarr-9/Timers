@@ -21,6 +21,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
     const { variables, colors, navigationMode, headerMode, isBorder } = useTheme();
     const { userData } = useData();
     const { width } = Dimensions.get('window');
+    const [expanded, setExpanded] = useState(0);
 
     // State for side navigation
     const [sideNavOpen, setSideNavOpen] = useState(false);
@@ -165,7 +166,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             },
             container: {
                 flexDirection: 'row',
-                backgroundColor: floating ? colors.card : colors.cardLighter ,
+                backgroundColor: floating ? colors.card : colors.cardLighter,
                 borderColor: colors.cardBorder,
                 borderTopWidth: floating ? 0.75 : 0,
                 borderBottomWidth: floating ? 0.75 : 0,
@@ -173,7 +174,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderLeftWidth: floating ? 0.75 : 0,
                 borderTopLeftRadius: variables.radius.xl,
                 borderTopRightRadius: variables.radius.xl,
-                borderBottomRightRadius: floating ? variables.radius.xl : 0, 
+                borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 alignItems: 'center',
                 height: floating ? 50 : fixed ? 60 : 0,
@@ -205,8 +206,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             },
             menuButton: {
                 position: 'absolute',
-                right: headerMode === 'fixed' ? 40 : 80,
-                top: insets.top + 25,
+                right: headerMode !== 'collapsible' ? 40 : 80,
+                top: headerMode === 'fixed' ? insets.top - 10 : insets.top + 25,
                 zIndex: 20,
             },
         });
@@ -469,7 +470,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 paddingVertical: 10,
                 paddingHorizontal: 12,
                 borderRadius: 12,
-                backgroundColor: colors.background,
+                backgroundColor: colors.highlight + '05',
                 marginBottom: 16,
                 borderWidth: isBorder ? 0.75 : 0,
                 borderColor: colors.border,
@@ -549,10 +550,10 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                         />
                     </TouchableOpacity>
 
-                    <View style={styles.sideNavHeader}>
+                    <TouchableOpacity style={styles.sideNavHeader} onPress={() => setExpanded(expanded == 5 ? 0 : expanded + 1)} activeOpacity={1}>
                         <Text style={styles.sideNavTitle}>Menu</Text>
                         <Text style={styles.sideNavSubtitle}>Navigate your app</Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
@@ -663,8 +664,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                         )}
                     </ScrollView>
 
-                    <View style={styles.footerSection}>
-                        <TouchableOpacity style={styles.userProfile} activeOpacity={1}>
+                    {expanded === 5 && <View style={styles.footerSection}>
+                        <View style={styles.userProfile} activeOpacity={1}>
                             <View style={styles.userAvatar}>
                                 {!userData.profilePic && <Icons.Ion
                                     name="person"
@@ -685,8 +686,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                 color={colors.textDesc}
                                 onPress={() => { setIsProfileSheetVisible(true) }}
                             />
-                        </TouchableOpacity>
-                    </View>
+                        </View>
+                    </View>}
                 </Animated.View>
             </>
         );

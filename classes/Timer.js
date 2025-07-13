@@ -7,6 +7,7 @@ export default class Timer {
         personName,
         priority = 'normal',
         date,
+        isFavourite = null,
         isRecurring = false,
         recurrenceInterval = null,
         isCountdown = true,
@@ -19,6 +20,7 @@ export default class Timer {
         this.personName = personName;
         this.priority = priority; // 'low', 'normal', 'high'
         this.date = date instanceof Date ? date : new Date(date);
+        this.isFavourite = isFavourite ?? false;
         this.isRecurring = isRecurring;
         this.recurrenceInterval = recurrenceInterval;
         this.isCountdown = isCountdown;
@@ -225,6 +227,7 @@ export default class Timer {
             personName: this.personName,
             priority: this.priority,
             date: this.date.toISOString(),
+            isFavourite:this.isFavourite,
             isRecurring: this.isRecurring,
             recurrenceInterval: this.recurrenceInterval,
             isCountdown: this.isCountdown,
@@ -233,4 +236,14 @@ export default class Timer {
             reminderNotificationId: this.reminderNotificationId
         };
     }
+
+    /**
+ * Toggles the favourite status
+ * @returns {boolean} The new favourite status
+ */
+    toggleFavourite() {
+        this.isFavourite = !this.isFavourite;
+        return this.isFavourite;
+    }
+
 }

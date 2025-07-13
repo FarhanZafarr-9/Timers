@@ -5,6 +5,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import AddTimerModal from '../components/AddTimerModal';
 import ScreenWithHeader from '../components/ScreenWithHeder';
+import TimerCard from '../components/TimerCard';
 
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
@@ -16,9 +17,13 @@ export default function HomeScreen({ navigation }) {
 
     const totalOpacity = useRef(new Animated.Value(0)).current;
     const rightOpacity = useRef(new Animated.Value(0)).current;
+    const favOpacity = useRef(new Animated.Value(0)).current;
+    const quoteOpacity = useRef(new Animated.Value(0)).current;
 
     const totalTranslate = useRef(new Animated.Value(-50)).current;
     const rightTranslate = useRef(new Animated.Value(-50)).current;
+    const favTranslate = useRef(new Animated.Value(-50)).current;
+    const quoteTranslate = useRef(new Animated.Value(-50)).current;
     const quickActionsTranslate = useRef(new Animated.Value(-50)).current;
 
     useEffect(() => {
@@ -27,43 +32,24 @@ export default function HomeScreen({ navigation }) {
 
             Animated.stagger(120, [
                 Animated.parallel([
-                    Animated.spring(totalTranslate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(totalOpacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(totalTranslate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(totalOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
                 Animated.parallel([
-                    Animated.spring(rightTranslate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(rightOpacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(rightTranslate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(rightOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
                 Animated.parallel([
-                    Animated.spring(quickActionsTranslate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(quickActionsOpacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(favTranslate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(favOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+                ]),
+                Animated.parallel([
+                    Animated.spring(quoteTranslate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(quoteOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+                ]),
+                Animated.parallel([
+                    Animated.spring(quickActionsTranslate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(quickActionsOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
             ]).start();
         }, 50);
@@ -73,10 +59,28 @@ export default function HomeScreen({ navigation }) {
 
     const { totalTimers, countdownTimers, countupTimers } = useMemo(() => {
         const total = timers?.length || 0;
-        const countdown = timers?.filter(timer => timer.isCountdown).length || 0;
-        const countup = timers?.filter(timer => !timer.isCountdown).length || 0;
+        const countdown = timers?.filter(t => t.isCountdown).length || 0;
+        const countup = timers?.filter(t => !t.isCountdown).length || 0;
         return { totalTimers: total, countdownTimers: countdown, countupTimers: countup };
     }, [timers]);
+
+    const favTimers = useMemo(() => timers?.filter(t => t.isFavourite === true) || [], [timers]);
+
+    const quotes = [
+        "Time waits for no one.",
+        "Moments are memories in the making.",
+        "The best time to start was yesterday. The next best is now.",
+        "Cherish each tick of the clock.",
+        "Your time is your life."
+    ];
+    const [quoteIndex, setQuoteIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setQuoteIndex(prev => (prev + 1) % quotes.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const styles = StyleSheet.create({
         grid: {
@@ -87,6 +91,18 @@ export default function HomeScreen({ navigation }) {
         leftColumn: {
             flex: 1,
             marginRight: 10,
+        },
+        gridTitle: {
+            color: colors.textDesc,
+            fontSize: 14,
+            fontWeight: '500',
+            marginBottom: 8,
+            textTransform: 'uppercase',
+        },
+        gridValue: {
+            color: colors.textTitle,
+            fontSize: 32,
+            fontWeight: '700',
         },
         rightColumn: {
             flex: 1,
@@ -107,17 +123,21 @@ export default function HomeScreen({ navigation }) {
         countdownTimers: {
             marginBottom: 10,
         },
-        gridTitle: {
-            color: colors.textDesc,
-            fontSize: 14,
-            fontWeight: '500',
-            marginBottom: 8,
-            textTransform: 'uppercase',
+        quoteCard: {
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.md,
+            padding: 15,
+            borderColor: colors.border,
+            borderWidth: isBorder ? 0.75 : 0,
+            minHeight: 40,
+            justifyContent: 'center'
         },
-        gridValue: {
-            color: colors.textTitle,
-            fontSize: 32,
-            fontWeight: '700',
+        quoteText: {
+            fontSize: 14,
+            fontStyle: 'italic',
+            textAlign: 'center',
+            color: colors.textDesc,
+            height: 20,
         },
         quickActionsCard: {
             marginTop: 10,
@@ -177,94 +197,83 @@ export default function HomeScreen({ navigation }) {
                 <>
                     {/* Grid Row */}
                     <View style={styles.grid}>
-                        <Animated.View
-                            style={[
-                                styles.gridItem,
-                                styles.leftColumn,
-                                styles.totalTimers,
-                                {
-                                    transform: [{ translateY: totalTranslate }],
-                                    opacity: totalOpacity
-                                }
-                            ]}
-                        >
+                        <Animated.View style={[styles.gridItem, styles.leftColumn, styles.totalTimers, { transform: [{ translateY: totalTranslate }], opacity: totalOpacity }]}>
                             <Text style={styles.gridTitle}>Total Timers</Text>
                             <Text style={styles.gridValue}>{totalTimers}</Text>
                         </Animated.View>
 
-                        <Animated.View
-                            style={[
-                                styles.rightColumn,
-                                {
-                                    transform: [{ translateY: rightTranslate }],
-                                    opacity: rightOpacity
-                                }
-                            ]}
-                        >
+                        <Animated.View style={[styles.rightColumn, { transform: [{ translateY: rightTranslate }], opacity: rightOpacity }]}>
                             <View style={[styles.gridItem, styles.countdownTimers]}>
                                 <Text style={styles.gridTitle}>Countdowns</Text>
                                 <Text style={styles.gridValue}>{countdownTimers}</Text>
                             </View>
-                            <View style={[styles.gridItem]}>
+                            <View style={styles.gridItem}>
                                 <Text style={styles.gridTitle}>Countups</Text>
                                 <Text style={styles.gridValue}>{countupTimers}</Text>
                             </View>
                         </Animated.View>
                     </View>
 
+                    {/* Favourite Timers */}
+                    {favTimers.length > 0 && (
+                        <Animated.View style={{ opacity: favOpacity, transform: [{ translateY: favTranslate }] }}>
+                            {favTimers.map((timer) => (
+                                <TimerCard
+                                    key={timer.id}
+                                    timer={timer}
+                                    onDelete={() => { }}
+                                    onEdit={() => { }}
+                                    handleDuplicate={() => { }}
+                                    isExpanded={false}
+                                    onClick={() => { }}
+                                    selectable={false}
+                                    selected={false}
+                                    colors={colors}
+                                    variables={variables}
+                                    isCountdown={timer.isCountdown}
+                                    searchText=""
+                                    privacyMode="off"
+                                    butons="off"
+                                />
+                            ))}
+                        </Animated.View>
+                    )}
+
+                    {/* Quote Card */}
+                    <Animated.View style={[styles.quoteCard, { opacity: quoteOpacity, transform: [{ translateY: quoteTranslate }] }]}>
+                        <Text style={styles.quoteText}>{quotes[quoteIndex]}</Text>
+                    </Animated.View>
+
                     {/* Quick Actions Card */}
-                    <Animated.View
-                        style={[
-                            styles.quickActionsCard,
-                            {
-                                opacity: quickActionsOpacity,
-                                transform: [{ translateY: quickActionsTranslate }]
-                            }
-                        ]}
-                    >
+                    <Animated.View style={[styles.quickActionsCard, { opacity: quickActionsOpacity, transform: [{ translateY: quickActionsTranslate }] }]}>
                         <Text style={styles.quickActionsTitle}>Quick Actions</Text>
                         <View style={styles.quickActionsGrid}>
                             <View style={styles.quickActionItem}>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={() => navigation.navigate('CountDowns')}
-                                >
+                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('CountDowns')}>
                                     <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
                                     <Text style={styles.actionText}>Countdowns</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.quickActionItem}>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={() => navigation.navigate('CountUps')}
-                                >
+                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('CountUps')}>
                                     <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
                                     <Text style={styles.actionText}>Countups</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.quickActionItem}>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={() => navigation.navigate('Settings')}
-                                >
+                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Settings')}>
                                     <Icons.Material name="settings" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
                                     <Text style={styles.actionText}>Settings</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.quickActionItem}>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={() => navigation.navigate('About', { addNew: true })}
-                                >
+                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('About', { addNew: true })}>
                                     <Icons.Ion name="information-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
                                     <Text style={styles.actionText}>About</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={[styles.quickActionItem, styles.fullAction]}>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={() => setQuickAddVisible(true)}
-                                >
+                                <TouchableOpacity style={styles.actionButton} onPress={() => setQuickAddVisible(true)}>
                                     <Icons.Material name="add-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
                                     <Text style={styles.actionText}>Quick Add Timer</Text>
                                 </TouchableOpacity>

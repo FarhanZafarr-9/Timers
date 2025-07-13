@@ -43,6 +43,8 @@ const AuthComponent = ({ children }) => {
     const [appState, setAppState] = useState(AppState.currentState);
 
     const [hasMounted, setHasMounted] = useState(false);
+    // ADD: State to track if we're ready to show auth UI
+    const [authUIReady, setAuthUIReady] = useState(false);
 
     const topCardAnimY = useRef(new Animated.Value(-200)).current;
     const topCardOpacity = useRef(new Animated.Value(0)).current;
@@ -51,7 +53,22 @@ const AuthComponent = ({ children }) => {
 
     useEffect(() => {
         setHasMounted(true);
+        // ADD: Small delay to ensure all security states are initialized
+        const timer = setTimeout(() => {
+            setAuthUIReady(true);
+        }, 100);
+        return () => clearTimeout(timer);
     }, []);
+
+    // ADD: Effect to monitor security state changes and ensure UI is ready
+    useEffect(() => {
+        if (hasMounted && !loading) {
+            const timer = setTimeout(() => {
+                setAuthUIReady(true);
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [hasMounted, loading, isAppLocked, isFingerprintEnabled, isPasswordLockEnabled]);
 
     useEffect(() => {
         if (!hasMounted) return;
@@ -144,6 +161,9 @@ const AuthComponent = ({ children }) => {
                 // Reset UI state when coming back from background
                 setIsFocused(false);
                 setShowPasswordInput(false);
+                // ADD: Reset auth UI ready state to re-trigger rendering
+                setAuthUIReady(false);
+                setTimeout(() => setAuthUIReady(true), 100);
 
                 if (!isAppLocked && (!shouldUseLockout || !shouldUseLockout())) {
                     updateLastActiveTime && updateLastActiveTime();
@@ -430,6 +450,19 @@ const AuthComponent = ({ children }) => {
             textAlign: 'left',
             lineHeight: 16,
         },
+        // ADD: Style for fallback content
+        fallbackContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+        },
+        fallbackText: {
+            fontSize: 16,
+            color: colors.textDesc,
+            textAlign: 'center',
+            marginBottom: 16,
+        },
     });
 
     const handlePasswordAuth = () => {
@@ -465,10 +498,109 @@ const AuthComponent = ({ children }) => {
         }
     };
 
+    // ADD: Function to determine what authentication UI to show
+    const getAuthButtonContent = () => {
+        if (!authUIReady) {
+            return (
+                <View style={styles.fallbackContainer}>
+                    <Text style={styles.fallbackText}>Loading authentication...</Text>
+                </View>
+            );
+        }
+
+        if (isAppLocked && shouldUseLockout() && !showPasswordInput) {
+            return (
+                <>
+                    {lockoutMode !== '0' && timeRemaining && (
+                        <View style={styles.timeContainer}>
+                            <Text style={styles.timeRemaining}>{formatTime(timeRemaining)}</Text>
+                            <Text style={styles.timeLabel}>Time Remaining</Text>
+                        </View>
+                    )}
+                    {wasAccessedFromRecents && timeRemaining > 0 ? (
+                        <TouchableOpacity style={styles.primaryButton} onPress={handleBypassLockout} activeOpacity={0.8}>
+                            <Text style={[styles.buttonText, styles.primaryButtonText]}>Enter App</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.primaryButton}
+                            onPress={() => {
+                                if (isFingerprintEnabled && isSensorAvailable) handleFingerprintAuth();
+                                else if (isPasswordLockEnabled) setShowPasswordInput(true);
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <Icons.Ion
+                                name={isFingerprintEnabled && isSensorAvailable ? 'finger-print' : 'lock-closed'}
+                                size={20}
+                                color={colors.background}
+                            />
+                            <Text style={[styles.buttonText, styles.primaryButtonText]}>
+                                {isFingerprintEnabled && isSensorAvailable ? 'Unlock with Fingerprint' : 'Enter Password'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </>
+            );
+        }
+
+        if (showPasswordInput || isPasswordLockEnabled) {
+            return (
+                <>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your password"
+                            placeholderTextColor={colors.textDesc}
+                            secureTextEntry={!showPassword}
+                            value={input}
+                            onChangeText={setInput}
+                            onSubmitEditing={handlePasswordAuth}
+                            returnKeyType="done"
+                            textContentType="password"
+                            autoComplete="password"
+                            keyboardType="default"
+                            enablesReturnKeyAutomatically
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                        />
+                        <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={{ padding: 8 }} activeOpacity={0.7}>
+                            <Icons.Ion name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textDesc} />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={[styles.halfButton, styles.secondaryButton]} onPress={handleForgotPassword} activeOpacity={0.8}>
+                            <Text style={[styles.buttonText, styles.secondaryButtonText]}>Reset</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.halfButton, styles.primaryButton]} onPress={handlePasswordAuth} activeOpacity={0.8}>
+                            <Text style={[styles.buttonText, styles.primaryButtonText]}>Unlock</Text>
+                        </TouchableOpacity>
+                    </View>
+                </>
+            );
+        }
+
+        // Fallback for when no auth method is available
+        return (
+            <View style={styles.fallbackContainer}>
+                <Text style={styles.fallbackText}>No authentication method available</Text>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => setAuthenticated(true)} activeOpacity={0.8}>
+                    <Text style={[styles.buttonText, styles.primaryButtonText]}>Continue</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
     if (passwordModalVisible || justSetPassword) return children;
+    
     if (authenticated && !isAppLocked) {
         return children;
     }
+
+    if (!isPasswordLockEnabled && !isFingerprintEnabled) {
+        return children;
+    }
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -481,7 +613,6 @@ const AuthComponent = ({ children }) => {
     return (
         <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsFocused(false); }}>
             <View style={styles.container}>
-                {/* CHANGE 11: Updated top card - removed logo and desc */}
                 <Animated.View style={[styles.topCard, {
                     transform: [{ translateY: topCardAnimY }],
                     opacity: topCardOpacity,
@@ -494,7 +625,6 @@ const AuthComponent = ({ children }) => {
                 <Animated.View style={{
                     transform: [{ translateY: middleCardAnimY }]
                 }}>
-                    {/* CHANGE 12: Updated middle card with new content structure */}
                     <View style={styles.middleContainer}>
                         <View style={styles.middleCard}>
                             {/* Draw vertical lines */}
@@ -524,77 +654,12 @@ const AuthComponent = ({ children }) => {
                     </View>
                 </Animated.View>
 
-                {/* Bottom card */}
+                {/* CHANGE: Use the new function to render auth content */}
                 <Animated.View style={[
                     styles.bottomCard,
                     { transform: [{ translateY: bottomCardAnimY }] }
                 ]}>
-                    {isAppLocked && shouldUseLockout() && !showPasswordInput ? (
-                        <>
-                            {lockoutMode !== '0' && timeRemaining && (
-                                <View style={styles.timeContainer}>
-                                    <Text style={styles.timeRemaining}>{formatTime(timeRemaining)}</Text>
-                                    <Text style={styles.timeLabel}>Time Remaining</Text>
-                                </View>
-                            )}
-                            {wasAccessedFromRecents && timeRemaining > 0 ? (
-                                <TouchableOpacity style={styles.primaryButton} onPress={handleBypassLockout} activeOpacity={0.8}>
-                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>Enter App</Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.primaryButton}
-                                    onPress={() => {
-                                        if (isFingerprintEnabled && isSensorAvailable) handleFingerprintAuth();
-                                        else if (isPasswordLockEnabled) setShowPasswordInput(true);
-                                    }}
-                                    activeOpacity={0.8}
-                                >
-                                    <Icons.Ion
-                                        name={isFingerprintEnabled && isSensorAvailable ? 'finger-print' : 'lock-closed'}
-                                        size={20}
-                                        color={colors.background}
-                                    />
-                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>
-                                        {isFingerprintEnabled && isSensorAvailable ? 'Unlock with Fingerprint' : 'Enter Password'}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        </>
-                    ) : (showPasswordInput || isPasswordLockEnabled) && (
-                        <>
-                            <View style={styles.inputContainer}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Enter your password"
-                                    placeholderTextColor={colors.textDesc}
-                                    secureTextEntry={!showPassword}
-                                    value={input}
-                                    onChangeText={setInput}
-                                    onSubmitEditing={handlePasswordAuth}
-                                    returnKeyType="done"
-                                    textContentType="password"
-                                    autoComplete="password"
-                                    keyboardType="default"
-                                    enablesReturnKeyAutomatically
-                                    onFocus={handleFocus}
-                                    onBlur={handleBlur}
-
-                                />
-                                <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={{ padding: 8 }} activeOpacity={0.7}>
-                                    <Icons.Ion name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textDesc} />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.buttonRow}>
-                                <TouchableOpacity style={[styles.halfButton, styles.secondaryButton]} onPress={handleForgotPassword} activeOpacity={0.8}>
-                                    <Text style={[styles.buttonText, styles.secondaryButtonText]}>Reset</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.halfButton, styles.primaryButton]} onPress={handlePasswordAuth} activeOpacity={0.8}>
-                                    <Text style={[styles.buttonText, styles.primaryButtonText]}>Unlock</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    )}
+                    {getAuthButtonContent()}
                 </Animated.View>
 
                 <PasswordBottomSheet visible={showResetModal} onClose={() => setShowResetModal(false)} onSave={handleResetPasswordSave} currentPassword={password} mode="reset" variables={variables} />

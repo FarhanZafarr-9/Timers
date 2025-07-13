@@ -454,10 +454,10 @@ export default function SettingsScreen() {
                                         toggleFingerprint();
                                     }}
                                     trackColor={{
-                                        false: colors.switchTrack,
-                                        true: colors.switchTrackActive,
+                                        false: colors.highlight + '25',
+                                        true: colors.highlight + '55',
                                     }}
-                                    thumbColor={isFingerprintEnabled ? colors.switchThumbActive : colors.switchThumb}
+                                    thumbColor={!isFingerprintEnabled ? colors.cardLighter : colors.background}
                                     style={{ transform: [{ scaleY: 1 }] }}
                                 />
                             </TouchableOpacity>
@@ -500,10 +500,10 @@ export default function SettingsScreen() {
                                     }
                                 }}
                                 trackColor={{
-                                    false: colors.switchTrack,
-                                    true: colors.switchTrackActive,
+                                    false: colors.highlight + '25',
+                                    true: colors.highlight + '55',
                                 }}
-                                thumbColor={isPasswordLockEnabled ? colors.switchThumbActive : colors.switchThumb}
+                                thumbColor={!isPasswordLockEnabled ? colors.cardLighter : colors.background}
                                 style={{ transform: [{ scale: 1 }] }}
                             />
                         </TouchableOpacity>

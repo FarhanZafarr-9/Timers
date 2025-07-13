@@ -206,9 +206,26 @@ export const showToast = (msg) => {
     }
 };
 
-export const appVersion = '1.0.16';
+export const appBuild = 'beta';
+export const appVersion = '1.0.17';
 
 export const changelog = [
+    {
+        "version": "1.0.17",
+        "date": "2025-07-13",
+        "title": "Home and About Screen",
+        "major": false,
+        "changes": [
+            "Added favourite feature for timers with toggle on cards",
+            "Home screen updated to show favourites card",
+            "Made cards more compact by hiding buttons on home screen",
+            "Improved switch styles and positions",
+            "Updated about screen with clearer app description",
+            "Profile section hidden until login is available",
+            "Fixed bugs in auth component",
+            "Fixed issue with favourite status not persisting"
+        ]
+    },
     {
         "version": "1.0.16",
         "date": "2025-07-13",
