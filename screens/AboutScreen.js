@@ -6,7 +6,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import BottomSheetChangelog from '../components/BottomSheetChnageLog';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import { appVersion } from '../utils/functions';
-import { showToast } from '../utils/functions';
+import { showToast, appBuild } from '../utils/functions';
 import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
 
 export default function AboutScreen() {
@@ -89,7 +89,8 @@ export default function AboutScreen() {
         card: {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
-            padding: 20,
+            paddingVertical: 15,
+            paddingHorizontal: 20,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
@@ -109,7 +110,7 @@ export default function AboutScreen() {
             color: colors.textSecondary, fontSize: 16, fontStyle: 'italic',
             borderLeftColor: colors.highlight, borderLeftWidth: 3, paddingLeft: 8, marginVertical: 24,
         },
-        credits: { textAlign: 'center', color: colors.textSecondary, fontSize: 14 },
+        credits: { textAlign: 'center', color: colors.textSecondary, fontSize: 14, height: 20 },
         buttonsContainer: {
             flexDirection: 'row',
             flexWrap: 'wrap',
@@ -202,17 +203,20 @@ export default function AboutScreen() {
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>ChronoX</Text>
                         <TouchableOpacity onPress={() => setExpanded(expanded === 5 ? 0 : expanded + 1)}>
-                            <Text style={styles.versionText}>v{appVersion} - beta</Text>
+                            <Text style={styles.versionText}>v{appVersion} - {appBuild}</Text>
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
 
                 <Animated.View style={[styles.card, { transform: [{ translateY: descCardAnim }], opacity: descOpacityAnim }]}>
                     <Text style={[styles.description, { textAlign: 'justify' }]}>
-                        Designed for remembering important moments. Whether you're timing an event or counting down to a special occasion, Timers has you covered.
-                        {'\n\n'}As a wise man once said:
+                        Some moments are worth remembering, others worth anticipating. Whether you're marking memories or counting down to what's next, ChronoX keeps time with what matters most.
+                        {'\n\n'}
+                        A thought that sparked this journey:
                     </Text>
-                    <Text style={styles.quote}>"Create what you wish existed."</Text>
+                    <Text style={styles.quote}>
+                        "Create what you wish existed."
+                    </Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim }]}>

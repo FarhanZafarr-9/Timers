@@ -43,6 +43,7 @@ export class TimerManager {
                 personName: timer.personName,
                 priority: timer.priority,
                 date: timer.date,
+                isFavourite: timer.isFavourite,
                 isRecurring: timer.isRecurring,
                 recurrenceInterval: timer.recurrenceInterval,
                 isCountdown: timer.isCountdown,
@@ -342,4 +343,18 @@ export class TimerManager {
             recurrenceCount: recurrenceCount - 1
         };
     }
+
+    async toggleFavourite(timerId) {
+        const timer = this.getTimer(timerId);
+        if (timer) {
+            const newStatus = timer.toggleFavourite();
+            console.log('❤️ Favourite toggled to:', newStatus);
+            await this.saveToStorage();
+            return newStatus;
+        }
+        console.warn('⚠️ Timer not found for toggling favourite:', timerId);
+        return null;
+    }
+
+
 }

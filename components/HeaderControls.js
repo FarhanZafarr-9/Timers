@@ -15,7 +15,7 @@ const HeaderControls = ({
     setSearchQuery,
     onSearch,
     onAdd,
-    onBatchDelete, // keep your same prop name
+    onBatchDelete,
     isSelectable,
     selectedCount = 0,
     sortMethod,
@@ -41,7 +41,7 @@ const HeaderControls = ({
 
     const styles = StyleSheet.create({
         container: {
-            borderRadius: variables.radius.circle ,
+            borderRadius: variables.radius.circle,
             marginVertical: 12,
             backgroundColor: colors.settingBlock,
             borderWidth: isBorder ? 1 : 0,
@@ -84,7 +84,7 @@ const HeaderControls = ({
 
     });
 
-    return (
+    return true ? (
         <>
             <View style={styles.container}>
                 <View style={styles.row}>
@@ -143,7 +143,7 @@ const HeaderControls = ({
                 variables={variables}
             />
         </>
-    );
+    ) : <></>;
 };
 
 export default HeaderControls;

@@ -4,7 +4,7 @@ import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
     // Animated values for sliding
     const logoSlide = useRef(new Animated.Value(-550)).current; // Start above
-    const textSlide = useRef(new Animated.Value(250)).current;  // Start below
+    const textSlide = useRef(new Animated.Value(350)).current;  // Start below
 
     useEffect(() => {
         if (visible) {
@@ -30,7 +30,7 @@ const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
                     useNativeDriver: true,
                 }),
                 Animated.timing(textSlide, {
-                    toValue: 200,
+                    toValue: 100,
                     duration: 400,
                     useNativeDriver: true,
                 }),

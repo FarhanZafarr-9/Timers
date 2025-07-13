@@ -14,6 +14,7 @@ const TimerCard = ({
     onDelete,
     onEdit,
     handleDuplicate,
+    handleFavourite = null,
     onClick,
     colors,
     variables,
@@ -21,6 +22,7 @@ const TimerCard = ({
     selected = false,
     searchText = '',
     privacyMode = 'off',
+    buttons
 }) => {
     const [showOverlay, setShowOverlay] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
@@ -582,12 +584,20 @@ const TimerCard = ({
                     <View style={cardStyle}>
                         <View style={styles.header}>
                             {privacyMode === 'off' ? (
-                                <HighlightMatchText
-                                    text={titleText}
-                                    textStyle={styles.timerTitle}
-                                    search={searchText}
-                                    colors={colors}
-                                />
+                                <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+                                    <HighlightMatchText
+                                        text={titleText}
+                                        textStyle={styles.timerTitle}
+                                        search={searchText}
+                                        colors={colors}
+                                    />
+                                    {timer.isFavourite && <Icons.Material
+                                        name={"favorite"}
+                                        size={10}
+                                        color={colors.highlight}
+                                        style={{ marginBottom: 2 }}
+                                    />}
+                                </View>
                             ) : (
                                 <Text style={styles.timerTitle}>
                                     {privacyMode === 'jumble' ? jumbledTitleText : maskText(titleText)}
@@ -712,6 +722,12 @@ const TimerCard = ({
                                         )}
 
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+
+                                            {timer.isRecurring && timer.recurrenceInterval && (
+                                                <View style={styles.statusIndicator}>
+                                                    <Text style={styles.statusText}>{timer.recurrenceInterval}</Text>
+                                                </View>
+                                            )}
                                             {timer.isRecurring && (
                                                 <View style={styles.statusIndicator}>
                                                     <Icons.Material
@@ -722,6 +738,7 @@ const TimerCard = ({
                                                     <Text style={styles.statusText}>Recurring</Text>
                                                 </View>
                                             )}
+
                                             {timer.isRecurring && timerState.recurrenceCount > 0 && (
                                                 <View style={styles.statusIndicator}>
                                                     <Text style={styles.statusText}>{timerState.recurrenceCount}</Text>
@@ -795,38 +812,55 @@ const TimerCard = ({
                                 </ViewShot>
 
                                 {/* Action Buttons */}
-                                <View style={styles.actionsSection}>
-                                    <TouchableOpacity
-                                        onPress={handleEdit}
-                                        style={[styles.actionButton, styles.editButton]}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Icons.Material name="edit" size={20} color={colors.highlight} />
-                                    </TouchableOpacity>
+                                {buttons === 'on' &&
+                                    <>
+                                        <View style={styles.actionsSection}>
+                                            <TouchableOpacity
+                                                onPress={handleEdit}
+                                                style={[styles.actionButton, styles.editButton]}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Icons.Material name="edit" size={20} color={colors.highlight} />
+                                            </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        onPress={() => setShowExportModal(true)}
-                                        style={[styles.actionButton, styles.exportButton]}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Icons.Material name="file-upload" size={20} color={colors.highlight} />
-                                    </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={() => setShowExportModal(true)}
+                                                style={[styles.actionButton, styles.exportButton]}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Icons.Material name="file-upload" size={20} color={colors.highlight} />
+                                            </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        onPress={handleDuplicate}
-                                        style={[styles.actionButton, styles.exportButton]}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
-                                    </TouchableOpacity>
-                                </View>
-                                <TouchableOpacity
-                                    onPress={handleDelete}
-                                    style={[styles.actionButton, styles.deleteButton]}
-                                    activeOpacity={0.7}
-                                >
-                                    <Icons.Material name="delete" size={22} color="#ef4444" />
-                                </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={handleDuplicate}
+                                                style={[styles.actionButton, styles.exportButton]}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                onPress={() => handleFavourite(timer.id)}
+                                                style={[styles.actionButton, styles.exportButton]}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Icons.Material
+                                                    name={timer.isFavourite ? "favorite" : "favorite-border"}
+                                                    size={20}
+                                                    color={colors.highlight}
+                                                />
+                                            </TouchableOpacity>
+
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={handleDelete}
+                                            style={[styles.actionButton, styles.deleteButton]}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Icons.Material name="delete" size={22} color="#ef4444" />
+                                        </TouchableOpacity>
+                                    </>
+                                }
                             </Animated.View>
                         </TouchableWithoutFeedback>
                     </Animated.View>

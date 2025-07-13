@@ -358,12 +358,23 @@ export const TimerProvider = ({ children }) => {
         }
     }, [syncTimers]);
 
+    const toggleFavourite = async (id) => {
+        try {
+            await manager.toggleFavourite(id);
+            syncTimers();
+        } catch (error) {
+            console.error('❌ Error toggling favourite:', error);
+        }
+    };
+
+
     return (
         <TimerContext.Provider value={{
             timers, isLoading,
             addTimer, removeTimer, clearAllTimers,
             initializeTimers, editTimer,
             setTimersAndSave, refreshTimers,
+            toggleFavourite
         }}>
             {children}
         </TimerContext.Provider>

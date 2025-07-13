@@ -90,20 +90,17 @@ const ExportBottomSheet = ({
                 throw new Error('Failed to capture view');
             }
 
-            const timestamp = new Date().getTime(); // Use simple timestamp
+            const timestamp = new Date().getTime();
             const fileName = `timer-${viewType}-${timestamp}.png`;
 
             switch (action) {
                 case 'save-files':
                     const directoryUri = await getOrRequestDirectory();
 
-
-                    // Read the captured image as base64
                     const base64 = await FileSystem.readAsStringAsync(uri, {
                         encoding: FileSystem.EncodingType.Base64,
                     });
 
-                    // Create and write the file directly
                     const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
                         directoryUri,
                         fileName,
@@ -121,16 +118,10 @@ const ExportBottomSheet = ({
                         throw new Error('Permission not granted');
                     }
 
-                    // Save the captured image to a temporary file with the custom name
                     const tempFileUri = FileSystem.cacheDirectory + fileName;
                     await FileSystem.copyAsync({ from: uri, to: tempFileUri });
-
-                    // Add the temporary file to the media library
                     await MediaLibrary.createAssetAsync(tempFileUri);
-
-                    // Optionally, delete the temporary file after adding it to the media library
                     await FileSystem.deleteAsync(tempFileUri);
-
                     break;
 
                 case 'share':
@@ -145,7 +136,6 @@ const ExportBottomSheet = ({
             }
         } catch (error) {
             console.error(`Export error (${action}):`, error);
-            // Errors are silently handled - you could add visual feedback here if needed
         } finally {
             setIsExporting(false);
             setCurrentAction(null);
@@ -156,89 +146,118 @@ const ExportBottomSheet = ({
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: colors.background + 'cc',
+            backgroundColor: colors.background + 'dd',
             justifyContent: 'flex-end',
         },
         bottomSheet: {
             backgroundColor: colors.card,
-            borderTopLeftRadius: variables.radius.lg,
-            borderTopRightRadius: variables.radius.lg,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom: 40,
-            minHeight: 450,
-            maxHeight: screenHeight * 0.8,
+            borderTopLeftRadius: variables.radius.lg + 4,
+            borderTopRightRadius: variables.radius.lg + 4,
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 44,
+            minHeight: 480,
+            maxHeight: screenHeight * 0.85,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+            
         },
         handle: {
-            width: 40,
+            width: 36,
             height: 4,
-            backgroundColor: colors.border,
+            backgroundColor: colors.border + '80',
             borderRadius: 2,
             alignSelf: 'center',
-            marginBottom: 20,
+            marginBottom: 28,
+        },
+        headerContainer: {
+            alignItems: 'center',
+            marginBottom: 32,
         },
         title: {
-            fontSize: 20,
-            fontWeight: 'bold',
+            fontSize: 22,
+            fontWeight: '700',
             color: colors.text,
-            marginBottom: 8,
-            textAlign: 'center',
-            height: 30
+            marginBottom: 6,
+            letterSpacing: -0.3,
         },
         subtitle: {
-            fontSize: 14,
+            fontSize: 15,
             color: colors.textDesc,
-            marginBottom: 24,
             textAlign: 'center',
-            height: 20
+            lineHeight: 20,
+            opacity: 0.8,
         },
         optionCard: {
-            backgroundColor: colors.cardLighter,
-            borderRadius: variables.radius.md,
-            padding: 16,
-            marginBottom: 16,
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.md + 2,
+            padding: 20,
+            marginBottom: 20,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
+           
+        },
+        optionHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 12,
+        },
+        optionIcon: {
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: colors.highlight + '15',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+        },
+        optionTitleContainer: {
+            flex: 1,
         },
         optionTitle: {
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: '600',
             color: colors.text,
-            marginBottom: 8,
+            marginBottom: 2,
+            letterSpacing: -0.2,
         },
         optionDescription: {
-            fontSize: 13,
+            fontSize: 14,
             color: colors.textDesc,
-            marginBottom: 12,
-            height: 20
+            lineHeight: 18,
+            opacity: 0.8,
+            marginBottom: 18,
         },
         actionRow: {
             flexDirection: 'row',
-            gap: 8,
-            marginBottom: 8,
+            gap: 12,
+            marginBottom: 12,
         },
         actionButton: {
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: 10,
-            borderRadius: variables.radius.sm,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: variables.radius.sm + 2,
             borderWidth: isBorder ? 0.75 : 0,
-            backgroundColor: colors.highlight + '10',
+            backgroundColor: colors.highlight + '08',
             borderColor: colors.border,
-            minHeight: 40,
+            minHeight: 48,
         },
         galleryButton: {
-            marginBottom: 16,
+            marginBottom:22
+        },
+        actionButtonPressed: {
+            backgroundColor: colors.highlight + '20',
+            transform: [{ scale: 0.98 }],
         },
         actionButtonText: {
             fontSize: 14,
             fontWeight: '600',
-            marginLeft: 6,
-            height: 20
+            marginLeft: 8,
+            letterSpacing: -0.1,
         },
         filesButtonText: {
             color: colors.highlight,
@@ -253,15 +272,16 @@ const ExportBottomSheet = ({
             backgroundColor: colors.cardLighter,
             borderColor: colors.border,
             borderWidth: isBorder ? 0.75 : 0,
-            borderRadius: variables.radius.sm,
-            paddingVertical: 12,
+            borderRadius: variables.radius.sm + 2,
+            paddingVertical: 16,
             alignItems: 'center',
-            marginTop: 8,
+            marginTop: 12,
         },
         cancelButtonText: {
             color: colors.text,
             fontSize: 16,
             fontWeight: '600',
+            letterSpacing: -0.1,
         },
         loadingContainer: {
             position: 'absolute',
@@ -271,8 +291,24 @@ const ExportBottomSheet = ({
             bottom: 0,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: colors.background + 'aa',
-            borderRadius: variables.radius.lg,
+            backgroundColor: colors.background + 'dd',
+            borderRadius: variables.radius.lg + 4,
+            zIndex: 10,
+        },
+        loadingContent: {
+            alignItems: 'center',
+            backgroundColor: colors.card,
+            paddingHorizontal: 24,
+            paddingVertical: 20,
+            borderRadius: variables.radius.md,
+            
+        },
+        loadingText: {
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: '500',
+            marginTop: 12,
+            letterSpacing: -0.1,
         },
     });
 
@@ -281,10 +317,10 @@ const ExportBottomSheet = ({
         return (
             <>
                 {isActive ? (
-                    <ActivityIndicator size="small" color={colors.text} />
+                    <ActivityIndicator size="small" color={colors.highlight} />
                 ) : (
                     <>
-                        <Icons.Ion name={iconName} size={16} color={
+                        <Icons.Ion name={iconName} size={18} color={
                             action === 'share' ? colors.text : colors.highlight
                         } />
                         <Text style={[
@@ -321,19 +357,32 @@ const ExportBottomSheet = ({
                         >
                             {isExporting && (
                                 <View style={styles.loadingContainer}>
-                                    <ActivityIndicator size="large" color={colors.highlight} />
+                                    <View style={styles.loadingContent}>
+                                        <ActivityIndicator size="large" color={colors.highlight} />
+                                        <Text style={styles.loadingText}>Exporting...</Text>
+                                    </View>
                                 </View>
                             )}
 
                             <View style={styles.handle} />
-                            <Text style={styles.title}>Export Timer</Text>
-                            <Text style={styles.subtitle}>Choose what to export and how to save it</Text>
+
+                            <View style={styles.headerContainer}>
+                                <Text style={styles.title}>Export Timer</Text>
+                                <Text style={styles.subtitle}>Choose what to export and how to save it</Text>
+                            </View>
 
                             {/* Card View Option */}
                             <View style={styles.optionCard}>
-                                <Text style={styles.optionTitle}>Card View</Text>
+                                <View style={styles.optionHeader}>
+                                    <View style={styles.optionIcon}>
+                                        <Icons.Ion name="card-outline" size={16} color={colors.highlight} />
+                                    </View>
+                                    <View style={styles.optionTitleContainer}>
+                                        <Text style={styles.optionTitle}>Card View</Text>
+                                    </View>
+                                </View>
                                 <Text style={styles.optionDescription}>
-                                    Export the compact timer card view
+                                    Export the compact timer card view with essential information
                                 </Text>
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
@@ -342,7 +391,7 @@ const ExportBottomSheet = ({
                                         disabled={isExporting}
                                         activeOpacity={0.7}
                                     >
-                                        {renderButtonContent('save-files', 'folder-outline', 'Save to Files')}
+                                        {renderButtonContent('save-files', 'folder-outline', 'Files')}
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
@@ -366,9 +415,16 @@ const ExportBottomSheet = ({
 
                             {/* Detail View Option */}
                             <View style={styles.optionCard}>
-                                <Text style={styles.optionTitle}>Detail View</Text>
+                                <View style={styles.optionHeader}>
+                                    <View style={styles.optionIcon}>
+                                        <Icons.Ion name="list-outline" size={16} color={colors.highlight} />
+                                    </View>
+                                    <View style={styles.optionTitleContainer}>
+                                        <Text style={styles.optionTitle}>Detail View</Text>
+                                    </View>
+                                </View>
                                 <Text style={styles.optionDescription}>
-                                    Export the detailed timer information
+                                    Export the detailed timer information with comprehensive data
                                 </Text>
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
@@ -377,7 +433,7 @@ const ExportBottomSheet = ({
                                         disabled={isExporting}
                                         activeOpacity={0.7}
                                     >
-                                        {renderButtonContent('save-files', 'folder-outline', 'Save to Files')}
+                                        {renderButtonContent('save-files', 'folder-outline', 'Files')}
                                     </TouchableOpacity>
 
                                     <TouchableOpacity

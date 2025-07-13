@@ -17,7 +17,7 @@ export default function TimersScreen({ route }) {
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
     const { variables, colors, isBorder } = useTheme();
-    const { timers, addTimer, editTimer, removeTimer } = useTimers();
+    const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalVisible, setModalVisible] = useState(false);
@@ -184,6 +184,7 @@ export default function TimersScreen({ route }) {
                     setModalVisible(true);
                 }}
                 isExpanded={isExpanded}
+                handleFavourite={toggleFavourite}
                 onClick={() => handleCardClick(timer.id)}
                 selectable={isSelectable}
                 selected={isSelected}
@@ -192,6 +193,7 @@ export default function TimersScreen({ route }) {
                 isCountdown={isCountdown}
                 searchText={searchQuery}
                 privacyMode={privacyMode}
+                buttons='on'
             />
         );
     }
@@ -299,7 +301,7 @@ export default function TimersScreen({ route }) {
 
     const ListEmptyComponent = useMemo(() => (
         <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No timers found.</Text>
+            {filteredTimers.length === 0 && <Text style={styles.emptyText}>No timers found.</Text>}
             <TouchableOpacity
                 style={styles.actionButton}
                 activeOpacity={0.85}
@@ -320,7 +322,7 @@ export default function TimersScreen({ route }) {
     return (
         <>
             <ScreenWithHeader
-                headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down':'arrow-up'} size={18} color={colors.highlight} />}
+                headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down' : 'arrow-up'} size={18} color={colors.highlight} />}
                 headerTitle={isCountdown ? "Countdowns" : "Countups"}
                 borderRadius={variables.radius.lg}
                 paddingMargin={0}
