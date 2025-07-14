@@ -32,7 +32,7 @@ const WheelPicker = ({
     const [isVisible, setIsVisible] = useState(visible);
     const [initialized, setInitialized] = useState(false);
     const { headerMode } = useTheme();
-    
+
     const BOTTOM_SHEET_HEIGHT = 380;
     const translateY = useRef(new Animated.Value(BOTTOM_SHEET_HEIGHT)).current;
 
@@ -60,7 +60,7 @@ const WheelPicker = ({
                 useNativeDriver: true,
             }),
             Animated.timing(translateY, {
-                toValue: 0, // Position at the bottom of the screen
+                toValue: 0,
                 duration: 300,
                 easing: Easing.out(Easing.quad),
                 useNativeDriver: true,
@@ -83,7 +83,7 @@ const WheelPicker = ({
                 useNativeDriver: true,
             }),
             Animated.timing(translateY, {
-                toValue: BOTTOM_SHEET_HEIGHT, // Move down by its own height
+                toValue: BOTTOM_SHEET_HEIGHT,
                 duration: 300,
                 easing: Easing.in(Easing.quad),
                 useNativeDriver: true,
@@ -147,6 +147,7 @@ const WheelPicker = ({
             marginBottom: 20,
             justifyContent: 'center',
             alignItems: 'center',
+            position: 'relative',
         },
         buttonContainer: {
             flexDirection: 'row',
@@ -184,7 +185,8 @@ const WheelPicker = ({
             position: 'absolute',
             width: '100%',
             height: 40,
-            top: 70,
+            top: '52%',
+            marginTop: -20,
             borderRadius: 6,
             backgroundColor: colors.highlight + '30',
             borderWidth: 1,
@@ -217,11 +219,11 @@ const WheelPicker = ({
                 <Text style={styles.title}>{title}</Text>
 
                 <View style={styles.pickerContainer}>
-                    <View style={styles.highlightedItem} />
+                    <View style={styles.highlightedItem} pointerEvents='none' />
                     {initialized && (
                         <WheelPickerExpo
                             height={180}
-                            width={200}
+                            width={'100%'}
                             initialSelectedIndex={initialIndex >= 0 ? initialIndex : 0}
                             items={values.map(val => ({
                                 label: formatValue(val),
@@ -229,7 +231,9 @@ const WheelPicker = ({
                                 style: {
                                     fontSize: 18,
                                     fontWeight: '600',
-                                    color: colors.text
+                                    color: colors.text,
+                                    lineHeight: 40,
+                                    textAlignVertical: 'center',
                                 }
                             }))}
                             onChange={({ item }) => setCurrentValue(item.value)}
@@ -237,6 +241,11 @@ const WheelPicker = ({
                             textColor={colors.text}
                             haptics={true}
                             itemHeight={40}
+                            selectedStyle={{
+                                height: 40,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
                         />
                     )}
                 </View>
@@ -274,12 +283,12 @@ const WheelPickerInput = ({
     style,
 }) => {
     const [showPicker, setShowPicker] = useState(false);
-    const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+    const anim = useRef(new Animated.Value(value || value === minValue ? 1 : 0)).current;
     const [focus, setFocus] = useState(false);
 
     useEffect(() => {
         Animated.spring(anim, {
-            toValue: (focus || value) ? 1 : 0,
+            toValue: (focus || value || value === minValue) ? 1 : 0,
             damping: 15,
             stiffness: 120,
             useNativeDriver: false,
@@ -297,8 +306,8 @@ const WheelPickerInput = ({
 
     const labelStyle = {
         position: 'absolute',
-        right: focus || value ? labelRight : undefined,
-        left: focus || value ? undefined : 12,
+        right: focus || value || value === minValue ? labelRight : undefined,
+        left: focus || value || value === minValue ? undefined : 12,
         top: labelTop,
         fontSize: anim.interpolate({
             inputRange: [0, 1],
@@ -338,11 +347,11 @@ const WheelPickerInput = ({
                 activeOpacity={0.7}
             >
                 <Text style={{
-                    color: value ? colors.text : colors.textDesc,
+                    color: value || value === minValue ? colors.text : colors.textDesc,
                     fontSize: 16,
                     fontWeight: '600',
                 }}>
-                    {value ? formatValue(value) : `Select ${label}`}
+                    {value || value === minValue ? formatValue(value) : `Select ${label}`}
                 </Text>
             </TouchableOpacity>
 

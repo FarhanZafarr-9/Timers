@@ -7,7 +7,7 @@ const THEME_STORAGE_KEY = 'userThemePreference';
 const NAVIGATION_MODE_KEY = 'navigationModePreference';
 const HEADER_MODE_KEY = 'headerModePreference';
 const BORDER_MODE_KEY = 'borderModePreference';
-const VALID_THEMES = ['light', 'dark', 'system'];
+const VALID_THEMES = ['light', 'dark', 'system', 'darkBlue', 'darkGreen', 'darkPurple', 'darkRose'];
 
 const palettes = {
     light: {
@@ -68,6 +68,126 @@ const palettes = {
         addButtonBg: 'rgba(34, 197, 94, 0.18)',
         addButtonBorder: '#22c55e',
         cancelButtonBg: 'rgba(239, 68, 68, 0.18)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkBlue: {
+        background: '#12131A',
+        card: '#181A20',
+        cardLighter: '#23252C',
+        cardBorder: '#55575A55',
+        settingBlock: '#1e2027',
+        text: '#fefefe',
+        textSecondary: '#b8bcc5',
+        textTitle: '#ffffff',
+        textDesc: '#aaadb7',
+        snackbarBg: '#181A20',
+        snackbarText: '#ffffff',
+        modalBg: '#181A20',
+        modalText: '#fefefe',
+        modalBtnBg: '#2b2d35',
+        modalBtnText: '#b8bcc5',
+        modalBtnOkBg: 'rgba(239, 68, 68, 0.16)',
+        modalBtnOkText: '#ef4444',
+        switchTrack: '#444',
+        switchTrackActive: '#556',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#ededed',
+        border: '#55575A55',
+        divider: '#23252C',
+        highlight: '#fefefe',
+        addButtonBg: 'rgba(34, 197, 94, 0.16)',
+        addButtonBorder: '#22c55e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkGreen: {
+        background: '#101311',        // dark with a hint of greenish tint
+        card: '#161d18',              // slightly richer green-black
+        cardLighter: '#1e2721',       // lifted green-gray
+        cardBorder: '#4d5a4d55',      // dark olive
+        settingBlock: '#19221c',
+        text: '#fefefe',
+        textSecondary: '#bac8ba',     // soft moss gray
+        textTitle: '#ffffff',
+        textDesc: '#a9b8a9',
+        snackbarBg: '#161d18',
+        snackbarText: '#ffffff',
+        modalBg: '#161d18',
+        modalText: '#fefefe',
+        modalBtnBg: '#233027',        // dark leafy
+        modalBtnText: '#bac8ba',
+        modalBtnOkBg: 'rgba(34, 197, 94, 0.20)',
+        modalBtnOkText: '#22c55e',
+        switchTrack: '#384838',
+        switchTrackActive: '#4a6850',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#ededed',
+        border: '#4d5a4d55',
+        divider: '#1e2721',
+        highlight: '#fefefe',
+        addButtonBg: 'rgba(34, 197, 94, 0.20)',
+        addButtonBorder: '#22c55e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkPurple: {
+        background: '#131016',        // dark with a muted plum cast
+        card: '#1a1720',
+        cardLighter: '#231f2c',
+        cardBorder: '#564d5a55',      // subtle violet-gray
+        settingBlock: '#1d1927',
+        text: '#fefefe',
+        textSecondary: '#c6b8cc',     // lavender-gray
+        textTitle: '#ffffff',
+        textDesc: '#b6a9c0',
+        snackbarBg: '#1a1720',
+        snackbarText: '#ffffff',
+        modalBg: '#1a1720',
+        modalText: '#fefefe',
+        modalBtnBg: '#2b2635',
+        modalBtnText: '#c6b8cc',
+        modalBtnOkBg: 'rgba(168, 85, 247, 0.20)',
+        modalBtnOkText: '#a855f7',
+        switchTrack: '#4a384f',
+        switchTrackActive: '#6b4a7a',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#ededed',
+        border: '#564d5a55',
+        divider: '#231f2c',
+        highlight: '#fefefe',
+        addButtonBg: 'rgba(168, 85, 247, 0.20)',
+        addButtonBorder: '#a855f7',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkRose: {
+        background: '#141012',         // dark with faint rose-brown tone
+        card: '#1c1618',
+        cardLighter: '#261e21',
+        cardBorder: '#5a4d4d55',       // warm gray-rose
+        settingBlock: '#211a1d',
+        text: '#fefefe',
+        textSecondary: '#c8b8b8',      // rose-tinted gray
+        textTitle: '#ffffff',
+        textDesc: '#bdaaaa',
+        snackbarBg: '#1c1618',
+        snackbarText: '#ffffff',
+        modalBg: '#1c1618',
+        modalText: '#fefefe',
+        modalBtnBg: '#322628',
+        modalBtnText: '#c8b8b8',
+        modalBtnOkBg: 'rgba(244, 63, 94, 0.20)',  // rose accent
+        modalBtnOkText: '#f43f5e',
+        switchTrack: '#553f44',
+        switchTrackActive: '#7a4a5e',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#ededed',
+        border: '#5a4d4d55',
+        divider: '#261e21',
+        highlight: '#fefefe',
+        addButtonBg: 'rgba(244, 63, 94, 0.20)',
+        addButtonBorder: '#f43f5e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
         cancelButtonBorder: '#ef4444',
     },
 };

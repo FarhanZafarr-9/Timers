@@ -18,7 +18,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { WheelPicker, WheelPickerInput } from './RollerPickerInput';
 import BottomSheetPicker from './BottomSheetPicker';
 import { priorityOptions, recurrenceOptions } from '../utils/functions';
-
+import ModernSwitch from './ModernSwitch';
 
 
 const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) => {
@@ -594,7 +594,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                     <View style={styles.recurringContainer}>
                                         <Text style={styles.label}>Is Recurring?</Text>
                                         <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                            <Switch
+                                            <ModernSwitch
                                                 value={timerData.isRecurring}
                                                 onValueChange={val =>
                                                     setTimerData({
@@ -604,11 +604,11 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                                     })
                                                 }
                                                 trackColor={{
-                                                    false: colors.switchTrack,
-                                                    true: colors.switchTrackActive,
+                                                    false: colors.highlight + '25',
+                                                    true: colors.highlight + '55',
                                                 }}
-                                                thumbColor={timerData.isRecurring ? colors.switchThumbActive : colors.switchThumb}
-                                                style={{ transform: [{ scale: 0.95 }] }}
+                                                thumbColor={!timerData.isRecurring ? colors.cardLighter : colors.background}
+                                                style={{ transform: [{ scaleY: 1 }] }}
                                             />
                                         </View>
 
