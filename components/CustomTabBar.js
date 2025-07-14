@@ -207,7 +207,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             menuButton: {
                 position: 'absolute',
                 right: headerMode !== 'collapsible' ? 40 : 80,
-                top: headerMode === 'fixed' ? insets.top - 10 : insets.top + 25,
+                top: headerMode === 'fixed' ? insets.top : insets.top + 25,
                 zIndex: 20,
             },
         });
@@ -334,10 +334,10 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 backgroundColor: colors.card,
                 borderTopRightRadius: 18,
                 borderBottomRightRadius: 18,
-                paddingTop: insets.top + 16,
+                paddingTop: insets.top + 12,
                 borderWidth: border,
                 borderColor: colors.border,
-                paddingHorizontal: 16,
+                paddingHorizontal: 12,
                 zIndex: 30,
                 shadowColor: '#000',
                 shadowOffset: { width: 3, height: 0 },
@@ -346,50 +346,40 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 elevation: 12,
             },
             sideNavHeader: {
-                paddingBottom: 16,
-                marginBottom: 12,
-                position: 'relative',
+                paddingBottom: 8,
+                marginBottom: 8,
             },
             sideNavTitle: {
-                fontSize: 22,
-                fontWeight: '700',
+                fontSize: 16,
+                fontWeight: '600',
                 color: colors.text,
-                letterSpacing: -0.3,
-            },
-            sideNavSubtitle: {
-                fontSize: 13,
-                color: colors.textDesc,
-                marginTop: 2,
-                opacity: 0.7,
-                height: 20
+                letterSpacing: -0.2,
             },
             sideNavItem: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 12,
-                paddingHorizontal: 12,
-                borderRadius: 12,
-                marginBottom: 4,
-                marginHorizontal: 4,
+                paddingVertical: 10,
+                paddingHorizontal: 10,
+                borderRadius: 10,
+                marginBottom: 3,
                 position: 'relative',
                 overflow: 'hidden',
             },
             sideNavItemActive: {
                 backgroundColor: colors.highlight,
-                transform: [{ scale: 1.02 }],
             },
             sideNavItemInactive: {
                 backgroundColor: colors.card,
             },
             sideNavIcon: {
-                marginRight: 12,
+                marginRight: 10,
                 width: 18,
                 height: 18,
                 alignItems: 'center',
                 justifyContent: 'center',
             },
             sideNavText: {
-                fontSize: 15,
+                fontSize: 14,
                 color: colors.text,
                 fontWeight: '500',
                 flex: 1,
@@ -423,32 +413,15 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
             },
             closeButton: {
                 position: 'absolute',
-                right: 16,
-                top: insets.top + 16,
+                right: 12,
+                top: insets.top + 12,
                 zIndex: 40,
-                width: 36,
-                height: 36,
-                borderRadius: 18,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
                 backgroundColor: colors.background + '15',
                 alignItems: 'center',
                 justifyContent: 'center',
-            },
-            divider: {
-                height: 1,
-                backgroundColor: colors.cardBorder,
-                marginVertical: 12,
-                marginHorizontal: 4,
-                opacity: 0.3,
-            },
-            sectionTitle: {
-                fontSize: 11,
-                fontWeight: '600',
-                color: colors.textDesc,
-                textTransform: 'uppercase',
-                letterSpacing: 0.8,
-                marginBottom: 8,
-                marginTop: 4,
-                paddingHorizontal: 12,
             },
             rippleEffect: {
                 position: 'absolute',
@@ -456,112 +429,65 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                borderRadius: 12,
+                borderRadius: 10,
                 opacity: 0.1,
             },
             footerSection: {
                 marginTop: 'auto',
-                paddingTop: 16,
+                paddingTop: 12,
                 borderTopWidth: 1,
                 borderTopColor: colors.cardBorder,
             },
             userProfile: {
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                borderRadius: 12,
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 10,
                 backgroundColor: colors.highlight + '05',
-                marginBottom: 16,
+                marginBottom: 14,
                 borderWidth: border,
                 borderColor: colors.border,
             },
             userAvatar: {
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: 6,
                 backgroundColor: userData.profilePic ? 'transparent' : colors.highlight,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: 10,
+                marginRight: 8,
             },
-            userInfo: {
-                flex: 1,
-            },
-            userName: {
-                fontSize: 14,
-                fontWeight: '500',
-                color: colors.text,
-            },
-            userStatus: {
-                fontSize: 11,
-                color: colors.textDesc,
-                opacity: 0.7,
-            },
-            avatar: {
-                width: '100%',
-                height: '100%',
-                borderRadius: 8,
-            },
+            userInfo: { flex: 1 },
+            userName: { fontSize: 13, fontWeight: '500', color: colors.text },
+            userStatus: { fontSize: 10, color: colors.textDesc, opacity: 0.7 },
+            avatar: { width: '100%', height: '100%', borderRadius: 8 },
         });
 
-        // Main navigation routes
-        const mainRoutes = state.routes.filter(route =>
-            ['Home', 'Search', 'Favorites', 'Profile'].includes(route.name)
-        );
-
-        // Secondary routes
-        const secondaryRoutes = state.routes.filter(route =>
-            !['Home', 'Search', 'Favorites', 'Profile'].includes(route.name)
-        );
+        const allRoutes = [...state.routes];
 
         return (
             <>
                 <Animated.View
-                    style={[styles.overlay, {
-                        opacity: overlayOpacity,
-                        display: sideNavOpen ? 'flex' : 'none',
-                    }]}
+                    style={[styles.overlay, { opacity: overlayOpacity, display: sideNavOpen ? 'flex' : 'none' }]}
                     pointerEvents={sideNavOpen ? 'auto' : 'none'}
                 >
-                    <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={closeSideNav}
-                        activeOpacity={1}
-                    />
+                    <TouchableOpacity style={{ flex: 1 }} onPress={closeSideNav} activeOpacity={1} />
                 </Animated.View>
 
                 <Animated.View
-                    style={[styles.sideNavContainer,
-                    {
-                        transform: [{ translateX: sideNavTranslateX }],
-                        display: sideNavOpen ? 'flex' : 'none',
-                    }
-                    ]}
+                    style={[styles.sideNavContainer, { transform: [{ translateX: sideNavTranslateX }], display: sideNavOpen ? 'flex' : 'none' }]}
                 >
-                    <TouchableOpacity
-                        onPress={closeSideNav}
-                        style={styles.closeButton}
-                        activeOpacity={0.7}
-                    >
-                        <Icons.Ion
-                            name="close"
-                            size={24}
-                            color={colors.text}
-                        />
+                    <TouchableOpacity onPress={closeSideNav} style={styles.closeButton} activeOpacity={0.7}>
+                        <Icons.Ion name="close" size={20} color={colors.text} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.sideNavHeader} onPress={() => setExpanded(expanded == 5 ? 0 : expanded + 1)} activeOpacity={1}>
                         <Text style={styles.sideNavTitle}>Menu</Text>
-                        <Text style={styles.sideNavSubtitle}>Navigate your app</Text>
                     </TouchableOpacity>
 
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        style={{ flex: 1 }}
-                    >
-                        <Text style={styles.sectionTitle}>Main</Text>
-                        {mainRoutes.map((route, index) => {
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                        {allRoutes.map((route, index) => {
                             const isFocused = state.index === index;
                             const iconName = getIconName(route.name);
 
@@ -611,84 +537,32 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                 </TouchableOpacity>
                             );
                         })}
-
-                        {secondaryRoutes.length > 0 && (
-                            <>
-                                <View style={styles.divider} />
-                                <Text style={styles.sectionTitle}>More</Text>
-                                {secondaryRoutes.map((route, index) => {
-                                    const isFocused = state.routes.indexOf(route) === state.index;
-                                    const iconName = getIconName(route.name);
-
-                                    const onPress = () => {
-                                        const event = navigation.emit({
-                                            type: 'tabPress',
-                                            target: route.key,
-                                            canPreventDefault: true,
-                                        });
-
-                                        if (!isFocused && !event.defaultPrevented) {
-                                            navigation.navigate(route.name);
-                                            closeSideNav();
-                                        }
-                                    };
-
-                                    return (
-                                        <TouchableOpacity
-                                            key={route.name}
-                                            accessibilityRole="button"
-                                            onPress={onPress}
-                                            style={[
-                                                styles.sideNavItem,
-                                                isFocused ? styles.sideNavItemActive : styles.sideNavItemInactive
-                                            ]}
-                                            activeOpacity={0.8}
-                                        >
-                                            <View style={[styles.rippleEffect, isFocused && { backgroundColor: colors.background }]} />
-                                            <View style={styles.sideNavIcon}>
-                                                <Icons.Ion
-                                                    name={iconName}
-                                                    size={18}
-                                                    color={isFocused ? colors.background : colors.textDesc}
-                                                />
-                                            </View>
-                                            <Text style={[
-                                                styles.sideNavText,
-                                                isFocused && styles.sideNavTextActive
-                                            ]}>
-                                                {route.name}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </>
-                        )}
                     </ScrollView>
 
-                    {expanded === 5 && <View style={styles.footerSection}>
-                        <View style={styles.userProfile} activeOpacity={1}>
-                            <View style={styles.userAvatar}>
-                                {!userData.profilePic && <Icons.Ion
-                                    name="person"
+                    {expanded === 5 && (
+                        <View style={styles.footerSection}>
+                            <View style={styles.userProfile}>
+                                <View style={styles.userAvatar}>
+                                    {!userData.profilePic && (
+                                        <Icons.Ion name="person" size={16} color={colors.background} />
+                                    )}
+                                    {userData.profilePic && (
+                                        <Image source={{ uri: userData.profilePic }} style={styles.avatar} />
+                                    )}
+                                </View>
+                                <View style={styles.userInfo}>
+                                    <Text style={styles.userName}>{userData.name}</Text>
+                                    <Text style={styles.userStatus}>{userData.profession}</Text>
+                                </View>
+                                <Icons.Ion
+                                    name="settings-outline"
                                     size={16}
-                                    color={colors.background}
-                                />}
-                                {userData.profilePic && (
-                                    <Image source={{ uri: userData.profilePic }} style={styles.avatar} />
-                                )}
+                                    color={colors.textDesc}
+                                    onPress={() => setIsProfileSheetVisible(true)}
+                                />
                             </View>
-                            <View style={styles.userInfo}>
-                                <Text style={styles.userName}>{userData.name}</Text>
-                                <Text style={styles.userStatus}>{userData.profession}</Text>
-                            </View>
-                            <Icons.Ion
-                                name="settings-outline"
-                                size={18}
-                                color={colors.textDesc}
-                                onPress={() => { setIsProfileSheetVisible(true) }}
-                            />
                         </View>
-                    </View>}
+                    )}
                 </Animated.View>
             </>
         );

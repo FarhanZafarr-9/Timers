@@ -4,10 +4,10 @@ import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import BottomSheetChangelog from '../components/BottomSheetChnageLog';
-import BottomSheetPicker from '../components/BottomSheetPicker';
 import { appVersion } from '../utils/functions';
 import { showToast, appBuild } from '../utils/functions';
 import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
+import AboutMeModal from '../components/AboutMeModal';
 
 export default function AboutScreen() {
     const { variables, colors, isBorder, border } = useTheme();
@@ -19,6 +19,7 @@ export default function AboutScreen() {
     const descCardAnim = useRef(new Animated.Value(-50)).current;
     const creditsCardAnim = useRef(new Animated.Value(-50)).current;
     const buttonsAnim = useRef(new Animated.Value(-50)).current;
+    const [showAboutMe, setShowAboutMe] = useState(false);
 
     const topOpacityAnim = useRef(new Animated.Value(0)).current;
     const descOpacityAnim = useRef(new Animated.Value(0)).current;
@@ -65,23 +66,16 @@ export default function AboutScreen() {
 
     const handleReportBug = () => {
         const email = 'farhanzafarr.9@gmail.com';
-        const subject = 'Bug Report - Timers App';
+        const subject = 'Bug Report - ChronoX App';
         const body = 'Please describe the bug you encountered:';
         Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     };
 
-    const handleScheduleTestNotification = () => {
-        if (selectedTestTime) {
-            const selectedOption = testTimeOptions.find(opt => opt.value === selectedTestTime);
-            scheduleNotification(
-                selectedTestTime,
-                `Hello from ${selectedOption.label}! 👋`,
-                `This notification was scheduled for ${selectedOption.label}`
-            );
-            showToast(`Test notification scheduled for ${selectedOption.label}`, 'success');
-        } else {
-            showToast('Please select a test time first', 'warning');
-        }
+    const handleSuggestion = () => {
+        const email = 'farhanzafarr.9@gmail.com';
+        const subject = 'Suggestion - ChronoX App';
+        const body = 'Please describe the suggestion you came upon:';
+        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     };
 
     const styles = StyleSheet.create({
@@ -127,7 +121,6 @@ export default function AboutScreen() {
             borderWidth: border,
             borderColor: colors.border,
             minWidth: 120,
-            flexGrow: 1,
             flexBasis: '48%',
         },
         fullWidthButton: {
@@ -142,50 +135,7 @@ export default function AboutScreen() {
             marginTop: 12,
             width: '100%',
         },
-        buttonText: { marginLeft: 8, fontSize: 14, fontWeight: '600', color: colors.text, height: 20 },
-        testSection: {
-            marginTop: 20,
-            padding: 16,
-            backgroundColor: colors.card,
-            borderRadius: variables.radius.md,
-            borderWidth: border,
-            borderColor: colors.border,
-        },
-        testSectionTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: colors.textTitle,
-            marginBottom: 12,
-        },
-        testControls: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-        },
-        pickerContainer: {
-            flex: 1,
-        },
-        testButton: {
-            backgroundColor: colors.primary || colors.highlight,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: variables.radius.sm,
-            minWidth: 80,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        testButtonText: {
-            color: colors.background,
-            fontSize: 14,
-            fontWeight: '600',
-        },
-        testButtonDisabled: {
-            backgroundColor: colors.border,
-            opacity: 0.5,
-        },
-        testButtonTextDisabled: {
-            color: colors.textSecondary,
-        },
+        buttonText: { marginLeft: 8, fontSize: 14, fontWeight: '600', color: colors.text, height: 16 },
     });
 
     return (
@@ -197,6 +147,9 @@ export default function AboutScreen() {
             colors={colors}
             paddingX={15}
         >
+            {showAboutMe && (
+                <AboutMeModal onClose={() => setShowAboutMe(false)} />
+            )}
             <View style={styles.content}>
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
@@ -231,7 +184,7 @@ export default function AboutScreen() {
 
                         <TouchableOpacity style={styles.actionButton} onPress={() => setShowChangelog(true)}>
                             <Icons.Ion name="document-text-outline" size={18} color={colors.text} />
-                            <Text style={styles.buttonText}>Show Changelog</Text>
+                            <Text style={styles.buttonText}>Changelog</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}>
@@ -249,58 +202,22 @@ export default function AboutScreen() {
                             <Text style={styles.buttonText}>Report Bug</Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity style={styles.actionButton} onPress={handleSuggestion}>
+                            <Icons.Ion name="star" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>Suggestion</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.actionButton]}
+                            onPress={() => setShowAboutMe(true)}
+                        >
+                            <Icons.Ion name="person-circle-outline" size={18} color={colors.text} />
+                            <Text style={styles.buttonText}>About Me</Text>
+                        </TouchableOpacity>
+
                     </View>
-
-
-
-                    {expanded === 5 &&
-                        (<>
-
-                            <TouchableOpacity
-                                style={[styles.fullWidthButton, { backgroundColor: colors.highlight, marginTop: 20 }]}
-                                onPress={clearAllScheduledNotifications}
-                            >
-                                <Icons.Ion name="trash-outline" size={18} color={colors.background} />
-                                <Text style={[styles.buttonText, { color: colors.background }]}>Clear All Notifications</Text>
-                            </TouchableOpacity>
-
-
-                            <View style={styles.testSection}>
-                                <Text style={styles.testSectionTitle}>Test Notifications</Text>
-                                <View style={styles.testControls}>
-                                    <View style={styles.pickerContainer}>
-                                        <BottomSheetPicker
-                                            value={selectedTestTime}
-                                            options={testTimeOptions}
-                                            onChange={setSelectedTestTime}
-                                            placeholder="Select test time"
-                                            title="Select Test Time"
-                                            colors={colors}
-                                            variables={variables}
-                                            pillsPerRow={3}
-                                            defaultValue={null}
-                                        />
-                                    </View>
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.testButton,
-                                            !selectedTestTime && styles.testButtonDisabled
-                                        ]}
-                                        onPress={handleScheduleTestNotification}
-                                        disabled={!selectedTestTime}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Text style={[
-                                            styles.testButtonText,
-                                            !selectedTestTime && styles.testButtonTextDisabled
-                                        ]}>
-                                            Test
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </>)}
                 </Animated.View>
+
 
                 <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </View>

@@ -374,9 +374,36 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.19';
+export const appVersion = '1.0.21';
 
 export const changelog = [
+    {
+        "version": "1.0.21",
+        "date": "2025-07-15",
+        "title": "About Me Modal & UI Tweaks",
+        "major": false,
+        "changes": [
+            "Aligned header for immersive modal look",
+            "Added stylish About Me modal with app intro",
+            "Polished card and button visuals"
+        ]
+    },
+    {
+        "version": "1.0.20",
+        "date": "2025-07-14",
+        "title": "Side Navigation & Theming Polish",
+        "major": false,
+        "changes": [
+            "Made side navigation more minimal and compact",
+            "Removed 'Main' and 'More' section labels",
+            "Removed 'Navigate your app' subtitle text",
+            "Reduced side menu header font size for a tighter look",
+            "Kept user profile footer toggle intact and tied to header clicks",
+            "Added a Wisdom section if no lock is enabled",
+            "Improved dark themes for better unique color vibes",
+            "Smoothed spacing and padding for side nav items"
+        ]
+    },
     {
         "version": "1.0.19",
         "date": "2025-07-15",

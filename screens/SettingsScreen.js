@@ -384,6 +384,7 @@ export default function SettingsScreen() {
                                 placeholder="Select accent"
                                 colors={colors}
                                 variables={variables}
+                                defaultValue={'default'}
                             />
                         </TouchableOpacity>
 
