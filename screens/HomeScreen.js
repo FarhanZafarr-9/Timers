@@ -8,6 +8,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import TimerCard from '../components/TimerCard';
 import { useSecurity } from '../utils/SecurityContext';
 import { quotes } from '../utils/functions';
+import { jumbleText, maskText } from '../utils/functions';
 
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
@@ -36,6 +37,8 @@ export default function HomeScreen({ navigation }) {
     const [isTyping, setIsTyping] = useState(false);
     const quoteTextOpacity = useRef(new Animated.Value(0)).current;
     const quoteScale = useRef(new Animated.Value(0.95)).current;
+    const jumbledText = useMemo(() => jumbleText('Favourite'), []);
+    const maskedText = useMemo(() => maskText('Favourite'), []);
 
     // Update current time every minute
     useEffect(() => {
@@ -200,85 +203,6 @@ export default function HomeScreen({ navigation }) {
     }, [timers]);
 
     const favTimers = useMemo(() => timers?.filter(t => t.isFavourite === true) || [], [timers]);
-
-    // Enhanced: Active timers logic with better categorization
-    const activeTimers = useMemo(() => {
-        const now = currentTime;
-        return timers?.filter(timer => {
-            const timerDate = new Date(timer.date);
-            if (timer.isCountdown) {
-                return timerDate > now; // Active countdown (future date)
-            } else {
-                return timerDate <= now; // Active countup (past/current date)
-            }
-        }).sort((a, b) => {
-            // Sort by urgency: countdowns by time remaining, countups by time elapsed
-            const aDate = new Date(a.date);
-            const bDate = new Date(b.date);
-            if (a.isCountdown && b.isCountdown) {
-                return aDate - bDate; // Closest countdown first
-            } else if (!a.isCountdown && !b.isCountdown) {
-                return bDate - aDate; // Longest running countup first
-            } else {
-                return a.isCountdown ? -1 : 1; // Countdowns first
-            }
-        }).slice(0, 4) || []; // Show top 4 active timers
-    }, [timers, currentTime]);
-
-    // Enhanced: Recent timers logic
-    const recentTimers = useMemo(() => {
-        return timers?.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 3) || [];
-    }, [timers]);
-
-    // Enhanced: Comprehensive timer stats
-    const timerStats = useMemo(() => {
-        const now = currentTime;
-        const runningCountdowns = timers?.filter(t => t.isCountdown && new Date(t.date) > now).length || 0;
-        const expiredCountdowns = timers?.filter(t => t.isCountdown && new Date(t.date) <= now).length || 0;
-        const runningCountups = timers?.filter(t => !t.isCountdown && new Date(t.date) <= now).length || 0;
-        const upcomingCountdowns = timers?.filter(t => {
-            const timerDate = new Date(t.date);
-            const timeDiff = timerDate - now;
-            return t.isCountdown && timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // Within 24 hours
-        }).length || 0;
-
-        return { runningCountdowns, expiredCountdowns, runningCountups, upcomingCountdowns };
-    }, [timers, currentTime]);
-
-    const formatTimeRemaining = (date, isCountdown) => {
-        const now = currentTime;
-        const target = new Date(date);
-        const diff = isCountdown ? target - now : now - target;
-
-        if (isCountdown && diff <= 0) return "Expired";
-        if (!isCountdown && diff < 0) return "Pending";
-
-        const absDiff = Math.abs(diff);
-        const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-
-        if (days > 0) return `${days}d ${hours}h`;
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
-    };
-
-    const getTimerProgress = (timer) => {
-        const now = currentTime;
-        const timerDate = new Date(timer.date);
-        const createdDate = new Date(timer.createdAt || timer.date);
-
-        if (timer.isCountdown) {
-            const total = timerDate - createdDate;
-            const elapsed = now - createdDate;
-            return Math.min(Math.max(elapsed / total, 0), 1);
-        } else {
-            // For countups, show a simple indicator based on time elapsed
-            const elapsed = now - timerDate;
-            const daysPassed = elapsed / (1000 * 60 * 60 * 24);
-            return Math.min(daysPassed / 30, 1); // Max progress at 30 days
-        }
-    };
 
     const styles = StyleSheet.create({
         grid: {
@@ -500,7 +424,7 @@ export default function HomeScreen({ navigation }) {
                         >
                             {favTimers.length > 0 ? (<>
                                 <View style={styles.labelContainer}>
-                                    <Text style={styles.labelText}>Favourites</Text>
+                                    <Text style={styles.labelText}>{privacyMode === 'off' ? Favourites : privacyMode === 'jumble' ? jumbledText : maskedText}</Text>
                                 </View>
 
                                 {favTimers.map((timer) => (

@@ -50,19 +50,19 @@ const HeaderControls = ({
         row: {
             flexDirection: 'row',
             alignItems: 'center',
-            height: 48,
+            height: 38,
         },
         searchContainer: {
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            height: 48,
+            height: 38,
             paddingHorizontal: 12,
         },
         searchInput: {
             flex: 1,
             color: colors.text,
-            height: 48,
+            height: 38,
             fontSize: 16,
             paddingVertical: 0,
             paddingHorizontal: 8,
@@ -72,8 +72,8 @@ const HeaderControls = ({
             borderRadius: 12,
         },
         toggleButton: {
-            width: 48,
-            height: 48,
+            width: 38,
+            height: 38,
             borderTopRightRadius: variables.radius.xl,
             borderBottomRightRadius: variables.radius.xl,
             backgroundColor: colors.highlight + '20',

@@ -7,6 +7,7 @@ import { showToast } from './functions';
 import { AppState } from 'react-native';
 import PasswordBottomSheet from '../components/PasswordModal';
 import logo from '../assets/logo.png'
+import { quotes } from './functions';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,6 +43,7 @@ const AuthComponent = ({ children }) => {
     const [showResetModal, setShowResetModal] = useState(false);
     const [wasAccessedFromRecents, setWasAccessedFromRecents] = useState(false);
     const [appState, setAppState] = useState(AppState.currentState);
+
 
     const [hasMounted, setHasMounted] = useState(false);
 
@@ -219,7 +221,7 @@ const AuthComponent = ({ children }) => {
         },
         appIcon: {
             width: 175, height: 175, borderRadius: variables.radius.circle, marginRight: 16, resizeMode: 'cover',
-            borderWidth: border, borderColor: colors.cardBorder,marginBottom: '15%', alignSelf:'center',marginLeft: '5%'
+            borderWidth: border, borderColor: colors.cardBorder, marginBottom: '15%', alignSelf: 'center', marginLeft: '5%'
         },
         topTextContainer: {
             flex: 1,
@@ -640,20 +642,20 @@ const AuthComponent = ({ children }) => {
                                     height: 1
                                 }]} />
                             ))}
-                            
+
                             <Image source={logo} style={styles.appIcon} />
 
                             <View style={styles.cardOverlay} />
                             <View style={styles.textContainer}>
-                                <Text style={styles.middleTitle}>Security</Text>
-                                <Text style={styles.middleDesc}>Authenticate to continue</Text>
+                                <Text style={styles.middleTitle}>{(!isFingerprintEnabled && !isPasswordLockEnabled) ? 'Wisdom' : 'Security'}</Text>
+                                <Text style={styles.middleDesc}>{(!isFingerprintEnabled && !isPasswordLockEnabled) ? quotes[Math.floor(Math.random() * quotes.length)]
+                                    : 'Authenticate to continue securely'}</Text>
                             </View>
                         </View>
                     </View>
                 </Animated.View>
 
                 {/* Bottom card */}
-                 // Replace the bottom card content with this simplified version
                 <Animated.View style={[
                     styles.bottomCard,
                     { transform: [{ translateY: bottomCardAnimY }] }
