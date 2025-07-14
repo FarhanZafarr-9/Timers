@@ -28,7 +28,7 @@ const HeaderControlsBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
-    const { isBorder, headerMode } = useTheme();
+    const { isBorder, headerMode, border } = useTheme();
 
     useEffect(() => {
         if (visible) showBottomSheet();
@@ -76,7 +76,7 @@ const HeaderControlsBottomSheet = ({
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
             paddingBottom: 15,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },
@@ -102,7 +102,7 @@ const HeaderControlsBottomSheet = ({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             flexDirection: 'row',
             gap: 8,
@@ -130,7 +130,7 @@ const HeaderControlsBottomSheet = ({
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             borderRadius: 12,
             paddingHorizontal: 14,
@@ -148,7 +148,7 @@ const HeaderControlsBottomSheet = ({
             paddingHorizontal: 0,
             paddingTop: 16,
             paddingBottom: 8,
-            borderTopWidth: 0.75,
+            borderTopWidth: border,
             borderTopColor: colors.border,
             gap: '4%',
         },

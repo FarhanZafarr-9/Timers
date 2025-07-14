@@ -10,9 +10,9 @@ export default function CollapsibleHeader({
     colors,
     pageLength = null,
     borderRadius = 12,
-    paddingX=15
+    paddingX = 15
 }) {
-    const { headerMode, isBorder, variables } = useTheme();
+    const { headerMode, isBorder, variables, border } = useTheme();
     const forceCollapsed = shouldForceCollapsed(pageLength);
     const snapThreshold = 45;
 
@@ -63,15 +63,16 @@ export default function CollapsibleHeader({
     const styles = StyleSheet.create({
         header: {
             borderRadius: borderRadius,
-            borderColor: colors.cardBorder,
+            borderColor: colors.border,
             marginBottom: headerMode !== 'collapsible' ? 0 : 16,
             marginTop: headerMode === 'fixed' ? 0 : HEADER_MARGIN_TOP,
             overflow: 'hidden',
             alignSelf: 'center',
             backgroundColor: colors.settingBlock,
             flexDirection: 'row',
-            alignItems: headerMode === 'fixed' ? 'flex-end' :'center',
+            alignItems: headerMode === 'fixed' ? 'center' : 'center',
             paddingBottom: headerMode === 'fixed' ? 15 : 0,
+            paddingTop: headerMode === 'fixed' ? 25 : 0,
             gap: 12,
         },
         title: {
@@ -85,13 +86,13 @@ export default function CollapsibleHeader({
             zIndex: 100,
             backgroundColor: headerMode === 'fixed' ? 'transparent' : colors.background,
             height: headerMode === 'fixed' ? MIN_HEADER_HEIGHT + 15 : MAX_HEADER_HEIGHT + HEADER_MARGIN_TOP,
-            paddingTop: headerMode === 'fixed' ? 0: 10,
+            paddingTop: headerMode === 'fixed' ? 0 : 10,
         },
     });
 
     if (headerMode === 'minimized') {
         return (
-            <View style={[styles.container, { paddingHorizontal: paddingX, paddingBottom: 10}]}>
+            <View style={[styles.container, { paddingHorizontal: paddingX, paddingBottom: 10 }]}>
                 <View
                     style={[
                         styles.header,
@@ -99,7 +100,7 @@ export default function CollapsibleHeader({
                             height: MIN_HEADER_HEIGHT,
                             width: '100%',
                             paddingHorizontal: 25,
-                            borderWidth: isBorder ? 0.75 : 0,
+                            borderWidth: border,
                             borderColor: colors.border,
                             top: 0,
                             zIndex: 100,
@@ -124,7 +125,7 @@ export default function CollapsibleHeader({
 
     else if (headerMode === 'fixed') {
         return (
-            <View style={[styles.container,{backgroundColor: colors.background}]}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <View
                     style={[
                         styles.header,
@@ -136,14 +137,17 @@ export default function CollapsibleHeader({
                             backgroundColor: colors.cardLighter,
                             alignSelf: 'center',
                             paddingHorizontal: 25,
+                            borderColor: colors.border,
+                            borderWidth: border,
+                            borderTopWidth: headerMode === 'fixed' ? 0 : border
                         },
                     ]}
                 >
                     <View style={{ transform: [{ scale: 0.71428 }], justifyContent: 'center', alignItems: 'center' }}>
-                        {React.cloneElement(icon, { size: 24, paddingTop: 0 })}
+                        {React.cloneElement(icon, { size: 24 })}
                     </View>
                     <Animated.Text
-                        style={[styles.title, { fontSize: 16, marginLeft: 0, color: colors.text }]}
+                        style={[styles.title, { fontSize: 18, marginLeft: 0, marginBottom: 0, color: colors.text }]}
                         numberOfLines={1}
                     >
                         {title}

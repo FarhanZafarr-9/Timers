@@ -18,7 +18,7 @@ import { useData } from '../utils/DataContext';
 
 const CustomNavigation = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
-    const { variables, colors, navigationMode, headerMode, isBorder } = useTheme();
+    const { variables, colors, navigationMode, headerMode, isBorder, border } = useTheme();
     const { userData } = useData();
     const { width } = Dimensions.get('window');
     const [expanded, setExpanded] = useState(0);
@@ -168,10 +168,10 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 flexDirection: 'row',
                 backgroundColor: floating ? colors.card : colors.cardLighter,
                 borderColor: colors.cardBorder,
-                borderTopWidth: floating ? 0.75 : 0,
-                borderBottomWidth: floating ? 0.75 : 0,
-                borderRightWidth: floating ? 0.75 : 0,
-                borderLeftWidth: floating ? 0.75 : 0,
+                borderTopWidth: border,
+                borderBottomWidth: floating ? border : 0,
+                borderRightWidth: border,
+                borderLeftWidth: border,
                 borderTopLeftRadius: variables.radius.xl,
                 borderTopRightRadius: variables.radius.xl,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
@@ -260,6 +260,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                         flex: isFocused ? 0.5 * tabCount : 1,
                                     }
                                 ]}
+                                activeOpacity={isFocused ? 1 : 0.75}
                             >
                                 <Animated.View style={[
                                     styles.tabContent,
@@ -334,7 +335,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderTopRightRadius: 18,
                 borderBottomRightRadius: 18,
                 paddingTop: insets.top + 16,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
                 paddingHorizontal: 16,
                 zIndex: 30,
@@ -472,7 +473,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderRadius: 12,
                 backgroundColor: colors.highlight + '05',
                 marginBottom: 16,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             userAvatar: {

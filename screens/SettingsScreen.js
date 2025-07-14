@@ -12,7 +12,7 @@ import Snackbar from '../components/SnackBar';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
+import { themeOptions, accentOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 import ModernSwitch from '../components/ModernSwitch';
 
@@ -21,6 +21,8 @@ export default function SettingsScreen() {
 
     const {
         theme,
+        accentMode,
+        setAccentModeState,
         colors,
         variables,
         themeMode,
@@ -32,6 +34,7 @@ export default function SettingsScreen() {
         borderMode,
         setBorderMode,
         isBorder
+        , border
     } = useTheme();
 
     const {
@@ -152,7 +155,7 @@ export default function SettingsScreen() {
             marginBottom: 15,
             borderRadius: variables.radius.lg,
             overflow: 'hidden',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.cardBorder,
         },
         settingBlock: {
@@ -163,7 +166,7 @@ export default function SettingsScreen() {
             paddingBottom: 14,
             paddingHorizontal: 20,
             backgroundColor: colors.settingBlock + 'f5',
-            borderBottomWidth: .75,
+            borderBottomWidth: border,
             borderBottomColor: colors.border
         },
         settingTextBlock: {
@@ -362,6 +365,23 @@ export default function SettingsScreen() {
                                 options={themeOptions}
                                 onChange={setThemeMode}
                                 placeholder="Select theme"
+                                colors={colors}
+                                variables={variables}
+                            />
+                        </TouchableOpacity>
+
+                        {/* Accent Mode Picker */}
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                            <Icons.Ion name='brush-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Accent</Text>
+                                <Text style={styles.settingDesc}>Choose app accent</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={accentMode}
+                                options={accentOptions}
+                                onChange={setAccentModeState}
+                                placeholder="Select accent"
                                 colors={colors}
                                 variables={variables}
                             />

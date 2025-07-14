@@ -31,7 +31,7 @@ const WheelPicker = ({
     const backdropOpacity = useRef(new Animated.Value(0)).current;
     const [isVisible, setIsVisible] = useState(visible);
     const [initialized, setInitialized] = useState(false);
-    const { headerMode } = useTheme();
+    const { headerMode, border } = useTheme();
 
     const BOTTOM_SHEET_HEIGHT = 380;
     const translateY = useRef(new Animated.Value(BOTTOM_SHEET_HEIGHT)).current;

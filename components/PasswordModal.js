@@ -45,7 +45,7 @@ export default function PasswordBottomSheet({
     mode = 'set',
     variables,
 }) {
-    const { colors, isBorder, headerMode } = useTheme();
+    const { colors, isBorder, headerMode, border } = useTheme();
     const { getResetCode, setResetCodeValue } = useSecurity();
 
     const [translateY] = useState(new Animated.Value(screenHeight));
@@ -129,7 +129,7 @@ export default function PasswordBottomSheet({
             borderTopRightRadius: variables.radius.lg || 20,
             paddingBottom: 15,
             maxHeight: screenHeight * 0.85,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: {
@@ -152,7 +152,7 @@ export default function PasswordBottomSheet({
         header: {
             paddingHorizontal: 20,
             paddingVertical: 16,
-            borderBottomWidth: 0.75,
+            borderBottomWidth: border,
             borderBottomColor: colors.border,
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -185,7 +185,7 @@ export default function PasswordBottomSheet({
         inputRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderRadius: variables.radius.sm,
             borderColor: colors.border,
             backgroundColor: colors.settingBlock,
@@ -232,7 +232,7 @@ export default function PasswordBottomSheet({
             marginBottom: 16,
             textAlign: 'center',
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: '#ef4444',
             padding: 12,
             borderRadius: variables.radius.sm,
@@ -251,7 +251,7 @@ export default function PasswordBottomSheet({
         },
         resetCodeContainer: {
             backgroundColor: colors.settingBlock,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             borderRadius: variables.radius.sm,
             padding: 16,
@@ -290,7 +290,7 @@ export default function PasswordBottomSheet({
             paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 8,
-            borderTopWidth: 0.75,
+            borderTopWidth: border,
             borderTopColor: colors.border,
             gap: 12,
         },
@@ -301,7 +301,7 @@ export default function PasswordBottomSheet({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
         },
         saveButton: {
             backgroundColor: colors.highlight,
@@ -323,7 +323,7 @@ export default function PasswordBottomSheet({
         },
         resetModeInfo: {
             backgroundColor: colors.settingBlock,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             borderRadius: variables.radius.sm,
             padding: 16,

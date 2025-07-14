@@ -32,7 +32,7 @@ const ExportBottomSheet = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isExporting, setIsExporting] = useState(false);
     const [currentAction, setCurrentAction] = useState(null);
-    const { isBorder } = useTheme();
+    const { border } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -158,9 +158,9 @@ const ExportBottomSheet = ({
             paddingBottom: 44,
             minHeight: 480,
             maxHeight: screenHeight * 0.85,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
-            
+
         },
         handle: {
             width: 36,
@@ -193,9 +193,9 @@ const ExportBottomSheet = ({
             borderRadius: variables.radius.md + 2,
             padding: 20,
             marginBottom: 20,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
-           
+
         },
         optionHeader: {
             flexDirection: 'row',
@@ -241,13 +241,13 @@ const ExportBottomSheet = ({
             paddingVertical: 8,
             paddingHorizontal: 14,
             borderRadius: variables.radius.sm + 2,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             backgroundColor: colors.highlight + '08',
             borderColor: colors.border,
             minHeight: 48,
         },
         galleryButton: {
-            marginBottom:22
+            marginBottom: 22
         },
         actionButtonPressed: {
             backgroundColor: colors.highlight + '20',
@@ -271,7 +271,7 @@ const ExportBottomSheet = ({
         cancelButton: {
             backgroundColor: colors.cardLighter,
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderRadius: variables.radius.sm + 2,
             paddingVertical: 16,
             alignItems: 'center',
@@ -301,7 +301,7 @@ const ExportBottomSheet = ({
             paddingHorizontal: 24,
             paddingVertical: 20,
             borderRadius: variables.radius.md,
-            
+
         },
         loadingText: {
             color: colors.text,

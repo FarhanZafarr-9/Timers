@@ -28,28 +28,35 @@ export const themeOptions = [
         value: 'dark',
         icon: <Icons.Ion name="moon-outline" size={16} />,
     },
-    {
-        label: 'Dark Blue',
-        value: 'darkBlue',
-        icon: <Icons.Ion name="color-palette-outline" size={16} color="#b8bcc5" />,
-    },
-    {
-        label: 'Dark Green',
-        value: 'darkGreen',
-        icon: <Icons.Ion name="leaf-outline" size={16} color="#bac8ba" />,
-    },
-    {
-        label: 'Dark Purple',
-        value: 'darkPurple',
-        icon: <Icons.Ion name="flower-outline" size={16} color="#c6b8cc" />,
-    },
-    {
-        label: 'Dark Rose',
-        value: 'darkRose',
-        icon: <Icons.Ion name="rose-outline" size={16} color="#c8b8b8" />,
-    },
 ];
 
+export const accentOptions = [
+    {
+        label: 'Monochrome',
+        value: 'default',
+        icon: <Icons.Ion name="contrast-outline" size={16} />,
+    },
+    {
+        label: 'Blue',
+        value: 'blue',
+        icon: <Icons.Ion name="color-palette-outline" size={16} color="#3b82f6" />,
+    },
+    {
+        label: 'Green',
+        value: 'green',
+        icon: <Icons.Ion name="leaf-outline" size={16} color="#22c55e" />,
+    },
+    {
+        label: 'Purple',
+        value: 'purple',
+        icon: <Icons.Ion name="flower-outline" size={16} color="#a855f7" />,
+    },
+    {
+        label: 'Rose',
+        value: 'rose',
+        icon: <Icons.Ion name="rose-outline" size={16} color="#f43f5e" />,
+    },
+];
 
 export const privacyOptions = [
     {
@@ -195,16 +202,25 @@ export const recurrenceOptions = [
 
 export const borderOptions = [
     {
+        label: 'None',
+        value: 'none',
+        icon: <Icons.Ion name="close-outline" size={16} />,
+    },
+    {
+        label: 'Thin',
+        value: 'thin',
+        icon: <Icons.Ion name="remove-outline" size={16} />, // Using horizontal line icon
+    },
+    {
         label: 'Subtle',
         value: 'subtle',
         icon: <Icons.Ion name="checkmark-outline" size={16} />,
     },
     {
-        label: 'None',
-        value: 'none',
-        icon: <Icons.Ion name="close-outline" size={16} />,
+        label: 'Thick',
+        value: 'thick',
+        icon: <Icons.Ion name="square-outline" size={16} />,
     },
-
 ];
 
 export const jumbleText = (str) => {
@@ -298,13 +314,84 @@ export const quotes = [
     "Late starts are better than never.",
     "Time unravels every secret.",
     "The moment you're in is all you own.",
-    "Time flows; make sure you're swimming."
+    "Time flows; make sure you're swimming.",
+    "Time's melody plays only once—listen closely.",
+    "A second's decision can change a lifetime.",
+    "The hourglass never pauses for regrets.",
+    "Time is the architect of character.",
+    "Moments are the brushstrokes of destiny.",
+    "Watches measure time, but presence measures life.",
+    "Time's river carries both the patient and rushed.",
+    "The present is time's only guaranteed gift.",
+    "Every ending is time's new beginning.",
+    "Time heals wounds but scars remain as lessons.",
+    "The clock's hands point forward for a reason.",
+    "Time spent laughing is never wasted.",
+    "Yesterday's lessons fuel tomorrow's victories.",
+    "Time magnifies what we nurture.",
+    "An idle moment is a stolen opportunity.",
+    "Time's tapestry weaves choices into fate.",
+    "The past is a museum, not a residence.",
+    "Time's value is known only when it's gone.",
+    "Morning dew fades as time teaches impermanence.",
+    "Future memories are born in present moments.",
+    "Time is the silent partner in all achievements.",
+    "Hurry empties moments of their magic.",
+    "The sundial measures light, not just hours.",
+    "Time's echo carries further than we imagine.",
+    "Patience is time's favorite currency.",
+    "A watched clock slows for the impatient.",
+    "Time's mirror reflects what we truly value.",
+    "Sunrises are time's daily reset button.",
+    "The hourglass reminds: what falls will rise again.",
+    "Time is the gardener of all possibilities.",
+    "Rushed decisions bloom into lasting consequences.",
+    "Time's current favors those who paddle with purpose.",
+    "The present moment is time's only true possession.",
+    "Time's arithmetic: subtract distractions, add meaning.",
+    "A lifetime is just minutes, wisely spent.",
+    "Time's fingerprint is unique on every life.",
+    "The pendulum swings but never repeats its arc.",
+    "Time is the quiet editor of all stories.",
+    "Moments are the seeds of legacy.",
+    "Time's compass always points to now.",
+    "The calendar pages turn whether we're ready or not.",
+    "Time is the invisible thread connecting all lives.",
+    "Procrastination is time's favorite disguise.",
+    "Time's recipe: mix intention with action, serve warm.",
+    "The clock's face smiles at those who use time well.",
+    "Time's mosaic is made of a million nows.",
+    "Future you will thank present you for starting today.",
+    "Time's whisper becomes a roar when ignored.",
+    "The hourglass never asks if you're ready.",
+    "Time is the canvas, attention is the brush.",
+    "Moments multiply when shared with meaning.",
+    "Time's alchemy turns effort into achievement.",
+    "The present is time's only delivery.",
+    "Time's river carves canyons from consistent drops.",
+    "Watches tell time, but consciousness tells meaning.",
+    "Time is the silent shareholder in all endeavors."
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.18';
+export const appVersion = '1.0.19';
 
 export const changelog = [
+    {
+        "version": "1.0.19",
+        "date": "2025-07-15",
+        "title": "UI Theming Revamp",
+        "major": false,
+        "changes": [
+            "Enhanced dark/light mode accents",
+            "Added thin border option (none/thin/subtle/thick)",
+            "Improved Favorites section UI",
+            "Redesigned quotes with animations +50 new quotes",
+            "Optimized theme performance",
+            "Refined card/button visuals",
+            "Fixed border radius consistency"
+        ]
+    },
     {
         "version": "1.0.18",
         "date": "2025-07-14",
@@ -319,8 +406,7 @@ export const changelog = [
             "Optimized UI performance and rendering",
             "Refined styles for cards, buttons, and switches"
         ]
-    }
-,
+    },
     {
         "version": "1.0.17",
         "date": "2025-07-13",
@@ -498,7 +584,6 @@ export const changelog = [
         ]
     }
 ];
-
 
 
 /*

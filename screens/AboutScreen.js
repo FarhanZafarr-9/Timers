@@ -10,7 +10,7 @@ import { showToast, appBuild } from '../utils/functions';
 import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
 
 export default function AboutScreen() {
-    const { variables, colors, isBorder } = useTheme();
+    const { variables, colors, isBorder, border } = useTheme();
     const [showChangelog, setShowChangelog] = useState(false);
     const [selectedTestTime, setSelectedTestTime] = useState(null);
     const [expanded, setExpanded] = useState(0);
@@ -91,19 +91,19 @@ export default function AboutScreen() {
             borderRadius: variables.radius.md,
             paddingVertical: 15,
             paddingHorizontal: 20,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         row: { flexDirection: 'row', alignItems: 'center' },
         appIcon: {
             width: 72, height: 72, borderRadius: variables.radius.md, marginRight: 16, resizeMode: 'cover',
-            borderWidth: 0.75, borderColor: colors.cardBorder,
+            borderWidth: border, borderColor: colors.cardBorder,
         },
         appName: { fontSize: 22, color: colors.textTitle, fontWeight: 'bold' },
         versionText: {
             marginTop: 14, fontSize: 12, color: colors.textDesc, backgroundColor: colors.card,
             textAlign: 'center', paddingHorizontal: 14, paddingVertical: 6, borderRadius: variables.radius.lg,
-            alignSelf: 'flex-start', borderWidth: isBorder ? 0.75 : 0, borderColor: colors.border
+            alignSelf: 'flex-start', borderWidth: border, borderColor: colors.border
         },
         description: { color: colors.text, fontSize: 14, lineHeight: 22 },
         quote: {
@@ -124,7 +124,7 @@ export default function AboutScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             minWidth: 120,
             flexGrow: 1,
@@ -137,7 +137,7 @@ export default function AboutScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             marginTop: 12,
             width: '100%',
@@ -148,7 +148,7 @@ export default function AboutScreen() {
             padding: 16,
             backgroundColor: colors.card,
             borderRadius: variables.radius.md,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         testSectionTitle: {

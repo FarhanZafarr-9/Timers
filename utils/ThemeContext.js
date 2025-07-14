@@ -4,10 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { headerOptions } from './functions';
 
 const THEME_STORAGE_KEY = 'userThemePreference';
+const ACCENT_STORAGE_KEY = 'userAccentPreference'
 const NAVIGATION_MODE_KEY = 'navigationModePreference';
 const HEADER_MODE_KEY = 'headerModePreference';
 const BORDER_MODE_KEY = 'borderModePreference';
-const VALID_THEMES = ['light', 'dark', 'system', 'darkBlue', 'darkGreen', 'darkPurple', 'darkRose'];
+const VALID_THEMES = ['light', 'dark', 'system'];
+const VALID_ACCENTS = ['default', 'blue', 'green', 'purple', 'rose'];
+
 
 const palettes = {
     light: {
@@ -38,6 +41,126 @@ const palettes = {
         addButtonBg: 'rgba(34, 197, 94, 0.18)',
         addButtonBorder: '#22c55e',
         cancelButtonBg: 'rgba(239, 68, 68, 0.18)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightBlue: {
+        background: '#f3f6fc',
+        card: '#dce4f4',
+        cardLighter: '#eaf0fa',
+        cardBorder: '#a3b8d155',
+        settingBlock: '#e3ebf8',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#dce4f4',
+        snackbarText: '#1f2937',
+        modalBg: '#eaf0fa',
+        modalText: '#1f2937',
+        modalBtnBg: '#c9d6ee',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(59, 130, 246, 0.20)',
+        modalBtnOkText: '#3b82f6',
+        switchTrack: '#9fb3d1',
+        switchTrackActive: '#3b82f6',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f0f6ff',
+        border: '#a3b8d155',
+        divider: '#dce4f4',
+        highlight: '#3b82f6',
+        addButtonBg: 'rgba(59, 130, 246, 0.12)',
+        addButtonBorder: '#3b82f6',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightGreen: {
+        background: '#f3f9f5',
+        card: '#d7e9dd',
+        cardLighter: '#e9f4eb',
+        cardBorder: '#a5d6b055',
+        settingBlock: '#e2f1e5',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#d7e9dd',
+        snackbarText: '#1f2937',
+        modalBg: '#e9f4eb',
+        modalText: '#1f2937',
+        modalBtnBg: '#cbe3d1',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(34, 197, 94, 0.20)',
+        modalBtnOkText: '#22c55e',
+        switchTrack: '#9fc8af',
+        switchTrackActive: '#22c55e',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f3faf6',
+        border: '#a5d6b055',
+        divider: '#d7e9dd',
+        highlight: '#22c55e',
+        addButtonBg: 'rgba(34, 197, 94, 0.12)',
+        addButtonBorder: '#22c55e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightPurple: {
+        background: '#f9f7fc',
+        card: '#e6dff0',
+        cardLighter: '#f1eaf8',
+        cardBorder: '#cab3e155',
+        settingBlock: '#efe5f5',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#e6dff0',
+        snackbarText: '#1f2937',
+        modalBg: '#f1eaf8',
+        modalText: '#1f2937',
+        modalBtnBg: '#d8cbe8',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(168, 85, 247, 0.20)',
+        modalBtnOkText: '#a855f7',
+        switchTrack: '#c0aee0',
+        switchTrackActive: '#a855f7',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#faf5ff',
+        border: '#cab3e155',
+        divider: '#e6dff0',
+        highlight: '#a855f7',
+        addButtonBg: 'rgba(168, 85, 247, 0.12)',
+        addButtonBorder: '#a855f7',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightRose: {
+        background: '#fcf7f8',
+        card: '#f1d8db',
+        cardLighter: '#f8e6e8',
+        cardBorder: '#d1a3aa55',
+        settingBlock: '#f5e2e5',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#f1d8db',
+        snackbarText: '#1f2937',
+        modalBg: '#f8e6e8',
+        modalText: '#1f2937',
+        modalBtnBg: '#e8cbd0',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(244, 63, 94, 0.20)',
+        modalBtnOkText: '#f43f5e',
+        switchTrack: '#e0aeb5',
+        switchTrackActive: '#f43f5e',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#fff5f7',
+        border: '#d1a3aa55',
+        divider: '#f1d8db',
+        highlight: '#f43f5e',
+        addButtonBg: 'rgba(244, 63, 94, 0.12)',
+        addButtonBorder: '#f43f5e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
         cancelButtonBorder: '#ef4444',
     },
     dark: {
@@ -195,7 +318,7 @@ const palettes = {
 const variables = {
     spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
     radius: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, circle: 999 },
-    borderWidth: { thin: 0.5, regular: 1, thick: 2 },
+    borderWidth: { thin: 0.75, regular: 1.25, thick: 2 },
     shadow: {
         sm: {
             shadowColor: '#000',
@@ -268,6 +391,13 @@ const normalizeTheme = (theme) => {
     return 'system';
 };
 
+const normalizeAccent = (accent) => {
+    if (typeof accent === 'string' && VALID_ACCENTS.includes(accent)) {
+        return accent;
+    }
+    return 'blue';
+};
+
 const normalizeNavigationMode = (mode) => {
     if (['floating', 'fixed', 'side'].includes(mode)) {
         return mode;
@@ -283,7 +413,7 @@ const normalizeHeaderMode = (mode) => {
 };
 
 const normalizeBorderMode = (mode) => {
-    if (['none', 'subtle'].includes(mode)) {
+    if (['none', 'thin', 'subtle', 'thick'].includes(mode)) {
         return mode;
     }
     return 'subtle';
@@ -301,6 +431,7 @@ const getSystemTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeModeState] = useState('system');
+    const [accentMode, setAccentModeState] = useState('blue');
     const [navigationMode, setNavigationMode] = useState('floating');
     const [headerMode, setHeaderMode] = useState('minimized');
     const [borderMode, setBorderMode] = useState('subtle');
@@ -313,8 +444,9 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const [storedTheme, storedNavMode, storedHeaderMode, storedBorderMode] = await Promise.all([
+                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedBorderMode] = await Promise.all([
                     AsyncStorage.getItem(THEME_STORAGE_KEY),
+                    AsyncStorage.getItem(ACCENT_STORAGE_KEY),
                     AsyncStorage.getItem(NAVIGATION_MODE_KEY),
                     AsyncStorage.getItem(HEADER_MODE_KEY),
                     AsyncStorage.getItem(BORDER_MODE_KEY),
@@ -322,11 +454,13 @@ export const ThemeProvider = ({ children }) => {
 
                 if (isMounted) {
                     const loadedTheme = storedTheme && VALID_THEMES.includes(storedTheme) ? storedTheme : 'system';
+                    const loadedAccent = storedAccent && VALID_ACCENTS.includes(storedAccent) ? storedAccent : 'blue';
                     const loadedFloatingNav = storedNavMode !== null ? storedNavMode : 'floating';
                     const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'minimized';
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
 
                     setThemeModeState(loadedTheme);
+                    setAccentModeState(loadedAccent);
                     setNavigationMode(loadedFloatingNav);
                     setHeaderMode(loadedHeaderMode);
                     setBorderMode(loadedBorderMode);
@@ -358,6 +492,14 @@ export const ThemeProvider = ({ children }) => {
             );
         }
     }, [themeMode, isLoading]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(ACCENT_STORAGE_KEY, accentMode).catch(e =>
+                console.warn('Failed to save accent mode to storage:', e)
+            );
+        }
+    }, [accentMode, isLoading]);
 
     // Save navigationMode to AsyncStorage when it changes
     useEffect(() => {
@@ -397,6 +539,14 @@ export const ThemeProvider = ({ children }) => {
         };
     }, [themeMode]);
 
+    // Handle system accent changes and manual accent changes
+    useEffect(() => {
+        const accent = normalizeAccent(accentMode);
+        if (accent !== accentMode) {
+            setAccentModeState(accentMode);
+        }
+    }, [accentMode]);
+
     // Normalize theme mode to ensure it is valid
     useEffect(() => {
         const Navigation = normalizeNavigationMode(navigationMode);
@@ -425,12 +575,23 @@ export const ThemeProvider = ({ children }) => {
         setThemeModeState(normalizeTheme(mode));
     }, []);
 
-    const colors = palettes[theme] || palettes.light;
+    const resolvePaletteKey = () => {
+        if (accentMode === 'default') {
+            return theme;
+        }
+        const capitalizedAccent = accentMode.charAt(0).toUpperCase() + accentMode.slice(1);
+        return theme + capitalizedAccent;
+    };
+
+    const colors = palettes[resolvePaletteKey()] || palettes.dark;
+
     const styles = createStyles(colors);
 
     const contextValue = {
         theme,
         themeMode,
+        accentMode,
+        setAccentModeState,
         setThemeMode,
         colors,
         variables,
@@ -441,7 +602,8 @@ export const ThemeProvider = ({ children }) => {
         setHeaderMode,
         borderMode,
         setBorderMode,
-        isBorder: borderMode === 'subtle',
+        isBorder: borderMode !== 'none',
+        border: borderMode === 'none' ? 0 : borderMode === 'thin' ? variables.borderWidth.thin : borderMode === 'subtle' ? variables.borderWidth.regular : variables.borderWidth.thick,
         isLoading,
     };
 

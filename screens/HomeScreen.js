@@ -12,7 +12,7 @@ import { quotes } from '../utils/functions';
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
     const [quickAddVisible, setQuickAddVisible] = useState(false);
-    const { variables, colors, isBorder } = useTheme();
+    const { variables, colors, isBorder, border } = useTheme();
     const { privacyMode } = useSecurity();
 
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
@@ -311,7 +311,7 @@ export default function HomeScreen({ navigation }) {
             padding: 15,
             backgroundColor: colors.settingBlock,
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
         },
         totalTimers: {
             minHeight: 160,
@@ -327,7 +327,7 @@ export default function HomeScreen({ navigation }) {
             padding: 12,
             marginBottom: 12,
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             justifyContent: 'center',
             alignItems: 'center',
         },
@@ -342,6 +342,7 @@ export default function HomeScreen({ navigation }) {
             textAlign: 'center',
             color: colors.textDesc,
             lineHeight: 20,
+            fontWeight: '600'
         },
         cursor: {
             opacity: 1,
@@ -352,7 +353,7 @@ export default function HomeScreen({ navigation }) {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.lg,
             padding: 20,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         quickActionsRow: {
@@ -373,7 +374,7 @@ export default function HomeScreen({ navigation }) {
         },
         quickActionButtonSecondary: {
             backgroundColor: colors.highlight + '10',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         quickActionText: {
@@ -386,14 +387,23 @@ export default function HomeScreen({ navigation }) {
         quickActionTextSecondary: {
             color: colors.text,
         },
-        label: {
+        labelContainer: {
+            width: '100%',
+            marginBottom: 12,
+            height: 40,
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.md,
+            borderColor: colors.border,
+            borderWidth: border,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+
+        labelText: {
             color: colors.text,
             fontWeight: '600',
-            marginVertical: 12,
-            marginHorizontal: 10,
-            height: 20,
-            alignSelf: 'center',
         }
+
     });
 
     // Blinking cursor component
@@ -489,7 +499,10 @@ export default function HomeScreen({ navigation }) {
                             pointerEvents="box-none"
                         >
                             {favTimers.length > 0 ? (<>
-                                <Text style={styles.label}>Favourites</Text>
+                                <View style={styles.labelContainer}>
+                                    <Text style={styles.labelText}>Favourites</Text>
+                                </View>
+
                                 {favTimers.map((timer) => (
                                     <TimerCard
                                         key={timer.id}
