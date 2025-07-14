@@ -66,6 +66,7 @@ const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
             fontStyle: 'italic',
             fontSize: 16,
             color: colors.text,
+            fontWeight: '600'
         },
         credits: {
             position: 'absolute',

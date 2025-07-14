@@ -31,7 +31,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
     const [localProfession, setLocalProfession] = useState(userData.profession || '');
     const [localProfilePic, setLocalProfilePic] = useState(userData.profilePic || null);
     const [errorMsg, setErrorMsg] = useState('');
-    const { isBorder, headerMode } = useTheme();
+    const { isBorder, headerMode, border } = useTheme();
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -160,7 +160,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             shadowOpacity: 0.25,
             shadowRadius: 10,
             elevation: 10,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         handle: {
@@ -183,7 +183,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             textAlign: 'center',
             marginBottom: 24,
             borderBottomColor: colors.border,
-            borderBottomWidth: 0.75,
+            borderBottomWidth: border,
             paddingBottom: 18,
         },
         avatarContainer: {
@@ -231,7 +231,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             marginBottom: 16,
             fontSize: 16,
             color: colors.text,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         buttonRow: {
@@ -239,7 +239,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             justifyContent: 'flex-end',
             marginTop: 8,
             gap: '4%',
-            borderTopWidth: 1.75,
+            borderTopWidth: border,
             paddingTop: 18,
             borderColor: colors.border
         },
@@ -248,7 +248,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.card,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             width: '48%',
             justifyContent: 'center',
@@ -259,7 +259,7 @@ const BottomProfileSheet = ({ visible, onClose, colors, variables }) => {
             paddingHorizontal: 20,
             borderRadius: variables.radius.sm || 12,
             backgroundColor: colors.highlight,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             width: '48%',
             justifyContent: 'center',

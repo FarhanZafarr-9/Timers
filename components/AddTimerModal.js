@@ -36,7 +36,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
     const BOTTOM_SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.7, mode === 'countdown' ? 660 : 550);
 
-    const { variables, colors, isBorder, headerMode } = useTheme();
+    const { variables, colors, isBorder, headerMode, border } = useTheme();
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
@@ -287,7 +287,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             shadowOpacity: 0.25,
             shadowRadius: 10,
             elevation: 20,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         handle: {
@@ -313,7 +313,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             paddingVertical: 4,
             paddingHorizontal: 8,
             borderRadius: variables.radius.sm,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         modeText: {
@@ -333,7 +333,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             padding: 10,
             borderRadius: variables.radius.sm,
             marginBottom: 0,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: 'transparent',
             fontSize: 14,
         },
@@ -346,7 +346,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             backgroundColor: colors.highlight + '22',
             padding: 2,
             borderRadius: variables.radius.sm,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         arrowButton: {
@@ -375,7 +375,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
             flexDirection: 'column',
             marginTop: 'auto',
             borderTopColor: colors.border,
-            borderTopWidth: 0.75,
+            borderTopWidth: border,
             paddingTop: 20,
             gap: 10,
         },

@@ -6,11 +6,12 @@ import { Icons } from '../assets/icons';
 import { showToast } from './functions';
 import { AppState } from 'react-native';
 import PasswordBottomSheet from '../components/PasswordModal';
+import logo from '../assets/logo.png'
 
 const { width, height } = Dimensions.get('window');
 
 const AuthComponent = ({ children }) => {
-    const { variables, colors, isBorder } = useTheme();
+    const { variables, colors, isBorder, border } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const {
@@ -213,18 +214,13 @@ const AuthComponent = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderTopWidth: 0,
         },
-        securityImage: {
-            width: 60,
-            height: 60,
-            borderRadius: variables.radius.lg,
-            marginRight: 16,
-            marginTop: 0,
-            marginBottom: 0,
+        appIcon: {
+            width: 175, height: 175, borderRadius: variables.radius.circle, marginRight: 16, resizeMode: 'cover',
+            borderWidth: border, borderColor: colors.cardBorder,marginBottom: '15%', alignSelf:'center',marginLeft: '5%'
         },
-
         topTextContainer: {
             flex: 1,
         },
@@ -246,13 +242,6 @@ const AuthComponent = ({ children }) => {
             alignItems: 'center',
             paddingTop: height * 0.15,
             paddingHorizontal: 32,
-        },
-        appIcon: {
-            width: 80,
-            height: 80,
-            borderRadius: 20,
-            marginBottom: 24,
-            alignSelf: 'center',
         },
         timeContainer: {
             backgroundColor: colors.card,
@@ -280,7 +269,7 @@ const AuthComponent = ({ children }) => {
             right: 0,
             backgroundColor: colors.modalBg,
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderBottomWidth: 0,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
@@ -358,7 +347,7 @@ const AuthComponent = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             borderColor: colors.border,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
         },
         loadingContainer: {
             flex: 1,
@@ -393,7 +382,7 @@ const AuthComponent = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             position: 'relative',
         },
@@ -601,7 +590,7 @@ const AuthComponent = ({ children }) => {
         );
     };
 
-   
+
 
     if (passwordModalVisible || justSetPassword) return children;
     if (authenticated && !isAppLocked) {
@@ -651,7 +640,8 @@ const AuthComponent = ({ children }) => {
                                     height: 1
                                 }]} />
                             ))}
-                            <Icons.Ion name="shield-checkmark" size={126} color={colors.highlight} style={{ marginBottom: 80 }} />
+                            
+                            <Image source={logo} style={styles.appIcon} />
 
                             <View style={styles.cardOverlay} />
                             <View style={styles.textContainer}>

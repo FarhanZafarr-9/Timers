@@ -28,7 +28,7 @@ const ConfirmationBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
-    const { isBorder, headerMode } = useTheme();
+    const { isBorder, headerMode, border } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -88,7 +88,7 @@ const ConfirmationBottomSheet = ({
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
             paddingBottom: 15,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: {
@@ -146,7 +146,7 @@ const ConfirmationBottomSheet = ({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         cancelButton: {

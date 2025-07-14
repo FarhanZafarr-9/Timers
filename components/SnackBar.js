@@ -6,7 +6,7 @@ const Snackbar = ({ text, onClose, style }) => {
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const timeoutRef = useRef(null);
     const isMountedRef = useRef(true);
-    const { variables, colors } = useTheme();
+    const { variables, colors, border } = useTheme();
 
     const styles = StyleSheet.create({
         snackbarContainer: {

@@ -16,7 +16,7 @@ export default function TimersScreen({ route }) {
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
-    const { variables, colors, isBorder } = useTheme();
+    const { variables, colors, isBorder, border } = useTheme();
     const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -260,7 +260,7 @@ export default function TimersScreen({ route }) {
             paddingVertical: 12,
             borderRadius: variables.radius.md,
             backgroundColor: colors.cardLighter,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.cardBorder,
             justifyContent: 'center',
             marginTop: 16,

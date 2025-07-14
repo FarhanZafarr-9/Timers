@@ -32,7 +32,7 @@ const BottomSheetPicker = ({
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
-    const { isBorder, headerMode } = useTheme();
+    const { isBorder, headerMode, border } = useTheme();
 
     const showBottomSheet = () => {
         setVisible(true);
@@ -75,7 +75,7 @@ const BottomSheetPicker = ({
             paddingVertical: 6,
             paddingHorizontal: 8,
             backgroundColor: colors.highlight + '0f',
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             minWidth: 60,
             justifyContent: 'space-between',
@@ -94,7 +94,7 @@ const BottomSheetPicker = ({
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
             paddingBottom: 15,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             maxHeight,
             minHeight: 200,
@@ -149,7 +149,7 @@ const BottomSheetPicker = ({
             paddingVertical: 8,
             paddingHorizontal: 14,
             borderRadius: 8,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             backgroundColor: colors.cardLighter,
             minHeight: 36,
@@ -192,7 +192,7 @@ const BottomSheetPicker = ({
             paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 8,
-            borderTopWidth: 0.75,
+            borderTopWidth: border,
             borderTopColor: colors.border,
             gap: '4%',
         },
@@ -206,7 +206,7 @@ const BottomSheetPicker = ({
         },
         clearButton: {
             backgroundColor: colors.card,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
         },
         clearButtonText: {

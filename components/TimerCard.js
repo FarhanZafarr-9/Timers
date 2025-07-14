@@ -29,7 +29,7 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { isBorder, headerMode } = useTheme();
+    const { isBorder, headerMode, border } = useTheme();
     const titleText = timer.title;
     const nameText = timer.personName;
 
@@ -236,7 +236,7 @@ const TimerCard = ({
             ];
 
             const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-            const prefix = status === 'completed' ? 'Completed' : '';
+            const prefix = status === 'completed' ? 'Completed' : `${timer.isCountdown ? 'Left : ' : 'Elapsed : '}`;
 
             return (
                 <>
@@ -285,7 +285,7 @@ const TimerCard = ({
                 padding: 12,
                 borderRadius: variables.radius.md,
                 marginBottom: 10,
-                borderWidth: 0.75,
+                borderWidth: border,
                 borderColor: !isBorder ? 0 : (searchText === '' || privacyMode !== 'off') ? colors.border : colors.highlight + '3a',
             },
             header: {
@@ -309,7 +309,7 @@ const TimerCard = ({
                 width: 10,
                 height: 10,
                 borderRadius: variables.radius.circle,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
             },
             timerQuickInfo: {
                 color: colors.text,
@@ -317,7 +317,7 @@ const TimerCard = ({
                 fontWeight: 'bold',
                 letterSpacing: 1,
                 backgroundColor: colors.highlight + '10',
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -334,7 +334,7 @@ const TimerCard = ({
                 marginHorizontal: 8,
                 borderRadius: variables.radius.sm,
                 alignSelf: 'flex-start',
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
                 color: colors.text,
                 fontSize: 12,
@@ -360,7 +360,7 @@ const TimerCard = ({
                 paddingBottom: 40,
                 minHeight: 280,
                 maxHeight: screenHeight * 0.9,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             handle: {
@@ -390,7 +390,7 @@ const TimerCard = ({
                 padding: 16,
                 borderRadius: variables.radius.md,
                 marginBottom: 16,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
                 position: 'relative',
                 overflow: 'hidden',
@@ -433,7 +433,7 @@ const TimerCard = ({
                 paddingHorizontal: 8,
                 paddingVertical: 4,
                 borderRadius: variables.radius.sm,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             actionsSection: {
@@ -447,7 +447,7 @@ const TimerCard = ({
                 paddingVertical: 6,
                 borderRadius: variables.radius.sm,
                 alignItems: 'center',
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             editButton: {
@@ -483,7 +483,7 @@ const TimerCard = ({
                 paddingVertical: 4,
                 borderRadius: variables.radius.sm,
                 gap: 8,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             statusText: {
@@ -504,7 +504,7 @@ const TimerCard = ({
                 paddingVertical: 5,
                 paddingHorizontal: 16,
                 borderRadius: variables.radius.sm,
-                borderWidth: isBorder ? 0.75 : 0,
+                borderWidth: border,
                 borderColor: colors.border,
             },
             chipText: {

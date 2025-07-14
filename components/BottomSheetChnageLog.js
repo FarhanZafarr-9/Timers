@@ -10,7 +10,7 @@ import {
     ScrollView,
     Linking
 } from 'react-native';
-import { appVersion, changelog } from '../utils/functions';
+import { appBuild, appVersion, changelog } from '../utils/functions';
 import { getLastShownVersion, setLastShownVersion } from '../utils/updateStorage';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
@@ -22,10 +22,10 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
     const [opacity] = useState(new Animated.Value(0));
     const [lastShownVersion, setLastShownVersionState] = useState(null);
 
-    const { colors, variables, isBorder, headerMode } = useTheme();
+    const { colors, variables, isBorder, headerMode, border } = useTheme();
 
     const latest = changelog[0];
-    const updateNeeded = (!forced && lastShownVersion !== latest.version && latest.version === appVersion) ;
+    const updateNeeded = (!forced && lastShownVersion !== latest.version && latest.version === appVersion);
 
     useEffect(() => {
         const fetchVersion = async () => {
@@ -77,7 +77,7 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
             borderTopLeftRadius: variables.radius.lg,
             borderTopRightRadius: variables.radius.lg,
             paddingBottom: 20,
-            borderWidth: isBorder ? 0.75 : 0,
+            borderWidth: border,
             borderColor: colors.border,
             maxHeight: screenHeight * 0.7,
             shadowColor: '#000',
@@ -188,9 +188,9 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
                     <View style={styles.handle} />
                     <View style={styles.header}>
                         <Icons.Ion name="sparkles" size={20} color={colors.text} />
-                        <Text style={[styles.titleText,{marginLeft: 15}]}>{headline}</Text>
+                        <Text style={[styles.titleText, { marginLeft: 15 }]}>{headline}</Text>
                         <Text style={styles.versionDate}>
-                            {`v${latest.version} • ${latest.date}`}
+                            {`v${latest.version}-${appBuild} • ${latest.date}`}
                         </Text>
                     </View>
 

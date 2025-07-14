@@ -27,7 +27,7 @@ const HeaderControls = ({
     const inputRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
     const [sheetVisible, setSheetVisible] = useState(false);
-    const { isBorder } = useTheme();
+    const { isBorder, border } = useTheme();
 
     const handleSearch = (query) => {
         setSearchQuery(query);
