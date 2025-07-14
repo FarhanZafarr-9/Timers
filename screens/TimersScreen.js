@@ -188,11 +188,8 @@ export default function TimersScreen({ route }) {
                 onClick={() => handleCardClick(timer.id)}
                 selectable={isSelectable}
                 selected={isSelected}
-                colors={colors}
-                variables={variables}
                 isCountdown={isCountdown}
                 searchText={searchQuery}
-                privacyMode={privacyMode}
                 buttons='on'
             />
         );
