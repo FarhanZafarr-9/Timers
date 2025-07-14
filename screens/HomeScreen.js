@@ -8,7 +8,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import TimerCard from '../components/TimerCard';
 import { useSecurity } from '../utils/SecurityContext';
 import { quotes } from '../utils/functions';
-import { jumbleText, maskText } from '../utils/functions';
+import { getPrivacyText } from '../utils/functions';
 
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
@@ -37,10 +37,8 @@ export default function HomeScreen({ navigation }) {
     const [isTyping, setIsTyping] = useState(false);
     const quoteTextOpacity = useRef(new Animated.Value(0)).current;
     const quoteScale = useRef(new Animated.Value(0.95)).current;
-    const jumbledText = useMemo(() => jumbleText('Favourite'), []);
-    const maskedText = useMemo(() => maskText('Favourite'), []);
+    const privacyText = useMemo(() => getPrivacyText(privacyMode, 'Favourite'), [privacyMode]);
 
-    // Update current time every minute
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTime(new Date());
@@ -97,11 +95,10 @@ export default function HomeScreen({ navigation }) {
                     useNativeDriver: true,
                 })
             ]).start(() => {
-                // Reset text and start typing
+
                 setDisplayedText('');
                 setIsTyping(true);
 
-                // Fade in and scale up
                 Animated.parallel([
                     Animated.timing(quoteTextOpacity, {
                         toValue: 1,
@@ -126,11 +123,10 @@ export default function HomeScreen({ navigation }) {
                         clearInterval(typeInterval);
                         setIsTyping(false);
                     }
-                }, 30); // Adjust typing speed here
+                }, 60);
             });
         };
 
-        // Start animation immediately for first quote
         if (quoteIndex === 0 && displayedText === '') {
             animateQuote();
         }
@@ -424,7 +420,7 @@ export default function HomeScreen({ navigation }) {
                         >
                             {favTimers.length > 0 ? (<>
                                 <View style={styles.labelContainer}>
-                                    <Text style={styles.labelText}>{privacyMode === 'off' ? Favourites : privacyMode === 'jumble' ? jumbledText : maskedText}</Text>
+                                    <Text style={styles.labelText}>{privacyText}</Text>
                                 </View>
 
                                 {favTimers.map((timer) => (
@@ -438,11 +434,8 @@ export default function HomeScreen({ navigation }) {
                                         onClick={() => { }}
                                         selectable={false}
                                         selected={false}
-                                        colors={colors}
-                                        variables={variables}
                                         isCountdown={timer.isCountdown}
                                         searchText=""
-                                        privacyMode={privacyMode}
                                         butons="off"
                                     />
                                 ))}

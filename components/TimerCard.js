@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
-import { jumbleText, maskText } from '../utils/functions';
+import { getPrivacyText } from '../utils/functions';
 import ViewShot from 'react-native-view-shot';
 import ExportBottomSheet from './ExportBottomSheet';
 import { useTheme } from '../utils/ThemeContext';
+import { useSecurity } from '../utils/SecurityContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -16,12 +17,9 @@ const TimerCard = ({
     handleDuplicate,
     handleFavourite = null,
     onClick,
-    colors,
-    variables,
     selectable,
     selected = false,
     searchText = '',
-    privacyMode,
     buttons
 }) => {
     const [showOverlay, setShowOverlay] = useState(false);
@@ -29,19 +27,13 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { isBorder, headerMode, border } = useTheme();
+    const { isBorder, headerMode, border, colors, variables, } = useTheme();
     const titleText = timer.title;
     const nameText = timer.personName;
+    const { privacyMode } = useSecurity();
+    const privacyTitleText = useMemo(() => getPrivacyText(privacyMode, timer.title), [timer.title, privacyMode]);
+    const privacyNameText = useMemo(() => getPrivacyText(privacyMode, timer.personName), [timer.personName, privacyMode]);
 
-    const jumbledTitleText = useMemo(() => {
-        return privacyMode === 'jumble' ? jumbleText(timer.title) : maskText(timer.title);
-    }, [timer.title, privacyMode]);
-
-    const jumbledNameText = useMemo(() => {
-        return privacyMode === 'jumble' ? jumbleText(timer.personName) : maskText(timer.personName);
-    }, [timer.personName, privacyMode]);
-
-    // Optimized timer state that updates every 100ms
     const [timerState, setTimerState] = useState({
         now: Date.now(),
         progressPct: 0,
@@ -57,10 +49,8 @@ const TimerCard = ({
     const timerRef = useRef(timer);
     timerRef.current = timer;
 
-    // Memoized styles to prevent recreation on every render
     const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
 
-    // Calculate all timer-related values at once
     const calculateTimerState = useCallback((now) => {
         const timer = timerRef.current;
         let targetDate = timer.date;
@@ -600,7 +590,7 @@ const TimerCard = ({
                                 </View>
                             ) : (
                                 <Text style={styles.timerTitle}>
-                                    {privacyMode === 'jumble' ? jumbledTitleText : maskText(titleText)}
+                                    {privacyTitleText}
                                 </Text>
                             )}
                             <View style={styles.priorityIndicator}>
@@ -614,7 +604,7 @@ const TimerCard = ({
                                         />
                                     ) : (
                                         <Text style={styles.namePill}>
-                                            {privacyMode === 'jumble' ? jumbledNameText : maskText(nameText)}
+                                            {privacyNameText}
                                         </Text>
                                     )
                                 )}
@@ -704,8 +694,7 @@ const TimerCard = ({
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
                                         {/* Title and Person */}
                                         <Text style={styles.overlayTitle}>
-                                            {privacyMode === 'off' ? timer.title :
-                                                privacyMode === 'jumble' ? jumbledTitleText : maskText(timer.title)}
+                                            {privacyTitleText}
                                         </Text>
 
                                         <Text style={styles.detailValue}>
@@ -716,8 +705,7 @@ const TimerCard = ({
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
                                         {timer.personName && (
                                             <Text style={styles.overlayPersonName}>
-                                                For: {privacyMode === 'off' ? timer.personName :
-                                                    privacyMode === 'jumble' ? jumbledNameText : maskText(timer.personName)}
+                                                For: {privacyNameText}
                                             </Text>
                                         )}
 

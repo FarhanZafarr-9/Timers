@@ -74,6 +74,16 @@ export const privacyOptions = [
         value: 'jumble',
         icon: <Icons.Ion name="shuffle-outline" size={16} />,
     },
+    {
+        label: 'Invisible',
+        value: 'invisible',
+        icon: <Icons.Ion name="eye-off-outline" size={16} />,
+    },
+    {
+        label: 'Emoji',
+        value: 'emoji',
+        icon: <Icons.Ion name="happy-outline" size={16} />,
+    }
 ];
 
 export const lockoutOptions = [
@@ -230,9 +240,32 @@ export const jumbleText = (str) => {
     ).join('');
 };
 
+export const emojiText = (str) => {
+    const emojiChars = ['🔒', '👁️', '🕵️', '🙈', '🔑', '🛡️', '👤', '🤐', '🗝️', '🚫'];
+    const emojiChar = emojiChars[Math.floor(Math.random() * emojiChars.length)];
+    return str.split('').map(char => (char === ' ' ? ' ' : emojiChar)).join('');
+};
+
 export const maskText = (str) => {
-    // Replace each character with an asterisk (except spaces)
-    return str.split('').map(char => (char === ' ' ? ' ' : '*')).join('');
+    const maskChars = ['•', '●', '○', '■', '□', '▪', '▫', '★', '☆', '✱', '✲', '✵', '⌘'];
+    const maskChar = maskChars[Math.floor(Math.random() * maskChars.length)];
+
+    return str.split('').map(char => (char === ' ' ? ' ' : maskChar)).join('');
+};
+
+export const getPrivacyText = (privacyMode, inputText) => {
+    switch (privacyMode) {
+        case 'jumble':
+            return jumbleText(inputText);
+        case 'emoji':
+            return emojiText(inputText);
+        case 'invisible':
+            return '';
+        case 'mask':
+            return maskText(inputText);
+        default:
+            return (inputText);
+    }
 };
 
 export const showToast = (msg) => {
