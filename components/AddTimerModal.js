@@ -604,10 +604,10 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                                     })
                                                 }
                                                 trackColor={{
-                                                    false: colors.highlight + '25',
-                                                    true: colors.highlight + '55',
+                                                    false: colors.switchTrack,
+                                                    true: colors.switchTrackActive,
                                                 }}
-                                                thumbColor={!timerData.isRecurring ? colors.cardLighter : colors.background}
+                                                thumbColor={timerData.isRecurring ? colors.switchThumb : colors.switchThumbActive}
                                                 style={{ transform: [{ scaleY: 1 }] }}
                                             />
                                         </View>

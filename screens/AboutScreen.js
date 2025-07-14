@@ -114,7 +114,8 @@ export default function AboutScreen() {
         actionButton: {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
-            padding: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 14,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
@@ -122,6 +123,12 @@ export default function AboutScreen() {
             borderColor: colors.border,
             minWidth: 120,
             flexBasis: '48%',
+        },
+        buttonText: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+            lineHeight: 20,
         },
         fullWidthButton: {
             backgroundColor: colors.settingBlock,
@@ -135,7 +142,6 @@ export default function AboutScreen() {
             marginTop: 12,
             width: '100%',
         },
-        buttonText: { marginLeft: 8, fontSize: 14, fontWeight: '600', color: colors.text, height: 16 },
     });
 
     return (
@@ -178,44 +184,40 @@ export default function AboutScreen() {
 
                 <Animated.View style={{ transform: [{ translateY: buttonsAnim }], opacity: buttonsOpacityAnim }}>
 
-
-
                     <View style={styles.buttonsContainer}>
 
                         <TouchableOpacity style={styles.actionButton} onPress={() => setShowChangelog(true)}>
-                            <Icons.Ion name="document-text-outline" size={18} color={colors.text} />
+                            <Icons.Ion name="document-text-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Changelog</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}>
-                            <Icons.Ion name="logo-github" size={18} color={colors.text} />
+                            <Icons.Ion name="logo-github" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Repository</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9')}>
-                            <Icons.Ion name="person" size={18} color={colors.text} />
+                            <Icons.Ion name="person" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Creator</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.actionButton} onPress={handleReportBug}>
-                            <Icons.Ion name="bug" size={18} color={colors.text} />
+                            <Icons.Ion name="bug" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Report Bug</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.actionButton} onPress={handleSuggestion}>
-                            <Icons.Ion name="star" size={18} color={colors.text} />
+                            <Icons.Ion name="star" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Suggestion</Text>
                         </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                            style={[styles.actionButton]}
-                            onPress={() => setShowAboutMe(true)}
-                        >
-                            <Icons.Ion name="person-circle-outline" size={18} color={colors.text} />
+
+                        <TouchableOpacity style={styles.actionButton} onPress={() => setShowAboutMe(true)}>
+                            <Icons.Ion name="person-circle-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>About Me</Text>
                         </TouchableOpacity>
 
                     </View>
+
                 </Animated.View>
 
 
