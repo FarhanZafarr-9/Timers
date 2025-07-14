@@ -28,7 +28,28 @@ export const themeOptions = [
         value: 'dark',
         icon: <Icons.Ion name="moon-outline" size={16} />,
     },
+    {
+        label: 'Dark Blue',
+        value: 'darkBlue',
+        icon: <Icons.Ion name="color-palette-outline" size={16} color="#b8bcc5" />,
+    },
+    {
+        label: 'Dark Green',
+        value: 'darkGreen',
+        icon: <Icons.Ion name="leaf-outline" size={16} color="#bac8ba" />,
+    },
+    {
+        label: 'Dark Purple',
+        value: 'darkPurple',
+        icon: <Icons.Ion name="flower-outline" size={16} color="#c6b8cc" />,
+    },
+    {
+        label: 'Dark Rose',
+        value: 'darkRose',
+        icon: <Icons.Ion name="rose-outline" size={16} color="#c8b8b8" />,
+    },
 ];
+
 
 export const privacyOptions = [
     {
@@ -206,10 +227,100 @@ export const showToast = (msg) => {
     }
 };
 
+export const quotes = [
+    "Time waits for no one.",
+    "Moments are memories in the making.",
+    "The best time to start was yesterday. The next best is now.",
+    "Cherish each tick of the clock.",
+    "Your time is your life.",
+    "Time is the most valuable thing we have.",
+    "Every moment is a fresh beginning.",
+    "Time flies when you're having fun.",
+    "Time is the thread of life.",
+    "Seconds turn into stories.",
+    "Don't count time, make time count.",
+    "Tick tock, life moves on.",
+    "Time is the silent teacher.",
+    "The future depends on what you do now.",
+    "Lost time is never found again.",
+    "Punctuality is the thief of procrastination.",
+    "Time is the canvas, actions are the paint.",
+    "A minute saved is a moment earned.",
+    "Yesterday is gone, tomorrow is uncertain—today is a gift.",
+    "Time reveals all truths.",
+    "Life is measured in moments, not minutes.",
+    "The clock never stops, but you can start anytime.",
+    "Waste time, and you waste life.",
+    "Time is the one currency you can't earn back.",
+    "Every second is a chance to change.",
+    "The present is the only time you control.",
+    "Time doesn't heal, but it teaches.",
+    "Make time for what matters.",
+    "A well-spent day brings happy sleep.",
+    "The past is a lesson, not a home.",
+    "Time is the fire in which we burn.",
+    "Now is the only moment you own.",
+    "An hour lost is a future delayed.",
+    "Time is the wisest counselor.",
+    "The clock is ticking—start living.",
+    "Time is a river, not a reservoir.",
+    "Moments pass, memories last.",
+    "Time slips through careless hands.",
+    "Tomorrow is a promise, not a plan.",
+    "Count memories, not minutes.",
+    "Time molds what patience builds.",
+    "Let each second be a seed.",
+    "Time tests all intentions.",
+    "Don't chase time, walk with it.",
+    "Moments fade, impacts remain.",
+    "Time whispers what haste forgets.",
+    "Life unfolds one tick at a time.",
+    "Time waits for your courage.",
+    "The clock moves, whether you do or not.",
+    "Seconds lost are stories untold.",
+    "Time's gift is perspective.",
+    "Rush less, live more.",
+    "Time dances to its own tune.",
+    "Make memories, not excuses.",
+    "Time enriches quiet hearts.",
+    "Moments matter more than milestones.",
+    "Don't borrow tomorrow's worries.",
+    "Time tells what truth hides.",
+    "Each sunrise resets the clock.",
+    "Time polishes rough edges.",
+    "Spend time like you spend money—wisely.",
+    "One day you'll wish for today.",
+    "Time's pace is yours to match.",
+    "Pause often, time won't.",
+    "Time builds what haste breaks.",
+    "Clocks tick, hearts beat—both measure life.",
+    "Time is the stage, you write the script.",
+    "Late starts are better than never.",
+    "Time unravels every secret.",
+    "The moment you're in is all you own.",
+    "Time flows; make sure you're swimming."
+];
+
 export const appBuild = 'beta';
-export const appVersion = '1.0.17';
+export const appVersion = '1.0.18';
 
 export const changelog = [
+    {
+        "version": "1.0.18",
+        "date": "2025-07-14",
+        "title": "UI & Home Updates",
+        "major": false,
+        "changes": [
+            "Fixed auth component bugs for smoother unlocking",
+            "Added more theme customization options",
+            "Added animated quotes section on home screen",
+            "Added favourites section to home for quick access",
+            "Fixed timer modal switch and min diplay issues",
+            "Optimized UI performance and rendering",
+            "Refined styles for cards, buttons, and switches"
+        ]
+    }
+,
     {
         "version": "1.0.17",
         "date": "2025-07-13",

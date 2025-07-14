@@ -21,7 +21,7 @@ const TimerCard = ({
     selectable,
     selected = false,
     searchText = '',
-    privacyMode = 'off',
+    privacyMode,
     buttons
 }) => {
     const [showOverlay, setShowOverlay] = useState(false);
@@ -626,7 +626,7 @@ const TimerCard = ({
                                 {renderTimeDisplay()}
                             </Text>
                             <Icons.Material
-                                name="keyboard-arrow-down"
+                                name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
                                 size={18}
                                 color={colors.text}
                                 style={{ opacity: 0.5 }}

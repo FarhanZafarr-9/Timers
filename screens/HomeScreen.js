@@ -1,19 +1,23 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useTimers } from '../utils/TimerContext';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import AddTimerModal from '../components/AddTimerModal';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import TimerCard from '../components/TimerCard';
+import { useSecurity } from '../utils/SecurityContext';
+import { quotes } from '../utils/functions';
 
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
     const [quickAddVisible, setQuickAddVisible] = useState(false);
     const { variables, colors, isBorder } = useTheme();
+    const { privacyMode } = useSecurity();
 
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
     const [mounted, setMounted] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     const totalOpacity = useRef(new Animated.Value(0)).current;
     const rightOpacity = useRef(new Animated.Value(0)).current;
@@ -25,6 +29,21 @@ export default function HomeScreen({ navigation }) {
     const favTranslate = useRef(new Animated.Value(-50)).current;
     const quoteTranslate = useRef(new Animated.Value(-50)).current;
     const quickActionsTranslate = useRef(new Animated.Value(-50)).current;
+
+    // Enhanced quote animation states
+    const [quoteIndex, setQuoteIndex] = useState(0);
+    const [displayedText, setDisplayedText] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const quoteTextOpacity = useRef(new Animated.Value(0)).current;
+    const quoteScale = useRef(new Animated.Value(0.95)).current;
+
+    // Update current time every minute
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const value = setTimeout(() => {
@@ -57,6 +76,122 @@ export default function HomeScreen({ navigation }) {
         return () => clearTimeout(value);
     }, []);
 
+    // Enhanced quote animation effect
+    useEffect(() => {
+        const animateQuote = () => {
+            const currentQuote = quotes[quoteIndex];
+
+            // Fade out current text
+            Animated.parallel([
+                Animated.timing(quoteTextOpacity, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(quoteScale, {
+                    toValue: 0.95,
+                    duration: 300,
+                    useNativeDriver: true,
+                })
+            ]).start(() => {
+                // Reset text and start typing
+                setDisplayedText('');
+                setIsTyping(true);
+
+                // Fade in and scale up
+                Animated.parallel([
+                    Animated.timing(quoteTextOpacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(quoteScale, {
+                        toValue: 1,
+                        tension: 100,
+                        friction: 8,
+                        useNativeDriver: true,
+                    })
+                ]).start();
+
+                // Typewriter effect
+                let index = 0;
+                const typeInterval = setInterval(() => {
+                    if (index < currentQuote.length) {
+                        setDisplayedText(currentQuote.substring(0, index + 1));
+                        index++;
+                    } else {
+                        clearInterval(typeInterval);
+                        setIsTyping(false);
+                    }
+                }, 30); // Adjust typing speed here
+            });
+        };
+
+        // Start animation immediately for first quote
+        if (quoteIndex === 0 && displayedText === '') {
+            animateQuote();
+        }
+
+        // Set up interval for quote changes
+        const interval = setInterval(() => {
+            setQuoteIndex(prev => (prev + 1) % quotes.length);
+        }, 6000); // Increased duration to accommodate animation
+
+        return () => clearInterval(interval);
+    }, [quoteIndex]);
+
+    // Trigger animation when quote index changes (except for initial load)
+    useEffect(() => {
+        if (quoteIndex > 0 || displayedText !== '') {
+            const currentQuote = quotes[quoteIndex];
+
+            // Fade out current text
+            Animated.parallel([
+                Animated.timing(quoteTextOpacity, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(quoteScale, {
+                    toValue: 0.95,
+                    duration: 300,
+                    useNativeDriver: true,
+                })
+            ]).start(() => {
+                // Reset text and start typing
+                setDisplayedText('');
+                setIsTyping(true);
+
+                // Fade in and scale up
+                Animated.parallel([
+                    Animated.timing(quoteTextOpacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(quoteScale, {
+                        toValue: 1,
+                        tension: 100,
+                        friction: 8,
+                        useNativeDriver: true,
+                    })
+                ]).start();
+
+                // Typewriter effect
+                let index = 0;
+                const typeInterval = setInterval(() => {
+                    if (index < currentQuote.length) {
+                        setDisplayedText(currentQuote.substring(0, index + 1));
+                        index++;
+                    } else {
+                        clearInterval(typeInterval);
+                        setIsTyping(false);
+                    }
+                }, 30); // Adjust typing speed here
+            });
+        }
+    }, [quoteIndex]);
+
     const { totalTimers, countdownTimers, countupTimers } = useMemo(() => {
         const total = timers?.length || 0;
         const countdown = timers?.filter(t => t.isCountdown).length || 0;
@@ -66,21 +201,84 @@ export default function HomeScreen({ navigation }) {
 
     const favTimers = useMemo(() => timers?.filter(t => t.isFavourite === true) || [], [timers]);
 
-    const quotes = [
-        "Time waits for no one.",
-        "Moments are memories in the making.",
-        "The best time to start was yesterday. The next best is now.",
-        "Cherish each tick of the clock.",
-        "Your time is your life."
-    ];
-    const [quoteIndex, setQuoteIndex] = useState(0);
+    // Enhanced: Active timers logic with better categorization
+    const activeTimers = useMemo(() => {
+        const now = currentTime;
+        return timers?.filter(timer => {
+            const timerDate = new Date(timer.date);
+            if (timer.isCountdown) {
+                return timerDate > now; // Active countdown (future date)
+            } else {
+                return timerDate <= now; // Active countup (past/current date)
+            }
+        }).sort((a, b) => {
+            // Sort by urgency: countdowns by time remaining, countups by time elapsed
+            const aDate = new Date(a.date);
+            const bDate = new Date(b.date);
+            if (a.isCountdown && b.isCountdown) {
+                return aDate - bDate; // Closest countdown first
+            } else if (!a.isCountdown && !b.isCountdown) {
+                return bDate - aDate; // Longest running countup first
+            } else {
+                return a.isCountdown ? -1 : 1; // Countdowns first
+            }
+        }).slice(0, 4) || []; // Show top 4 active timers
+    }, [timers, currentTime]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setQuoteIndex(prev => (prev + 1) % quotes.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
+    // Enhanced: Recent timers logic
+    const recentTimers = useMemo(() => {
+        return timers?.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 3) || [];
+    }, [timers]);
+
+    // Enhanced: Comprehensive timer stats
+    const timerStats = useMemo(() => {
+        const now = currentTime;
+        const runningCountdowns = timers?.filter(t => t.isCountdown && new Date(t.date) > now).length || 0;
+        const expiredCountdowns = timers?.filter(t => t.isCountdown && new Date(t.date) <= now).length || 0;
+        const runningCountups = timers?.filter(t => !t.isCountdown && new Date(t.date) <= now).length || 0;
+        const upcomingCountdowns = timers?.filter(t => {
+            const timerDate = new Date(t.date);
+            const timeDiff = timerDate - now;
+            return t.isCountdown && timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // Within 24 hours
+        }).length || 0;
+
+        return { runningCountdowns, expiredCountdowns, runningCountups, upcomingCountdowns };
+    }, [timers, currentTime]);
+
+    const formatTimeRemaining = (date, isCountdown) => {
+        const now = currentTime;
+        const target = new Date(date);
+        const diff = isCountdown ? target - now : now - target;
+
+        if (isCountdown && diff <= 0) return "Expired";
+        if (!isCountdown && diff < 0) return "Pending";
+
+        const absDiff = Math.abs(diff);
+        const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    };
+
+    const getTimerProgress = (timer) => {
+        const now = currentTime;
+        const timerDate = new Date(timer.date);
+        const createdDate = new Date(timer.createdAt || timer.date);
+
+        if (timer.isCountdown) {
+            const total = timerDate - createdDate;
+            const elapsed = now - createdDate;
+            return Math.min(Math.max(elapsed / total, 0), 1);
+        } else {
+            // For countups, show a simple indicator based on time elapsed
+            const elapsed = now - timerDate;
+            const daysPassed = elapsed / (1000 * 60 * 60 * 24);
+            return Math.min(daysPassed / 30, 1); // Max progress at 30 days
+        }
+    };
 
     const styles = StyleSheet.create({
         grid: {
@@ -100,7 +298,7 @@ export default function HomeScreen({ navigation }) {
             textTransform: 'uppercase',
         },
         gridValue: {
-            color: colors.textTitle,
+            color: colors.text,
             fontSize: 32,
             fontWeight: '700',
         },
@@ -126,64 +324,114 @@ export default function HomeScreen({ navigation }) {
         quoteCard: {
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,
-            padding: 15,
+            padding: 12,
+            marginBottom: 12,
             borderColor: colors.border,
             borderWidth: isBorder ? 0.75 : 0,
-            minHeight: 40,
-            justifyContent: 'center'
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        quoteTextContainer: {
+            minHeight: 20,
+            justifyContent: 'center',
+            alignItems: 'center',
         },
         quoteText: {
             fontSize: 14,
             fontStyle: 'italic',
             textAlign: 'center',
             color: colors.textDesc,
-            height: 20,
+            lineHeight: 20,
         },
-        quickActionsCard: {
+        cursor: {
+            opacity: 1,
+            color: colors.highlight,
+        },
+        dashboardCard: {
             marginTop: 10,
             backgroundColor: colors.settingBlock,
-            borderRadius: variables.radius.md,
-            padding: 14,
+            borderRadius: variables.radius.lg,
+            padding: 20,
             borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
-        actionButton: {
+        quickActionsRow: {
             flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: 12,
-            borderRadius: variables.radius.lg,
-            backgroundColor: colors.card,
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             marginBottom: 10,
-            borderWidth: isBorder ? 0.5 : 0,
+            gap: 16
+        },
+        quickActionButton: {
+            backgroundColor: colors.highlight,
+            borderRadius: variables.radius.md,
+            padding: 12,
+            flex: 1,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginBottom: 12
+        },
+        quickActionButtonSecondary: {
+            backgroundColor: colors.highlight + '10',
+            borderWidth: isBorder ? 0.75 : 0,
             borderColor: colors.border,
         },
-        actionText: {
-            color: colors.text,
-            fontSize: 16,
-            fontWeight: '600',
-        },
-        quickActionsTitle: {
-            color: colors.textDesc,
+        quickActionText: {
+            color: colors.background,
             fontSize: 14,
-            fontWeight: 'bold',
-            marginBottom: 10,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            paddingLeft: 8,
+            fontWeight: '700',
+            marginLeft: 6,
+            height: 20
         },
-        quickActionsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
+        quickActionTextSecondary: {
+            color: colors.text,
         },
-        quickActionItem: {
-            width: '48%',
-        },
-        fullAction: {
-            width: '100%',
-        },
+        label: {
+            color: colors.text,
+            fontWeight: '600',
+            marginVertical: 12,
+            marginHorizontal: 10,
+            height: 20,
+            alignSelf: 'center',
+        }
     });
+
+    // Blinking cursor component
+    const BlinkingCursor = () => {
+        const cursorOpacity = useRef(new Animated.Value(1)).current;
+
+        useEffect(() => {
+            const blinkAnimation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(cursorOpacity, {
+                        toValue: 0,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(cursorOpacity, {
+                        toValue: 1,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+
+            if (isTyping) {
+                blinkAnimation.start();
+            } else {
+                blinkAnimation.stop();
+                cursorOpacity.setValue(0);
+            }
+
+            return () => blinkAnimation.stop();
+        }, [isTyping]);
+
+        return (
+            <Animated.Text style={[styles.cursor, { opacity: cursorOpacity }]}>
+                |
+            </Animated.Text>
+        );
+    };
 
     return (
         <ScreenWithHeader
@@ -193,108 +441,158 @@ export default function HomeScreen({ navigation }) {
             paddingMargin={15}
             paddingX={15}
         >
-            {mounted && (
-                <>
-                    {/* Grid Row */}
-                    <View style={styles.grid}>
-                        <Animated.View style={[styles.gridItem, styles.leftColumn, styles.totalTimers, { transform: [{ translateY: totalTranslate }], opacity: totalOpacity }]}>
-                            <Text style={styles.gridTitle}>Total Timers</Text>
-                            <Text style={styles.gridValue}>{totalTimers}</Text>
-                        </Animated.View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {mounted && (
+                    <>
+                        <View style={styles.grid} pointerEvents="box-none">
+                            <Animated.View
+                                style={[
+                                    styles.gridItem, styles.leftColumn, styles.totalTimers,
+                                    { transform: [{ translateY: totalTranslate }], opacity: totalOpacity }
+                                ]}
+                                pointerEvents="box-none"
+                            >
+                                <Text style={styles.gridTitle}>Total Timers</Text>
+                                <Text style={styles.gridValue}>{totalTimers}</Text>
+                            </Animated.View>
 
-                        <Animated.View style={[styles.rightColumn, { transform: [{ translateY: rightTranslate }], opacity: rightOpacity }]}>
-                            <View style={[styles.gridItem, styles.countdownTimers]}>
-                                <Text style={styles.gridTitle}>Countdowns</Text>
-                                <Text style={styles.gridValue}>{countdownTimers}</Text>
-                            </View>
-                            <View style={styles.gridItem}>
-                                <Text style={styles.gridTitle}>Countups</Text>
-                                <Text style={styles.gridValue}>{countupTimers}</Text>
-                            </View>
-                        </Animated.View>
-                    </View>
+                            <Animated.View
+                                style={[
+                                    styles.rightColumn,
+                                    { transform: [{ translateY: rightTranslate }], opacity: rightOpacity }
+                                ]}
+                                pointerEvents="box-none"
+                            >
+                                <TouchableOpacity
+                                    style={[styles.gridItem, styles.countdownTimers]}
+                                    onPress={() => navigation.navigate('CountDowns')}
+                                    activeOpacity={0.75}
+                                >
+                                    <Text style={styles.gridTitle}>Countdowns</Text>
+                                    <Text style={styles.gridValue}>{countdownTimers}</Text>
+                                </TouchableOpacity>
 
-                    {/* Favourite Timers */}
-                    {favTimers.length > 0 && (
-                        <Animated.View style={{ opacity: favOpacity, transform: [{ translateY: favTranslate }] }}>
-                            {favTimers.map((timer) => (
-                                <TimerCard
-                                    key={timer.id}
-                                    timer={timer}
-                                    onDelete={() => { }}
-                                    onEdit={() => { }}
-                                    handleDuplicate={() => { }}
-                                    isExpanded={false}
-                                    onClick={() => { }}
-                                    selectable={false}
-                                    selected={false}
-                                    colors={colors}
-                                    variables={variables}
-                                    isCountdown={timer.isCountdown}
-                                    searchText=""
-                                    privacyMode="off"
-                                    butons="off"
-                                />
-                            ))}
-                        </Animated.View>
-                    )}
-
-                    {/* Quote Card */}
-                    <Animated.View style={[styles.quoteCard, { opacity: quoteOpacity, transform: [{ translateY: quoteTranslate }] }]}>
-                        <Text style={styles.quoteText}>{quotes[quoteIndex]}</Text>
-                    </Animated.View>
-
-                    {/* Quick Actions Card */}
-                    <Animated.View style={[styles.quickActionsCard, { opacity: quickActionsOpacity, transform: [{ translateY: quickActionsTranslate }] }]}>
-                        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-                        <View style={styles.quickActionsGrid}>
-                            <View style={styles.quickActionItem}>
-                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('CountDowns')}>
-                                    <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                                    <Text style={styles.actionText}>Countdowns</Text>
+                                <TouchableOpacity
+                                    style={styles.gridItem}
+                                    onPress={() => navigation.navigate('CountUps')}
+                                    activeOpacity={0.75}
+                                >
+                                    <Text style={styles.gridTitle}>Countups</Text>
+                                    <Text style={styles.gridValue}>{countupTimers}</Text>
                                 </TouchableOpacity>
-                            </View>
-                            <View style={styles.quickActionItem}>
-                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('CountUps')}>
-                                    <Icons.Material name="timer" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                                    <Text style={styles.actionText}>Countups</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.quickActionItem}>
-                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Settings')}>
-                                    <Icons.Material name="settings" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                                    <Text style={styles.actionText}>Settings</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.quickActionItem}>
-                                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('About', { addNew: true })}>
-                                    <Icons.Ion name="information-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                                    <Text style={styles.actionText}>About</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={[styles.quickActionItem, styles.fullAction]}>
-                                <TouchableOpacity style={styles.actionButton} onPress={() => setQuickAddVisible(true)}>
-                                    <Icons.Material name="add-circle" size={15} color={colors.highlight} style={{ marginRight: 6 }} />
-                                    <Text style={styles.actionText}>Quick Add Timer</Text>
-                                </TouchableOpacity>
-                            </View>
+                            </Animated.View>
                         </View>
+
+
+                        <Animated.View
+                            style={{ opacity: favOpacity, transform: [{ translateY: favTranslate }] }}
+                            pointerEvents="box-none"
+                        >
+                            {favTimers.length > 0 ? (<>
+                                <Text style={styles.label}>Favourites</Text>
+                                {favTimers.map((timer) => (
+                                    <TimerCard
+                                        key={timer.id}
+                                        timer={timer}
+                                        onDelete={() => { }}
+                                        onEdit={() => { }}
+                                        handleDuplicate={() => { }}
+                                        isExpanded={false}
+                                        onClick={() => { }}
+                                        selectable={false}
+                                        selected={false}
+                                        colors={colors}
+                                        variables={variables}
+                                        isCountdown={timer.isCountdown}
+                                        searchText=""
+                                        privacyMode={privacyMode}
+                                        butons="off"
+                                    />
+                                ))}
+                            </>) : (<>
+                                <TouchableOpacity
+                                    style={styles.quickActionButton}
+                                    onPress={() => setQuickAddVisible(true)}
+                                    activeOpacity={0.75}
+                                >
+                                    <Icons.Material name="add" size={18} color={colors.background} />
+                                    <Text style={styles.quickActionText}>How about adding a new timer quicly</Text>
+                                </TouchableOpacity>
+                            </>)
+                            }
+                        </Animated.View>
+
+
+                        <Animated.View
+                            style={[
+                                styles.quoteCard,
+                                {
+                                    opacity: quoteOpacity,
+                                    transform: [{ translateY: quoteTranslate }]
+                                }
+                            ]}
+                            pointerEvents="box-none"
+                        >
+                            <Animated.View
+                                style={[
+                                    styles.quoteTextContainer,
+                                    {
+                                        opacity: quoteTextOpacity,
+                                        transform: [{ scale: quoteScale }]
+                                    }
+                                ]}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={styles.quoteText}>
+                                        {displayedText}
+                                    </Text>
+                                    <BlinkingCursor />
+                                </View>
+                            </Animated.View>
+                        </Animated.View>
+
+                        <Animated.View
+                            style={[
+                                { opacity: quickActionsOpacity, transform: [{ translateY: quickActionsTranslate }] }
+                            ]}
+                            pointerEvents="box-none"
+                        >
+                            <View style={styles.quickActionsRow}>
+                                <TouchableOpacity
+                                    style={[styles.quickActionButton, styles.quickActionButtonSecondary]}
+                                    onPress={() => navigation.navigate('Settings')}
+                                    activeOpacity={0.75}
+                                >
+                                    <Icons.Material name="settings" size={18} color={colors.text} />
+                                    <Text style={[styles.quickActionText, styles.quickActionTextSecondary]}>
+                                        Settings
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.quickActionButton}
+                                    onPress={() => setQuickAddVisible(true)}
+                                    activeOpacity={0.75}
+                                >
+                                    <Icons.Material name="add" size={18} color={colors.background} />
+                                    <Text style={styles.quickActionText}>Add Timer</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Animated.View>
 
                         <AddTimerModal
                             visible={quickAddVisible}
                             onClose={() => setQuickAddVisible(false)}
-                            onAdd={(timer) => {
-                                const now = new Date();
-                                const timerDate = new Date(timer.date);
-                                timer.isCountdown = timerDate > now;
-                                addTimer(timer);
+                            onAdd={(newTimer) => {
+                                addTimer(newTimer);
                                 setQuickAddVisible(false);
                             }}
-                            mode={null}
+                            colors={colors}
+                            variables={variables}
                         />
-                    </Animated.View>
-                </>
-            )}
+                    </>
+                )}
+            </ScrollView>
         </ScreenWithHeader>
     );
 }
