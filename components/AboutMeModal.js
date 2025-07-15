@@ -165,7 +165,7 @@ export default function AboutMeModal({ visible, onClose }) {
 
                 <Animated.View style={[styles.card, createAnimatedStyle(profileCardAnim)]}>
                     <Text style={styles.name}>Farhan Zafar</Text>
-                    <Text style={styles.subtitle}>Redesigned with passion ✨</Text>
+                    <Text style={styles.subtitle}>Crafted with passion ✨ and curiosity ❤️</Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.card, createAnimatedStyle(aboutCardAnim)]}>

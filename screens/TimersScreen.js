@@ -11,6 +11,7 @@ import { useSecurity } from '../utils/SecurityContext';
 import { sortOptions } from '../utils/functions';
 import Snackbar from '../components/SnackBar';
 import uuid from 'react-native-uuid';
+import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet'
 
 export default function TimersScreen({ route }) {
     const { mode } = route.params;
@@ -28,6 +29,9 @@ export default function TimersScreen({ route }) {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sortMethod, setSortMethod] = useState('priority');
     const [messages, setMessages] = useState([]);
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(() => () => { });
+    const [timerToDelete, setTimerToDelete] = useState(null);
 
     const addMessage = useCallback((text) => {
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -148,10 +152,21 @@ export default function TimersScreen({ route }) {
                 newSet.delete(id);
                 return newSet;
             });
+
         } catch (error) {
             addMessage('Error deleting timer');
         }
     }, [removeTimer, addMessage]);
+
+    const promptDeleteSingle = useCallback((id) => {
+        setTimerToDelete(id);
+        setConfirmAction(() => async () => {
+            await handleDeleteTimer(id);
+            setTimerToDelete(null);
+            setConfirmVisible(false);
+        });
+        setConfirmVisible(true);
+    }, [handleDeleteTimer]);
 
     const handleCardClick = useCallback((timerId) => {
         if (isSelectable) {
@@ -176,7 +191,7 @@ export default function TimersScreen({ route }) {
         return (
             <TimerCard
                 timer={timer}
-                onDelete={handleDeleteTimer}
+                onDelete={promptDeleteSingle}
                 onEdit={handleEditTimer}
                 handleDuplicate={() => {
                     setIsDuplicate(true);
@@ -212,10 +227,15 @@ export default function TimersScreen({ route }) {
                 idsArray.forEach(id => newSet.delete(id));
                 return newSet;
             });
+            setConfirmVisible(false);
         } catch (error) {
             addMessage('Error deleting timers');
         }
     }, [selectedIds, removeTimer, addMessage]);
+
+    const executeBatchDelete = useCallback(() => {
+        handleBatchDelete();
+    }, [handleBatchDelete]);
 
     const handleBatchDeletePress = useCallback(() => {
         const selectedCount = selectedIds.size;
@@ -224,12 +244,13 @@ export default function TimersScreen({ route }) {
             setIsSelectable(true);
             addMessage("Select timers to delete");
         } else if (selectedCount > 0) {
-            handleBatchDelete();
+            setConfirmAction(() => executeBatchDelete);
+            setConfirmVisible(true);
         } else {
             setIsSelectable(false);
             addMessage("Selection mode cancelled");
         }
-    }, [isSelectable, selectedIds.size, handleBatchDelete, addMessage]);
+    }, [isSelectable, selectedIds.size, executeBatchDelete, addMessage]);
 
     // Memoized styles
     const styles = useMemo(() => StyleSheet.create({
@@ -353,6 +374,24 @@ export default function TimersScreen({ route }) {
                     style={{ bottom: 100 + (messages.length - 1 - idx) * 48 }}
                 />
             ))}
+
+            <ConfirmationBottomSheet
+                visible={confirmVisible}
+                onClose={() => { setConfirmVisible(false); setTimerToDelete(null); }}
+                onConfirm={confirmAction}
+                title={timerToDelete ? 'Delete Timer' : 'Delete Timers'}
+                message={
+                    timerToDelete
+                        ? 'Delete this timer? This action cannot be undone.'
+                        : `Delete ${selectedIds.size} timer${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`
+                }
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="#ef4444"
+                icon="trash-outline"
+                colors={colors}
+                variables={variables}
+            />
 
             <AddTimerModal
                 visible={isModalVisible}

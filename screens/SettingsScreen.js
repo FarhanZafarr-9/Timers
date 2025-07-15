@@ -364,6 +364,7 @@ export default function SettingsScreen() {
                                 value={themeMode}
                                 options={themeOptions}
                                 onChange={setThemeMode}
+                                title={'Theme'}
                                 placeholder="Select theme"
                                 colors={colors}
                                 variables={variables}
@@ -381,6 +382,7 @@ export default function SettingsScreen() {
                                 value={accentMode}
                                 options={accentOptions}
                                 onChange={setAccentModeState}
+                                title={'Accent'}
                                 placeholder="Select accent"
                                 colors={colors}
                                 variables={variables}
@@ -399,6 +401,7 @@ export default function SettingsScreen() {
                                 value={navigationMode}
                                 options={navOptions}
                                 onChange={setNavigationMode}
+                                title={'Navigation'}
                                 placeholder="Select navigation mode"
                                 colors={colors}
                                 variables={variables}
@@ -417,6 +420,7 @@ export default function SettingsScreen() {
                                 value={headerMode}
                                 options={headerOptions}
                                 onChange={setHeaderMode}
+                                title={'Header'}
                                 placeholder="Select header mode"
                                 colors={colors}
                                 variables={variables}
@@ -435,6 +439,7 @@ export default function SettingsScreen() {
                                 value={borderMode}
                                 options={borderOptions}
                                 onChange={setBorderMode}
+                                title={'Border'}
                                 placeholder="Select Border mode"
                                 colors={colors}
                                 variables={variables}
@@ -559,6 +564,7 @@ export default function SettingsScreen() {
                                 value={privacyMode}
                                 options={privacyOptions}
                                 onChange={setPrivacyModeValue}
+                                title={'Privacy'}
                                 placeholder="Select mode"
                                 colors={colors}
                                 variables={variables}
@@ -576,6 +582,7 @@ export default function SettingsScreen() {
                                 value={lockoutMode}
                                 options={lockoutOptions}
                                 onChange={setLockoutModeValue}
+                                title={'Lockout'}
                                 placeholder="Select lockout"
                                 colors={colors}
                                 variables={variables}
@@ -688,8 +695,8 @@ export default function SettingsScreen() {
                     visible={confirmVisible}
                     onClose={() => setConfirmVisible(false)}
                     onConfirm={confirmAction}
-                    title="Delete Item"
-                    message="Are you sure you want to delete this item? This action cannot be undone."
+                    title="Delete Timers"
+                    message="Are you sure you want to delete all timers? This action cannot be undone."
                     confirmText="Delete"
                     cancelText="Cancel"
                     confirmColor="#ef4444"

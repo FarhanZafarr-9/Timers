@@ -18,7 +18,7 @@ const BottomSheetPicker = ({
     value,
     options,
     onChange,
-    placeholder = 'Select...',
+    placeholder = '...',
     style = {},
     textStyle = {},
     iconColor = '#888',
@@ -118,8 +118,8 @@ const BottomSheetPicker = ({
         },
         header: {
             paddingHorizontal: 20,
-            paddingVertical: 16,
-            borderBottomWidth: 0.5,
+            paddingVertical: 10,
+            borderBottomWidth: border,
             borderBottomColor: colors.border,
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -127,7 +127,7 @@ const BottomSheetPicker = ({
         },
         headerTitle: {
             fontSize: 18,
-            fontWeight: '600',
+            fontWeight: '500',
             color: colors.text,
         },
         closeButton: {
@@ -222,6 +222,24 @@ const BottomSheetPicker = ({
             fontSize: 16,
             fontWeight: '600',
         },
+        descContainer: {
+            marginTop: 20,
+            marginHorizontal: 20,
+            paddingVertical: 10,
+            backgroundColor: colors.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: variables.radius.sm,
+            borderWidth: border,
+            borderColor: colors.border
+
+        },
+        desc: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: colors.textDesc,
+            height: 20
+        },
     });
 
     const selectedOption = options.find(opt => opt.value === value);
@@ -230,9 +248,6 @@ const BottomSheetPicker = ({
 
     const handlePillPress = (optionValue) => {
         onChange(optionValue);
-        setTimeout(() => {
-            hideBottomSheet();
-        }, 150);
     };
 
     const handleClear = () => {
@@ -326,6 +341,12 @@ const BottomSheetPicker = ({
                                 </TouchableOpacity>
                             </View>
                         )}
+                        
+                        {selectedOption && selectedOption.description && <View style={styles.descContainer}>
+                            <Text style={styles.desc}>
+                                Info :  {selectedOption.description}
+                            </Text>
+                        </View>}
 
                         <ScrollView
                             style={styles.pillsContainer}
@@ -342,6 +363,8 @@ const BottomSheetPicker = ({
                                 </View>
                             )}
                         </ScrollView>
+
+                        
 
                         <View style={styles.actionButtons}>
                             <TouchableOpacity
