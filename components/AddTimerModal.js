@@ -584,6 +584,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                                 setTimerData({ ...timerData, priority: 'normal' });
                                             }
                                         }}
+                                        title={'Priority'}
                                         placeholder="Select Priority"
                                         colors={colors}
                                         variables={variables}
@@ -642,6 +643,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                                     setTimerData({ ...timerData, recurrenceInterval: null });
                                                 }
                                             }}
+                                            title={'Recurrence Interval'}
                                             placeholder=""
                                             colors={colors}
                                             variables={variables}

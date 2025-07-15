@@ -12,225 +12,78 @@ export function shouldForceCollapsed(pageLength) {
     return (pageLength !== null && (pageLength / 1.1) < screenHeight);
 }
 
+
 export const themeOptions = [
-    {
-        label: 'System',
-        value: 'system',
-        icon: <Icons.Ion name="phone-portrait-outline" size={16} />,
-    },
-    {
-        label: 'Light',
-        value: 'light',
-        icon: <Icons.Ion name="sunny-outline" size={16} />,
-    },
-    {
-        label: 'Dark',
-        value: 'dark',
-        icon: <Icons.Ion name="moon-outline" size={16} />,
-    },
+    { label: 'System', value: 'system', icon: <Icons.Ion name="phone-portrait-outline" size={16} />, description: 'Sync with your phone or OS setting' },
+    { label: 'Light', value: 'light', icon: <Icons.Ion name="sunny-outline" size={16} />, description: 'Crisp whites and high-contrast text' },
+    { label: 'Dark', value: 'dark', icon: <Icons.Ion name="moon-outline" size={16} />, description: 'Deep blacks, easy on the eyes at night' },
 ];
 
 export const accentOptions = [
-    {
-        label: 'Monochrome',
-        value: 'default',
-        icon: <Icons.Ion name="contrast-outline" size={16} />,
-    },
-    {
-        label: 'Blue',
-        value: 'blue',
-        icon: <Icons.Ion name="color-palette-outline" size={16} color="#3b82f6" />,
-    },
-    {
-        label: 'Green',
-        value: 'green',
-        icon: <Icons.Ion name="leaf-outline" size={16} color="#22c55e" />,
-    },
-    {
-        label: 'Purple',
-        value: 'purple',
-        icon: <Icons.Ion name="flower-outline" size={16} color="#a855f7" />,
-    },
-    {
-        label: 'Rose',
-        value: 'rose',
-        icon: <Icons.Ion name="rose-outline" size={16} color="#f43f5e" />,
-    },
+    { label: 'Monochrome', value: 'default', icon: <Icons.Ion name="contrast-outline" size={16} />, description: 'Sleek grayscale, zero color distraction' },
+    { label: 'Blue', value: 'blue', icon: <Icons.Ion name="color-palette-outline" size={16} color="#3b82f6" />, description: 'Calm, professional sky-blue highlights' },
+    { label: 'Green', value: 'green', icon: <Icons.Ion name="leaf-outline" size={16} color="#22c55e" />, description: 'Fresh minty pops for natural focus' },
+    { label: 'Purple', value: 'purple', icon: <Icons.Ion name="flower-outline" size={16} color="#a855f7" />, description: 'Electric violet sparks for bold flair' },
+    { label: 'Rose', value: 'rose', icon: <Icons.Ion name="rose-outline" size={16} color="#f43f5e" />, description: 'Soft coral touches, warm and friendly' },
 ];
 
 export const privacyOptions = [
-    {
-        label: 'Off',
-        value: 'off',
-        icon: <Icons.Ion name="eye-outline" size={16} />,
-    },
-    {
-        label: 'Mask',
-        value: 'mask',
-        icon: <Icons.Ion name="lock-closed-outline" size={16} />,
-    },
-    {
-        label: 'Jumble',
-        value: 'jumble',
-        icon: <Icons.Ion name="shuffle-outline" size={16} />,
-    },
-    {
-        label: 'Invisible',
-        value: 'invisible',
-        icon: <Icons.Ion name="eye-off-outline" size={16} />,
-    },
-    {
-        label: 'Emoji',
-        value: 'emoji',
-        icon: <Icons.Ion name="happy-outline" size={16} />,
-    }
+    { label: 'Off', value: 'off', icon: <Icons.Ion name="eye-outline" size={16} />, description: 'Everything visible, no masking' },
+    { label: 'Mask', value: 'mask', icon: <Icons.Ion name="lock-closed-outline" size={16} />, description: 'Mask out title and names on screen' },
+    { label: 'Jumble', value: 'jumble', icon: <Icons.Ion name="shuffle-outline" size={16} />, description: 'Scramble title and names into unreadable words' },
+    { label: 'Invisible', value: 'invisible', icon: <Icons.Ion name="eye-off-outline" size={16} />, description: 'Hide title and names entirely until changed' },
+    { label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
 ];
 
 export const lockoutOptions = [
-    {
-        label: 'Disabled',
-        value: 'never',
-        icon: <Icons.Ion name="close-circle-outline" size={16} />,
-    },
-    {
-        label: 'Instant',
-        value: '0',
-        icon: <Icons.Ion name="flash-outline" size={16} />,
-    },
-    {
-        label: '30 seconds',
-        value: '30000',
-        icon: <Icons.Ion name="time-outline" size={16} />,
-    },
-    {
-        label: '1 minute',
-        value: '60000',
-        icon: <Icons.Ion name="alarm-outline" size={16} />,
-    },
-    //5min
-    {
-        label: '5 minutes',
-        value: '300000',
-        icon: <Icons.Ion name="timer-outline" size={16} />,
-    },
-    //15min
-    {
-        label: '15 minutes',
-        value: '900000',
-        icon: <Icons.Ion name="timer-outline" size={16} />,
-    },
-    //30min
-    {
-        label: '30 minutes',
-        value: '1800000',
-        icon: <Icons.Ion name="timer-outline" size={16} />,
-    },
+    { label: 'Disabled', value: 'never', icon: <Icons.Ion name="close-circle-outline" size={16} />, description: 'App stays open until you quit' },
+    { label: 'Instant', value: '0', icon: <Icons.Ion name="flash-outline" size={16} />, description: 'Lock the moment you leave the app' },
+    { label: '30 seconds', value: '30000', icon: <Icons.Ion name="time-outline" size={16} />, description: 'Quick half-minute grace period' },
+    { label: '1 minute', value: '60000', icon: <Icons.Ion name="alarm-outline" size={16} />, description: 'Short 60-second buffer' },
+    { label: '5 minutes', value: '300000', icon: <Icons.Ion name="timer-outline" size={16} />, description: 'Coffee-break friendly timeout' },
+    { label: '15 minutes', value: '900000', icon: <Icons.Ion name="timer-outline" size={16} />, description: 'Quarter-hour of idle leeway' },
+    { label: '30 minutes', value: '1800000', icon: <Icons.Ion name="timer-outline" size={16} />, description: 'Long lunch-break protection' },
 ];
 
 export const sortOptions = [
-    { label: 'Priority', value: 'priority', icon: <MaterialIcons name="flag" size={16} /> },
-    { label: 'Time Left', value: 'timeLeft', icon: <MaterialIcons name="hourglass-empty" size={16} /> },
-    { label: 'Recurring', value: 'recurring', icon: <MaterialIcons name="repeat" size={16} /> },
-    { label: 'Non-Recurring', value: 'nonRecurring', icon: <MaterialIcons name="remove-circle-outline" size={16} /> },
+    { label: 'Priority', value: 'priority', icon: <MaterialIcons name="flag" size={16} />, description: 'Red flags first, greens last' },
+    { label: 'Time Left', value: 'timeLeft', icon: <MaterialIcons name="hourglass-empty" size={16} />, description: 'Nearest deadline rises to top' },
+    { label: 'Recurring', value: 'recurring', icon: <MaterialIcons name="repeat" size={16} />, description: 'Repeating tasks grab the spotlight' },
+    { label: 'Non-Recurring', value: 'nonRecurring', icon: <MaterialIcons name="remove-circle-outline" size={16} />, description: 'One-offs lead the queue' },
 ];
 
 export const priorityOptions = [
-    { label: 'High', value: 'high', icon: <Icons.Ion name="flag" size={16} color="#ff0000" /> },
-    { label: 'Medium', value: 'normal', icon: <Icons.Ion name="flag" size={16} color="#ffa500" /> },
-    { label: 'Low', value: 'low', icon: <Icons.Ion name="flag" size={16} color="#008000" /> },
+    { label: 'High', value: 'high', icon: <Icons.Ion name="flag" size={16} color="#ff0000" />, description: 'Drop everything and tackle now' },
+    { label: 'Medium', value: 'normal', icon: <Icons.Ion name="flag" size={16} color="#ffa500" />, description: 'Handle today if possible' },
+    { label: 'Low', value: 'low', icon: <Icons.Ion name="flag" size={16} color="#008000" />, description: 'Nice-to-do when you have time' },
 ];
 
 export const navOptions = [
-    {
-        label: 'Floating',
-        value: 'floating',
-        icon: <Icons.Ion name="layers-outline" size={16} />,
-    },
-    {
-        label: 'Fixed',
-        value: 'fixed',
-        icon: <Icons.Ion name="home-outline" size={16} />,
-    },
-    //side navigation
-    {
-        label: 'Side',
-        value: 'side',
-        icon: <Icons.Ion name="menu-outline" size={16} />,
-    },
+    { label: 'Floating', value: 'floating', icon: <Icons.Ion name="layers-outline" size={16} />, description: 'Drifting bubble over content' },
+    { label: 'Fixed', value: 'fixed', icon: <Icons.Ion name="home-outline" size={16} />, description: 'Stays glued to bottom edge' },
+    { label: 'Side', value: 'side', icon: <Icons.Ion name="menu-outline" size={16} />, description: 'Slide-in drawer from the left' },
 ];
 
 export const headerOptions = [
-    {
-        label: 'Minimized',
-        value: 'minimized',
-        icon: <Icons.Ion name="remove-outline" size={16} />
-    },
-    {
-        label: 'Fixed',
-        value: 'fixed',
-        icon: <Icons.Ion name="home-outline" size={16} />,
-    },
-    {
-        label: 'Collapsible',
-        value: 'collapsible',
-        icon: <Icons.Material name="unfold-more" size={16} />
-    },
+    { label: 'Minimized', value: 'minimized', icon: <Icons.Ion name="remove-outline" size={16} />, description: 'Tiny strip, maximum screen space' },
+    { label: 'Fixed', value: 'fixed', icon: <Icons.Ion name="home-outline" size={16} />, description: 'Always visible, quick access' },
+    { label: 'Collapsible', value: 'collapsible', icon: <Icons.Material name="unfold-more" size={16} />, description: 'Swipe up to expand, down to shrink' },
 ];
 
 export const recurrenceOptions = [
-    {
-        label: 'Daily',
-        value: '1 day',
-        icon: <Icons.Ion name="repeat-outline" size={16} />,
-    },
-    {
-        label: 'Weekly',
-        value: '1 week',
-        icon: <Icons.Ion name="calendar-outline" size={16} />,
-    },
-    {
-        label: 'Fortnightly',
-        value: '2 weeks',
-        icon: <Icons.Ion name="repeat-outline" size={16} />,
-    },
-    {
-        label: 'Monthly',
-        value: '1 month',
-        icon: <Icons.Ion name="calendar-outline" size={16} />,
-    },
-    {
-        label: 'Quarterly',
-        value: '3 months',
-        icon: <Icons.Ion name="repeat-outline" size={16} />,
-    },
-    {
-        label: 'Annually',
-        value: '1 year',
-        icon: <Icons.Ion name="calendar-outline" size={16} />,
-    },
+    { label: 'Daily', value: '1 day', icon: <Icons.Ion name="repeat-outline" size={16} />, description: 'Every 24 hours like clockwork' },
+    { label: 'Weekly', value: '1 week', icon: <Icons.Ion name="calendar-outline" size={16} />, description: 'Same day each week, perfect for habits' },
+    { label: 'Fortnightly', value: '2 weeks', icon: <Icons.Ion name="repeat-outline" size={16} />, description: 'Every two weeks, bi-weekly rhythm' },
+    { label: 'Monthly', value: '1 month', icon: <Icons.Ion name="calendar-outline" size={16} />, description: 'Once a month on the dot' },
+    { label: 'Quarterly', value: '3 months', icon: <Icons.Ion name="repeat-outline" size={16} />, description: 'Four times a year, seasonal ticks' },
+    { label: 'Annually', value: '1 year', icon: <Icons.Ion name="calendar-outline" size={16} />, description: 'Once a year, birthday-style' },
 ];
 
 export const borderOptions = [
-    {
-        label: 'None',
-        value: 'none',
-        icon: <Icons.Ion name="close-outline" size={16} />,
-    },
-    {
-        label: 'Thin',
-        value: 'thin',
-        icon: <Icons.Ion name="remove-outline" size={16} />, // Using horizontal line icon
-    },
-    {
-        label: 'Subtle',
-        value: 'subtle',
-        icon: <Icons.Ion name="checkmark-outline" size={16} />,
-    },
-    {
-        label: 'Thick',
-        value: 'thick',
-        icon: <Icons.Ion name="square-outline" size={16} />,
-    },
+    { label: 'None', value: 'none', icon: <Icons.Ion name="close-outline" size={16} />, description: 'Seamless edge-to-edge clean look' },
+    { label: 'Thin', value: 'thin', icon: <Icons.Ion name="remove-outline" size={16} />, description: 'Hairline 1px whisper borders' },
+    { label: 'Subtle', value: 'subtle', icon: <Icons.Ion name="checkmark-outline" size={16} />, description: 'Soft gray lines, barely there' },
+    { label: 'Thick', value: 'thick', icon: <Icons.Ion name="square-outline" size={16} />, description: 'Bold 2px statement frames' },
 ];
 
 export const jumbleText = (str) => {
@@ -241,31 +94,80 @@ export const jumbleText = (str) => {
 };
 
 export const emojiText = (str) => {
-    const emojiChars = ['🔒', '👁️', '🕵️', '🙈', '🔑', '🛡️', '👤', '🤐', '🗝️', '🚫'];
+    const emojiChars = [
+        '🔒', '👁', '🕵', '🙈', '🔑', '🛡', '👤', '🤐', '🗝', '🚫',
+        '🤖', '👽', '🧿', '💀', '😶‍🌫', '🎭', '🐙', '🫥', '🧙', '👻',
+        '🐲', '🐉', '🐺', '🦄', '🦉', '🦚', '🦜', '🦂', '🕷', '🪳',
+        '🌙', '⭐', '✨', '🌟', '💫', '🔥', '🌪', '🌈', '☄', '⚡',
+        '💥', '🌊', '🪐', '🌌', '🛰', '🚀', '🛸', '🧬', '⚙', '🗡',
+        '🪓', '🔨', '⛓', '🔗', '🪝', '🛠', '⚔', '🏹', '🚧', '🧰',
+        '🪙', '💎', '💰', '🪞', '🎴', '🎲', '🎯', '🎰', '🧿', '📿',
+        '🎃', '👹', '👺', '👾', '🤯', '🤡', '💣', '☢', '☣', '🚬',
+        '🎇', '🎆', '🎑', '🖤', '❤‍🔥', '💀', '☠', '😵‍💫', '😶‍🌫', '👀',
+        '😈', '👿', '👹', '👺', '🤬', '🤯', '😱', '😨', '😰', '🥵',
+        '🥶', '😳', '😵', '🤒', '🤕', '🤢', '🤮', '🤧', '🥴', '😤',
+        '😡', '😠', '🤬', '😷', '🤠', '🥸', '😎', '🤓', '🧐', '😇',
+        '🤥', '🤫', '🤭', '🫢', '🫣', '😶', '😐', '😑', '😬', '🙄',
+        '😯', '😲', '🥱', '😴', '🤤', '🫠', '🤯', '🥳', '😺', '😸',
+        '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐵', '🐒', '🦍',
+        '🦧', '🐶', '🐕', '🦮', '🐩', '🐺', '🦊', '🦝', '🐱', '🐈',
+        '🦁', '🐯', '🐅', '🐆', '🐴', '🐎', '🦄', '🫎', '🫏', '🐮',
+        '🐂', '🐃', '🐄', '🐷', '🐖', '🐗', '🐽', '🐏', '🐑', '🐐',
+        '🦌', '🐘', '🦣', '🦛', '🦏', '🐭', '🐁', '🐀', '🐹', '🐰',
+        '🐇', '🐿', '🦫', '🦔', '🦇', '🐻', '🐨', '🐼', '🦥', '🦦',
+        '🦨', '🦘', '🦡', '🐾', '🐉', '🐲', '🌵', '🎄', '🌲', '🌳',
+        '🌴', '🪵', '🌱', '🌿', '☘', '🍀', '🎍', '🪴', '🎋', '🍃',
+        '🍂', '🍁', '🍄', '🐚', '🪸', '🪨', '🌾', '💐', '🌷', '🌹',
+        '🥀', '🌺', '🌸', '🌼', '🌻', '🌞', '🌝', '🌛', '🌜', '🌚',
+        '🌕', '🌖', '🌗', '🌘', '🌑', '🌒', '🌓', '🌔', '🌙', '🌎',
+        '🌍', '🌏', '💫', '⭐', '🌟', '✨', '⚡', '🔥', '💥', '☄',
+        '☀', '🌤', '⛅', '🌥', '☁', '🌦', '🌧', '⛈', '🌩', '🌨',
+        '❄', '☃', '⛄', '🌬', '💨', '💧', '💦', '☔', '☂', '🌊'
+    ];
     const emojiChar = emojiChars[Math.floor(Math.random() * emojiChars.length)];
     return str.split('').map(char => (char === ' ' ? ' ' : emojiChar)).join('');
 };
 
 export const maskText = (str) => {
-    const maskChars = ['•', '●', '○', '■', '□', '▪', '▫', '★', '☆', '✱', '✲', '✵', '⌘'];
-    const maskChar = maskChars[Math.floor(Math.random() * maskChars.length)];
+    const maskChars = [
+        '•', '●', '○', '■', '□', '▪', '▫', '▬', '▲', '△', '▼', '▽',
+        '◆', '◇', '★', '☆', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮',
+        '░', '▒', '▓', '▔', '▕', '▖', '▗', '▘', '▙', '▚', '▛', '▜',
+        '▝', '▞', '▟', '╱', '╲', '╳', '╴', '╵', '╶', '╷', '╸', '╹',
+        '╺', '╻', '╼', '╽', '╾', '╿', '┄', '┅', '┆', '┇', '┈', '┉',
+        '┊', '┋', '┌', '┍', '┎', '┏', '┐', '┑', '┒', '┓', '└', '┕',
+        '┖', '┗', '┘', '┙', '┚', '┛', '━', '┃', '┠', '┡', '┢', '┣'
+    ];
 
+    const maskChar = maskChars[new Date().getMinutes() % maskChars.length];
     return str.split('').map(char => (char === ' ' ? ' ' : maskChar)).join('');
 };
 
+export const maxCharsLimit = 10;
+
 export const getPrivacyText = (privacyMode, inputText) => {
+    const isLong = inputText.length > maxCharsLimit;
+    const truncated = isLong ? inputText.slice(0, maxCharsLimit) : inputText;
+
+    let result;
     switch (privacyMode) {
         case 'jumble':
-            return jumbleText(inputText);
+            result = jumbleText(truncated);
+            break;
         case 'emoji':
-            return emojiText(inputText);
+            result = emojiText(truncated);
+            break;
         case 'invisible':
-            return '';
+            result = '';
+            break;
         case 'mask':
-            return maskText(inputText);
+            result = maskText(truncated);
+            break;
         default:
-            return (inputText);
+            result = truncated;
     }
+
+    return isLong && privacyMode !== 'invisible' ? result + '...' : result;
 };
 
 export const showToast = (msg) => {

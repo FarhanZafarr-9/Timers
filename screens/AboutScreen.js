@@ -12,8 +12,6 @@ import AboutMeModal from '../components/AboutMeModal';
 export default function AboutScreen() {
     const { variables, colors, isBorder, border } = useTheme();
     const [showChangelog, setShowChangelog] = useState(false);
-    const [selectedTestTime, setSelectedTestTime] = useState(null);
-    const [expanded, setExpanded] = useState(0);
     // Animations
     const topCardAnim = useRef(new Animated.Value(-50)).current;
     const descCardAnim = useRef(new Animated.Value(-50)).current;
@@ -25,19 +23,6 @@ export default function AboutScreen() {
     const descOpacityAnim = useRef(new Animated.Value(0)).current;
     const creditsOpacityAnim = useRef(new Animated.Value(0)).current;
     const buttonsOpacityAnim = useRef(new Animated.Value(0)).current;
-
-    // Test notification time options
-    const testTimeOptions = [
-        { value: 5, label: '5 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
-        { value: 10, label: '10 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
-        { value: 15, label: '15 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
-        { value: 30, label: '30 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
-        { value: 45, label: '45 seconds', icon: <Icons.Ion name="time-outline" size={16} /> },
-        { value: 60, label: '1 minute', icon: <Icons.Ion name="timer-outline" size={16} /> },
-        { value: 120, label: '2 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
-        { value: 300, label: '5 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
-        { value: 600, label: '10 minutes', icon: <Icons.Ion name="timer-outline" size={16} /> },
-    ];
 
     useEffect(() => {
         Animated.stagger(120, [
@@ -161,9 +146,9 @@ export default function AboutScreen() {
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>ChronoX</Text>
-                        <TouchableOpacity onPress={() => setExpanded(expanded === 5 ? 0 : expanded + 1)}>
+                        <View >
                             <Text style={styles.versionText}>v{appVersion} - {appBuild}</Text>
-                        </TouchableOpacity>
+                        </View>
                     </View>
                 </Animated.View>
 

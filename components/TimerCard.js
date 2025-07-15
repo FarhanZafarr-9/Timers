@@ -778,7 +778,7 @@ const TimerCard = ({
                                             <Text style={styles.timeLabel}>
                                                 {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
                                             </Text>
-                                            {timer.isCountdown && (
+                                            {timer.isCountdown && timerState.status === 'ongoing'&& (
                                                 <Text
                                                     style={{
                                                         color: colors.textDesc,
