@@ -621,7 +621,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
 
                                         <View style={{ width: '80%' }}>
                                             <FloatingLabelInput
-                                                label="Recurrence Interval (e.g., 2 days, 1 month)"
+                                                label="(i.e 2 days, 1 month)"
                                                 value={timerData.recurrenceInterval}
                                                 onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
                                                 style={styles.input}
