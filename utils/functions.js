@@ -2,6 +2,28 @@ import { Dimensions, Platform, ToastAndroid, Alert } from 'react-native';
 import { Icons } from '../assets/icons';
 
 import { MaterialIcons } from '@expo/vector-icons';
+// utils/checkForUpdate.js
+import * as Updates from 'expo-updates';
+
+export async function checkForUpdateAndReload() {
+    if (__DEV__) {
+        console.log("🚀 Skipping OTA check in Expo Go (__DEV__ mode).");
+        return;
+    }
+
+    try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+            console.log("✅ New update found, downloading...");
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync(); // app restarts here
+        } else {
+            console.log("👍 App is up to date.");
+        }
+    } catch (err) {
+        console.log("⚠️ Expo update check failed:", err);
+    }
+}
 
 export const HEADER_MARGIN_TOP = 50;
 export const MAX_HEADER_HEIGHT = 66;
@@ -12,7 +34,6 @@ export function shouldForceCollapsed(pageLength) {
     return (pageLength !== null && (pageLength / 1.1) < screenHeight);
 }
 
-
 export const themeOptions = [
     { label: 'System', value: 'system', icon: <Icons.Ion name="phone-portrait-outline" size={16} />, description: 'Sync with your phone or OS setting' },
     { label: 'Light', value: 'light', icon: <Icons.Ion name="sunny-outline" size={16} />, description: 'Crisp whites and high-contrast text' },
@@ -20,11 +41,18 @@ export const themeOptions = [
 ];
 
 export const accentOptions = [
-    { label: 'Monochrome', value: 'default', icon: <Icons.Ion name="contrast-outline" size={16} />, description: 'Sleek grayscale, zero color distraction' },
+    { label: 'Mono', value: 'default', icon: <Icons.Ion name="contrast-outline" size={16} />, description: 'Sleek grayscale, zero color distraction' },
     { label: 'Blue', value: 'blue', icon: <Icons.Ion name="color-palette-outline" size={16} color="#3b82f6" />, description: 'Calm, professional sky-blue highlights' },
     { label: 'Green', value: 'green', icon: <Icons.Ion name="leaf-outline" size={16} color="#22c55e" />, description: 'Fresh minty pops for natural focus' },
     { label: 'Purple', value: 'purple', icon: <Icons.Ion name="flower-outline" size={16} color="#a855f7" />, description: 'Electric violet sparks for bold flair' },
     { label: 'Rose', value: 'rose', icon: <Icons.Ion name="rose-outline" size={16} color="#f43f5e" />, description: 'Soft coral touches, warm and friendly' },
+    { label: 'Amber', value: 'amber', icon: <Icons.Ion name="sunny-outline" size={16} color="#f59e0b" />, description: 'Golden amber warmth, cheerful highlights' },
+    { label: 'Teal', value: 'teal', icon: <Icons.Ion name="water-outline" size={16} color="#14b8a6" />, description: 'Deep teal ocean vibes, tranquil feel' },
+    { label: 'Indigo', value: 'indigo', icon: <Icons.Ion name="ellipse-outline" size={16} color="#6366f1" />, description: 'Mysterious indigo tones, elegant edge' },
+    { label: 'Cyan', value: 'cyan', icon: <Icons.Ion name="ice-cream-outline" size={16} color="#06b6d4" />, description: 'Bright cyan zings, cool & playful' },
+    { label: 'Lime', value: 'lime', icon: <Icons.Ion name="sparkles-outline" size={16} color="#84cc16" />, description: 'Zesty lime pops, energetic highlights' },
+    { label: 'Fuchsia', value: 'fuchsia', icon: <Icons.Ion name="sparkles-outline" size={16} color="#d946ef" />, description: 'Neon fuchsia pops, modern & playful' },
+    { label: 'Slate', value: 'slate', icon: <Icons.Ion name="grid-outline" size={16} color="#64748b" />, description: 'Subtle slate blues, modern & muted' },
 ];
 
 export const privacyOptions = [
@@ -86,6 +114,21 @@ export const borderOptions = [
     { label: 'Thick', value: 'thick', icon: <Icons.Ion name="square-outline" size={16} />, description: 'Bold 2px statement frames' },
 ];
 
+export const layoutOptions = [
+    {
+        label: 'List',
+        value: 'list',
+        icon: <Icons.Ion name="list-outline" size={16} />,
+        description: 'Full-width cards stacked vertically'
+    },
+    {
+        label: 'Grid',
+        value: 'grid',
+        icon: <Icons.Ion name="grid-outline" size={16} />,
+        description: 'Compact multi-column view'
+    }
+];
+
 export const jumbleText = (str) => {
     // Replace each character with a random letter (except spaces)
     return str.split('').map(char =>
@@ -145,11 +188,12 @@ export const maskText = (str) => {
 
 export const maxCharsLimit = 10;
 
-export const getPrivacyText = (privacyMode, inputText) => {
+export const getPrivacyText = (maxCharsLimit, privacyMode, inputText) => {
     const isLong = inputText.length > maxCharsLimit;
     const truncated = isLong ? inputText.slice(0, maxCharsLimit) : inputText;
 
     let result;
+
     switch (privacyMode) {
         case 'jumble':
             result = jumbleText(truncated);
@@ -166,6 +210,7 @@ export const getPrivacyText = (privacyMode, inputText) => {
         default:
             result = truncated;
     }
+
 
     return isLong && privacyMode !== 'invisible' ? result + '...' : result;
 };
@@ -309,9 +354,37 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.21';
+export const appVersion = '1.0.23';
 
 export const changelog = [
+    {
+        "version": "1.0.23",
+        "date": "2025-07-16",
+        "title": "Fresh Themes & UI Upgrades",
+        "major": false,
+        "changes": [
+            "Added 7 new accent themes including Fuchsia",
+            "Introduced app updates card for changelogs & feedback",
+            "Added grid mode for timer cards (WIP)",
+            "Enhanced bottom sheet pickers with smoother UX",
+            "More privacy options for timer visibility",
+            "UI tweaks for better consistency & flow",
+            "Minor optimizations and bug fixes"
+        ]
+    },
+    {
+        "version": "1.0.22",
+        "date": "2025-07-15",
+        "title": "Update Checker & UX Enhancements",
+        "major": false,
+        "changes": [
+            "Added force update checker to instantly fetch new app updates",
+            "Improved pickers for smoother and better selection",
+            "Added descriptions for new settings adn all previous picker options",
+            "Refined some privacy options for better control and visibility",
+            "Fixed various minor bugs and adjusted UI styles for consistency"
+        ]
+    },
     {
         "version": "1.0.21",
         "date": "2025-07-15",

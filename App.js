@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from './screens/HomeScreen';
@@ -11,7 +11,6 @@ import { StatusBar } from 'expo-status-bar';
 
 import { SecurityProvider, useSecurity } from './utils/SecurityContext';
 import AuthComponent from './utils/AuthComponent';
-import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from './utils/ThemeContext';
 import { DataProvider } from './utils/DataContext';
 import SplashScreen from './screens/SplashScreen';
@@ -20,10 +19,18 @@ import BottomSheetChangelog from './components/BottomSheetChnageLog';
 
 import { initializeNotifications } from './utils/Notificationhelper';
 import * as Notifications from 'expo-notifications';
+import { checkForUpdateAndReload } from './utils/functions'
+
+export function useForceUpdateOnLoad() {
+  useEffect(() => {
+    checkForUpdateAndReload();
+  }, []);
+}
 
 const Tab = createBottomTabNavigator();
 
 function AppContent() {
+  useForceUpdateOnLoad();
   const { variables, colors } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);

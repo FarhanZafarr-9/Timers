@@ -12,9 +12,11 @@ import Snackbar from '../components/SnackBar';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
+import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 import ModernSwitch from '../components/ModernSwitch';
+import BottomSheetChangelog from '../components/BottomSheetChnageLog';
+import { checkForUpdateAndReload } from '../utils/functions';
 
 export default function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
@@ -33,8 +35,10 @@ export default function SettingsScreen() {
         setHeaderMode,
         borderMode,
         setBorderMode,
-        isBorder
-        , border
+        isBorder,
+        border,
+        layoutMode,
+        setLayoutMode
     } = useTheme();
 
     const {
@@ -73,6 +77,7 @@ export default function SettingsScreen() {
     const [mounted, setMounted] = useState(false);
     const [messages, setMessages] = useState([]);
     const [directoryUri, setDirectoryUri] = useState(null);
+    const [showChangelog, setShowChangelog] = useState(false);
 
     const addMessage = useCallback((text) => {
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -83,53 +88,103 @@ export default function SettingsScreen() {
         setMessages(prev => prev.filter(msg => msg.id !== messageId));
     }, []);
 
-    const topTranslate = useRef(new Animated.Value(-50)).current;
-    const midTranslate = useRef(new Animated.Value(-50)).current;
-    const bottomTranslate = useRef(new Animated.Value(-50)).current;
+    const handleReportBug = () => {
+        const email = 'farhanzafarr.9@gmail.com';
+        const subject = 'Bug Report - ChronoX App';
+        const body = 'Please describe the bug you encountered:';
+        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    };
 
-    const topOpacity = useRef(new Animated.Value(0)).current;
-    const midOpacity = useRef(new Animated.Value(0)).current;
-    const bottomOpacity = useRef(new Animated.Value(0)).current;
+    const handleSuggestion = () => {
+        const email = 'farhanzafarr.9@gmail.com';
+        const subject = 'Suggestion - ChronoX App';
+        const body = 'Please describe the suggestion you came upon:';
+        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    };
 
+    const card1Translate = useRef(new Animated.Value(-50)).current;
+    const card2Translate = useRef(new Animated.Value(-50)).current;
+    const card3Translate = useRef(new Animated.Value(-50)).current;
+    const card4Translate = useRef(new Animated.Value(-50)).current;
+    const card5Translate = useRef(new Animated.Value(-50)).current;
+
+    const card1Opacity = useRef(new Animated.Value(0)).current;
+    const card2Opacity = useRef(new Animated.Value(0)).current;
+    const card3Opacity = useRef(new Animated.Value(0)).current;
+    const card4Opacity = useRef(new Animated.Value(0)).current;
+    const card5Opacity = useRef(new Animated.Value(0)).current;
+
+    // Update the useEffect animation code:
     useEffect(() => {
         const value = setTimeout(() => {
             setMounted(true);
 
             Animated.stagger(120, [
+                // Card 1 Animation (Appearance)
                 Animated.parallel([
-                    Animated.spring(topTranslate, {
+                    Animated.spring(card1Translate, {
                         toValue: 0,
                         tension: 80,
                         friction: 8,
                         useNativeDriver: true,
                     }),
-                    Animated.timing(topOpacity, {
+                    Animated.timing(card1Opacity, {
                         toValue: 1,
                         duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
+                // Card 2 Animation (Layout Management)
                 Animated.parallel([
-                    Animated.spring(midTranslate, {
+                    Animated.spring(card2Translate, {
                         toValue: 0,
                         tension: 80,
                         friction: 8,
                         useNativeDriver: true,
                     }),
-                    Animated.timing(midOpacity, {
+                    Animated.timing(card2Opacity, {
                         toValue: 1,
                         duration: 400,
                         useNativeDriver: true,
                     }),
                 ]),
+                // Card 3 Animation (Security)
                 Animated.parallel([
-                    Animated.spring(bottomTranslate, {
+                    Animated.spring(card3Translate, {
                         toValue: 0,
                         tension: 80,
                         friction: 8,
                         useNativeDriver: true,
                     }),
-                    Animated.timing(bottomOpacity, {
+                    Animated.timing(card3Opacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]),
+                // Card 4 Animation (Timer Management)
+                Animated.parallel([
+                    Animated.spring(card4Translate, {
+                        toValue: 0,
+                        tension: 80,
+                        friction: 8,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(card4Opacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]),
+                // Card 5 Animation (App Updates)
+                Animated.parallel([
+                    Animated.spring(card5Translate, {
+                        toValue: 0,
+                        tension: 80,
+                        friction: 8,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(card5Opacity, {
                         toValue: 1,
                         duration: 400,
                         useNativeDriver: true,
@@ -349,8 +404,8 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
 
                 <Animated.View style={{
-                    transform: [{ translateX: topTranslate }],
-                    opacity: topOpacity  // ADD THIS
+                    transform: [{ translateX: card1Translate }],
+                    opacity: card1Opacity
                 }}>
                     <View style={styles.card} >
                         {/* Theme Mode Picker */}
@@ -387,44 +442,7 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue={'default'}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Floating Navigation Switch */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Navigation</Text>
-                                <Text style={styles.settingDesc}>Select navigation mode</Text>
-                            </View>
-                            <BottomSheetPicker
-                                value={navigationMode}
-                                options={navOptions}
-                                onChange={setNavigationMode}
-                                title={'Navigation'}
-                                placeholder="Select navigation mode"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="floating"
-                            />
-                        </TouchableOpacity>
-
-                        {/* Header Mode Switch */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='ellipsis-horizontal' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Header</Text>
-                                <Text style={styles.settingDesc}>Choose header mode</Text>
-                            </View>
-                            <BottomSheetPicker
-                                value={headerMode}
-                                options={headerOptions}
-                                onChange={setHeaderMode}
-                                title={'Header'}
-                                placeholder="Select header mode"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="minimized"
+                                pillsPerRow={3}
                             />
                         </TouchableOpacity>
 
@@ -449,14 +467,86 @@ export default function SettingsScreen() {
                     </View>
                 </Animated.View>
 
+                {/* LAYOUT MANAGEMENT SETTINGS */}
+                <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
+                    <Text style={styles.sectionHeaderText}>Layout Management</Text>
+                </TouchableOpacity>
+
+                <Animated.View style={{
+                    transform: [{ translateX: card2Translate }],
+                    opacity: card2Opacity
+                }}>
+                    <View style={styles.card}>
+
+                        {/* Header Mode Picker */}
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                            <Icons.Ion name='ellipsis-horizontal' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Header</Text>
+                                <Text style={styles.settingDesc}>Choose header mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={headerMode}
+                                options={headerOptions}
+                                onChange={setHeaderMode}
+                                title={'Header'}
+                                placeholder="Select header mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="minimized"
+                            />
+                        </TouchableOpacity>
+
+                        {/* Layout Mode Picker (Grid/List) */}
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                            <Icons.Ion name='grid-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Layout</Text>
+                                <Text style={styles.settingDesc}>Select layout mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={layoutMode}
+                                options={layoutOptions}
+                                onChange={setLayoutMode}
+                                title={'Layout'}
+                                placeholder="Select layout mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="list"
+                                note={"Grid layout shortens privacy text for easier view"}
+                            />
+                        </TouchableOpacity>
+
+                        {/* Navigation Mode Picker */}
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                            <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Navigation</Text>
+                                <Text style={styles.settingDesc}>Select navigation mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={navigationMode}
+                                options={navOptions}
+                                onChange={setNavigationMode}
+                                title={'Navigation'}
+                                placeholder="Select navigation mode"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="floating"
+                            />
+                        </TouchableOpacity>
+
+                    </View>
+                </Animated.View>
+
                 <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
                     <Text style={styles.sectionHeaderText}>Security & Privacy</Text>
                 </TouchableOpacity>
 
                 {/* SECURITY SETTINGS */}
                 <Animated.View style={{
-                    transform: [{ translateX: midTranslate }],
-                    opacity: midOpacity
+                    transform: [{ translateX: card3Translate }],
+                    opacity: card3Opacity
                 }}>
                     <View style={styles.card}>
                         {/* Fingerprint Unlock */}
@@ -598,8 +688,8 @@ export default function SettingsScreen() {
 
                 {/* TIMER MANAGEMENT */}
                 <Animated.View style={{
-                    transform: [{ translateY: bottomTranslate }],
-                    opacity: bottomOpacity,
+                    transform: [{ translateX: card4Translate }],
+                    opacity: card4Opacity
                 }}>
                     <View style={styles.card}>
 
@@ -691,6 +781,66 @@ export default function SettingsScreen() {
                     </View>
                 </Animated.View>
 
+
+                <TouchableOpacity style={styles.sectionHeader} activeOpacity={1}>
+                    <Text style={styles.sectionHeaderText}>App management</Text>
+                </TouchableOpacity>
+
+                <Animated.View style={{
+                    transform: [{ translateX: card5Translate }],
+                    opacity: card5Opacity
+                }}>
+
+                    <View style={styles.card}>
+                        {/* CHECK FOR UPDATES */}
+                        <TouchableOpacity
+                            style={styles.settingBlock}
+                            onPress={async () => {
+                                const status = await checkForUpdateAndReload();
+                                if (status === 'up-to-date') {
+                                    addMessage('Already on latest version');
+                                }
+                            }}
+                        >
+                            <Icons.Ion name='cloud-download-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Check for Updates</Text>
+                                <Text style={styles.settingDesc}>Fetch latest app updates</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* SHOW CHANGELOG */}
+                        <TouchableOpacity
+                            style={styles.settingBlock}
+                            onPress={() => setShowChangelog(true)}
+                        >
+                            <Icons.Ion name="document-text-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Show Changelog</Text>
+                                <Text style={styles.settingDesc}>View recent changes</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* REPORT BUG */}
+                        <TouchableOpacity style={styles.settingBlock} onPress={handleReportBug}>
+                            <Icons.Ion name="bug-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Report Bug</Text>
+                                <Text style={styles.settingDesc}>Found a problem? Let us know</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* SEND SUGGESTION */}
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} onPress={handleSuggestion}>
+                            <Icons.Ion name="sparkles-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Send Suggestion</Text>
+                                <Text style={styles.settingDesc}>Share your ideas or improvements</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                    </View>
+                </Animated.View>
                 <ConfirmationBottomSheet
                     visible={confirmVisible}
                     onClose={() => setConfirmVisible(false)}
@@ -720,6 +870,8 @@ export default function SettingsScreen() {
                         variables={variables}
                     />
                 )}
+
+                <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </>}
         </ScreenWithHeader>
     );

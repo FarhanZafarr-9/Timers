@@ -17,7 +17,7 @@ export default function TimersScreen({ route }) {
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
-    const { variables, colors, isBorder, border } = useTheme();
+    const { variables, colors, isBorder, border, layoutMode } = useTheme();
     const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -340,6 +340,7 @@ export default function TimersScreen({ route }) {
     return (
         <>
             <ScreenWithHeader
+                key={layoutMode}
                 headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down' : 'arrow-up'} size={18} color={colors.highlight} />}
                 headerTitle={isCountdown ? "Countdowns" : "Countups"}
                 borderRadius={variables.radius.lg}
@@ -351,9 +352,10 @@ export default function TimersScreen({ route }) {
                     keyExtractor,
                     ListHeaderComponent,
                     ListEmptyComponent,
+                    numColumns: layoutMode === 'grid' ? 2 : 1,
                     showsVerticalScrollIndicator: false,
                     keyboardShouldPersistTaps: 'handled',
-                    removeClippedSubviews: true,
+                    removeClippedSubviews: false,
                     maxToRenderPerBatch: 8,
                     windowSize: 8,
                     initialNumToRender: 8,
@@ -361,7 +363,7 @@ export default function TimersScreen({ route }) {
                     getItemLayout: null,
                     contentContainerStyle: {
                         paddingBottom: 95,
-                        minHeight: '100%'
+                        minHeight: '100%',
                     }
                 }}
             />

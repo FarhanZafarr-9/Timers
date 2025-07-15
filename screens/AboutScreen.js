@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } fr
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
-import BottomSheetChangelog from '../components/BottomSheetChnageLog';
 import { appVersion } from '../utils/functions';
 import { showToast, appBuild } from '../utils/functions';
 import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
@@ -11,7 +10,6 @@ import AboutMeModal from '../components/AboutMeModal';
 
 export default function AboutScreen() {
     const { variables, colors, isBorder, border } = useTheme();
-    const [showChangelog, setShowChangelog] = useState(false);
     // Animations
     const topCardAnim = useRef(new Animated.Value(-50)).current;
     const descCardAnim = useRef(new Animated.Value(-50)).current;
@@ -47,20 +45,6 @@ export default function AboutScreen() {
 
     const handleOpenLink = (url) => {
         Linking.openURL(url).catch(err => console.error("Failed to open URL:", err));
-    };
-
-    const handleReportBug = () => {
-        const email = 'farhanzafarr.9@gmail.com';
-        const subject = 'Bug Report - ChronoX App';
-        const body = 'Please describe the bug you encountered:';
-        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    };
-
-    const handleSuggestion = () => {
-        const email = 'farhanzafarr.9@gmail.com';
-        const subject = 'Suggestion - ChronoX App';
-        const body = 'Please describe the suggestion you came upon:';
-        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     };
 
     const styles = StyleSheet.create({
@@ -171,11 +155,6 @@ export default function AboutScreen() {
 
                     <View style={styles.buttonsContainer}>
 
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setShowChangelog(true)}>
-                            <Icons.Ion name="document-text-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Changelog</Text>
-                        </TouchableOpacity>
-
                         <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}>
                             <Icons.Ion name="logo-github" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>Repository</Text>
@@ -186,17 +165,7 @@ export default function AboutScreen() {
                             <Text style={styles.buttonText}>Creator</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.actionButton} onPress={handleReportBug}>
-                            <Icons.Ion name="bug" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Report Bug</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.actionButton} onPress={handleSuggestion}>
-                            <Icons.Ion name="star" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Suggestion</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setShowAboutMe(true)}>
+                        <TouchableOpacity style={[styles.actionButton, { flexBasis: '100%' }]} onPress={() => setShowAboutMe(true)}>
                             <Icons.Ion name="person-circle-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
                             <Text style={styles.buttonText}>About Me</Text>
                         </TouchableOpacity>
@@ -205,8 +174,6 @@ export default function AboutScreen() {
 
                 </Animated.View>
 
-
-                <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </View>
         </ScreenWithHeader>
     );
