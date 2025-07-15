@@ -11,7 +11,7 @@ import {
     Animated,
     ScrollView,
     Platform,
-    Image
+    Image,
 } from 'react-native';
 import BottomProfileSheet from './BottomProfileSheet';
 import { useData } from '../utils/DataContext';
@@ -23,10 +23,14 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
     const { width } = Dimensions.get('window');
     const [expanded, setExpanded] = useState(0);
 
-    // State for side navigation
+    const screenWidth = width;  // already imported from Dimensions
+    const tabCount = state.routes.length;
+
+    const showText = screenWidth > 420 || tabCount < 4;
+    const iconSize = screenWidth < 420 ? 18 : 20;
+
     const [sideNavOpen, setSideNavOpen] = useState(false);
 
-    // State for profile sheet visibility
     const [isProfileSheetVisible, setIsProfileSheetVisible] = useState(false);
 
     // Animation values
@@ -234,7 +238,6 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                     {state.routes.map((route, index) => {
                         const isFocused = state.index === index;
                         const iconName = getIconName(route.name);
-                        const tabCount = state.routes.length;
 
                         const onPress = () => {
                             const event = navigation.emit({
@@ -257,9 +260,10 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                 style={[
                                     styles.tab,
                                     {
-                                        flex: isFocused ? 0.5 * tabCount : 1,
+                                        flex: isFocused ? (showText ? 2 : 1.2) : 1,
                                     }
                                 ]}
+
                                 activeOpacity={isFocused ? 1 : 0.75}
                             >
                                 <Animated.View style={[
@@ -287,12 +291,12 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                     >
                                         <Icons.Ion
                                             name={iconName}
-                                            size={isFocused ? 22 : 18}
+                                            size={iconSize}
                                             color={isFocused ? colors.background : colors.textDesc}
                                         />
                                     </Animated.View>
 
-                                    {isFocused && (
+                                    {isFocused && showText && (
                                         <Animated.View
                                             style={{
                                                 opacity: textOpacity,
@@ -312,6 +316,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                                             </Text>
                                         </Animated.View>
                                     )}
+
                                 </Animated.View>
                             </TouchableOpacity>
                         );
