@@ -29,7 +29,7 @@ const TimerCard = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const { isBorder, headerMode, border, colors, variables, layoutMode } = useTheme();
     const titleText = timer.title && timer.title.length > 10
-        ? timer.title.slice(0, 10) + '…'
+        ? timer.title.slice(0, 12) + '…'
         : timer.title;
 
     const nameText = timer.personName && timer.personName.length > 10
