@@ -893,7 +893,7 @@ export const ThemeProvider = ({ children }) => {
                     setAccentModeState(loadedAccent);
                     setNavigationMode(loadedFloatingNav);
                     setHeaderMode(loadedHeaderMode);
-                    setLayoutMode(storedLayoutMode)
+                    setLayoutMode(loadedLayoutMode)
                     setBorderMode(loadedBorderMode);
 
                     // Set initial theme based on loaded preference
@@ -988,7 +988,7 @@ export const ThemeProvider = ({ children }) => {
 
     // Handle layout mode chnage
     useEffect(() => {
-        const layout = normalizeAccent(layoutMode);
+        const layout = normalizeLayoutMode(layoutMode);
         if (layout !== layoutMode) {
             setLayoutMode(layoutMode);
         }
