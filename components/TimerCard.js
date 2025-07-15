@@ -34,7 +34,7 @@ const TimerCard = ({
 
     const nameText = timer.personName && timer.personName.length > 10
         ? timer.personName.slice(0, 10) + '…'
-        : timer
+        : timer.personName;
     const { privacyMode } = useSecurity();
     const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.title), [timer.title, privacyMode]);
     const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.personName), [timer.personName, privacyMode]);
