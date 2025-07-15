@@ -29,15 +29,15 @@ const TimerCard = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const { isBorder, headerMode, border, colors, variables, layoutMode } = useTheme();
     const titleText = timer.title && timer.title.length > 10
-        ? timer.title.slice(0, 12) + '…'
+        ? timer.title.slice(0, 13) + '…'
         : timer.title;
 
     const nameText = timer.personName && timer.personName.length > 10
-        ? timer.personName.slice(0, 10) + '…'
+        ? timer.personName.slice(0, 13) + '…'
         : timer.personName;
     const { privacyMode } = useSecurity();
-    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.title), [timer.title, privacyMode]);
-    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.personName), [timer.personName, privacyMode]);
+    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 13, privacyMode, timer.title), [timer.title, privacyMode]);
+    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 13, privacyMode, timer.personName), [timer.personName, privacyMode]);
 
     const [timerState, setTimerState] = useState({
         now: Date.now(),
