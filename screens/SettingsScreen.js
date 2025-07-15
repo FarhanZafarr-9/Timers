@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated, Dimensions, Linking } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';

@@ -5,7 +5,6 @@ import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import { appVersion } from '../utils/functions';
 import { showToast, appBuild } from '../utils/functions';
-import { scheduleNotification, clearAllScheduledNotifications } from '../utils/Notificationhelper';
 import AboutMeModal from '../components/AboutMeModal';
 
 export default function AboutScreen() {
