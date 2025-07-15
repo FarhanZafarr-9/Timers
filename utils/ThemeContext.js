@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Appearance, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { headerOptions } from './functions';
 
 const THEME_STORAGE_KEY = 'userThemePreference';
 const ACCENT_STORAGE_KEY = 'userAccentPreference'
 const NAVIGATION_MODE_KEY = 'navigationModePreference';
+const LAYOUT_MODE_KEY = 'layoutModePreference'
 const HEADER_MODE_KEY = 'headerModePreference';
 const BORDER_MODE_KEY = 'borderModePreference';
 const VALID_THEMES = ['light', 'dark', 'system'];
-const VALID_ACCENTS = ['default', 'blue', 'green', 'purple', 'rose'];
-
+const VALID_ACCENTS = ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate'];
 
 const palettes = {
     light: {
@@ -160,6 +159,216 @@ const palettes = {
         highlight: '#f43f5e',
         addButtonBg: 'rgba(244, 63, 94, 0.12)',
         addButtonBorder: '#f43f5e',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightAmber: {
+        background: '#fdf9f3',
+        card: '#f8e8d0',
+        cardLighter: '#fbf0dc',
+        cardBorder: '#e7cfa355',
+        settingBlock: '#f9ecd9',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#f8e8d0',
+        snackbarText: '#1f2937',
+        modalBg: '#fbf0dc',
+        modalText: '#1f2937',
+        modalBtnBg: '#edd7b8',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(245, 158, 11, 0.20)',
+        modalBtnOkText: '#f59e0b',
+        switchTrack: '#e8be7c',
+        switchTrackActive: '#f59e0b',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#fffaf1',
+        border: '#e7cfa355',
+        divider: '#f8e8d0',
+        highlight: '#f59e0b',
+        addButtonBg: 'rgba(245, 158, 11, 0.12)',
+        addButtonBorder: '#f59e0b',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightTeal: {
+        background: '#f3faf9',
+        card: '#d0ebe5',
+        cardLighter: '#e0f4ef',
+        cardBorder: '#a3d9ce55',
+        settingBlock: '#d8f0ea',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#d0ebe5',
+        snackbarText: '#1f2937',
+        modalBg: '#e0f4ef',
+        modalText: '#1f2937',
+        modalBtnBg: '#c1e2da',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(20, 184, 166, 0.20)',
+        modalBtnOkText: '#14b8a6',
+        switchTrack: '#83d3c4',
+        switchTrackActive: '#14b8a6',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f3faf9',
+        border: '#a3d9ce55',
+        divider: '#d0ebe5',
+        highlight: '#14b8a6',
+        addButtonBg: 'rgba(20, 184, 166, 0.12)',
+        addButtonBorder: '#14b8a6',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightIndigo: {
+        background: '#f5f6fc',
+        card: '#dcdff4',
+        cardLighter: '#e8eaf8',
+        cardBorder: '#a3a8d155',
+        settingBlock: '#e3e5f8',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#dcdff4',
+        snackbarText: '#1f2937',
+        modalBg: '#e8eaf8',
+        modalText: '#1f2937',
+        modalBtnBg: '#c9cce9',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(99, 102, 241, 0.20)',
+        modalBtnOkText: '#6366f1',
+        switchTrack: '#a5a8f0',
+        switchTrackActive: '#6366f1',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f5f6fc',
+        border: '#a3a8d155',
+        divider: '#dcdff4',
+        highlight: '#6366f1',
+        addButtonBg: 'rgba(99, 102, 241, 0.12)',
+        addButtonBorder: '#6366f1',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightCyan: {
+        background: '#f3fbfc',
+        card: '#d0eff4',
+        cardLighter: '#e0f6fa',
+        cardBorder: '#a3d8df55',
+        settingBlock: '#d8f3f7',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#d0eff4',
+        snackbarText: '#1f2937',
+        modalBg: '#e0f6fa',
+        modalText: '#1f2937',
+        modalBtnBg: '#c1e6eb',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(6, 182, 212, 0.20)',
+        modalBtnOkText: '#06b6d4',
+        switchTrack: '#7edce7',
+        switchTrackActive: '#06b6d4',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f3fbfc',
+        border: '#a3d8df55',
+        divider: '#d0eff4',
+        highlight: '#06b6d4',
+        addButtonBg: 'rgba(6, 182, 212, 0.12)',
+        addButtonBorder: '#06b6d4',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightLime: {
+        background: '#f8fcf3',
+        card: '#e3f4d0',
+        cardLighter: '#eef9df',
+        cardBorder: '#c3e7a355',
+        settingBlock: '#ebf7d8',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#e3f4d0',
+        snackbarText: '#1f2937',
+        modalBg: '#eef9df',
+        modalText: '#1f2937',
+        modalBtnBg: '#d6efc1',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(132, 204, 22, 0.20)',
+        modalBtnOkText: '#84cc16',
+        switchTrack: '#b4e280',
+        switchTrackActive: '#84cc16',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f8fcf3',
+        border: '#c3e7a355',
+        divider: '#e3f4d0',
+        highlight: '#84cc16',
+        addButtonBg: 'rgba(132, 204, 22, 0.12)',
+        addButtonBorder: '#84cc16',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightFuchsia: {
+        background: '#fcf5fc',
+        card: '#f3d0f4',
+        cardLighter: '#f9e0fa',
+        cardBorder: '#e7a3e755',
+        settingBlock: '#f7d8f8',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#f3d0f4',
+        snackbarText: '#1f2937',
+        modalBg: '#f9e0fa',
+        modalText: '#1f2937',
+        modalBtnBg: '#eec1f0',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(217, 70, 239, 0.20)',
+        modalBtnOkText: '#d946ef',
+        switchTrack: '#e48ae4',
+        switchTrackActive: '#d946ef',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#fcf5fc',
+        border: '#e7a3e755',
+        divider: '#f3d0f4',
+        highlight: '#d946ef',
+        addButtonBg: 'rgba(217, 70, 239, 0.12)',
+        addButtonBorder: '#d946ef',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
+        cancelButtonBorder: '#ef4444',
+    },
+    lightSlate: {
+        background: '#f7f9fa',
+        card: '#d9dde1',
+        cardLighter: '#e6eaee',
+        cardBorder: '#b0b9c355',
+        settingBlock: '#e2e6eb',
+        text: '#1f2937',
+        textSecondary: '#374151',
+        textTitle: '#111827',
+        textDesc: '#6b7280',
+        snackbarBg: '#d9dde1',
+        snackbarText: '#1f2937',
+        modalBg: '#e6eaee',
+        modalText: '#1f2937',
+        modalBtnBg: '#c8cfd6',
+        modalBtnText: '#374151',
+        modalBtnOkBg: 'rgba(100, 116, 139, 0.20)',
+        modalBtnOkText: '#64748b',
+        switchTrack: '#adb9c7',
+        switchTrackActive: '#64748b',
+        switchThumb: '#ffffff',
+        switchThumbActive: '#f7f9fa',
+        border: '#b0b9c355',
+        divider: '#d9dde1',
+        highlight: '#64748b',
+        addButtonBg: 'rgba(100, 116, 139, 0.12)',
+        addButtonBorder: '#64748b',
         cancelButtonBg: 'rgba(239, 68, 68, 0.14)',
         cancelButtonBorder: '#ef4444',
     },
@@ -313,6 +522,217 @@ const palettes = {
         cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
         cancelButtonBorder: '#ef4444',
     },
+    darkAmber: {
+        background: '#191512',
+        card: '#231b14',
+        cardLighter: '#2e2219',
+        cardBorder: '#5a4d3b55',
+        settingBlock: '#271f17',
+        text: '#fefefe',
+        textSecondary: '#dcc9b8',
+        textTitle: '#ffffff',
+        textDesc: '#cdbba9',
+        snackbarBg: '#231b14',
+        snackbarText: '#ffffff',
+        modalBg: '#231b14',
+        modalText: '#fefefe',
+        modalBtnBg: '#3a2e22',
+        modalBtnText: '#dcc9b8',
+        modalBtnOkBg: 'rgba(245, 158, 11, 0.20)',
+        modalBtnOkText: '#f59e0b',
+        switchTrack: '#f59e0b88',
+        switchTrackActive: '#f59e0b',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#f59e0b',
+        border: '#5a4d3b55',
+        divider: '#2e2219',
+        highlight: '#f59e0b',
+        addButtonBg: 'rgba(245, 158, 11, 0.20)',
+        addButtonBorder: '#f59e0b',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkTeal: {
+        background: '#101413',
+        card: '#16201f',
+        cardLighter: '#1d2928',
+        cardBorder: '#4d5a5855',
+        settingBlock: '#1a2524',
+        text: '#fefefe',
+        textSecondary: '#b8ccc9',
+        textTitle: '#ffffff',
+        textDesc: '#a9bfbf',
+        snackbarBg: '#16201f',
+        snackbarText: '#ffffff',
+        modalBg: '#16201f',
+        modalText: '#fefefe',
+        modalBtnBg: '#233230',
+        modalBtnText: '#b8ccc9',
+        modalBtnOkBg: 'rgba(20, 184, 166, 0.20)',
+        modalBtnOkText: '#14b8a6',
+        switchTrack: '#14b8a688',
+        switchTrackActive: '#14b8a6',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#14b8a6',
+        border: '#4d5a5855',
+        divider: '#1d2928',
+        highlight: '#14b8a6',
+        addButtonBg: 'rgba(20, 184, 166, 0.20)',
+        addButtonBorder: '#14b8a6',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkIndigo: {
+        background: '#12121a',
+        card: '#181820',
+        cardLighter: '#22222c',
+        cardBorder: '#55555a55',
+        settingBlock: '#1e1e27',
+        text: '#fefefe',
+        textSecondary: '#c5c5d9',
+        textTitle: '#ffffff',
+        textDesc: '#b0b0c5',
+        snackbarBg: '#181820',
+        snackbarText: '#ffffff',
+        modalBg: '#181820',
+        modalText: '#fefefe',
+        modalBtnBg: '#2a2a35',
+        modalBtnText: '#c5c5d9',
+        modalBtnOkBg: 'rgba(99, 102, 241, 0.20)',
+        modalBtnOkText: '#6366f1',
+        switchTrack: '#6366f188',
+        switchTrackActive: '#6366f1',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#6366f1',
+        border: '#55555a55',
+        divider: '#22222c',
+        highlight: '#6366f1',
+        addButtonBg: 'rgba(99, 102, 241, 0.20)',
+        addButtonBorder: '#6366f1',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkCyan: {
+        background: '#101415',
+        card: '#162021',
+        cardLighter: '#1d292a',
+        cardBorder: '#4d5a5a55',
+        settingBlock: '#192425',
+        text: '#fefefe',
+        textSecondary: '#b8cdce',
+        textTitle: '#ffffff',
+        textDesc: '#a9c0c0',
+        snackbarBg: '#162021',
+        snackbarText: '#ffffff',
+        modalBg: '#162021',
+        modalText: '#fefefe',
+        modalBtnBg: '#233334',
+        modalBtnText: '#b8cdce',
+        modalBtnOkBg: 'rgba(6, 182, 212, 0.20)',
+        modalBtnOkText: '#06b6d4',
+        switchTrack: '#06b6d488',
+        switchTrackActive: '#06b6d4',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#06b6d4',
+        border: '#4d5a5a55',
+        divider: '#1d292a',
+        highlight: '#06b6d4',
+        addButtonBg: 'rgba(6, 182, 212, 0.20)',
+        addButtonBorder: '#06b6d4',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkLime: {
+        background: '#121410',
+        card: '#192014',
+        cardLighter: '#21291a',
+        cardBorder: '#4d5a3f55',
+        settingBlock: '#1c2517',
+        text: '#fefefe',
+        textSecondary: '#c9d6b8',
+        textTitle: '#ffffff',
+        textDesc: '#b8c6a9',
+        snackbarBg: '#192014',
+        snackbarText: '#ffffff',
+        modalBg: '#192014',
+        modalText: '#fefefe',
+        modalBtnBg: '#2a3323',
+        modalBtnText: '#c9d6b8',
+        modalBtnOkBg: 'rgba(132, 204, 22, 0.20)',
+        modalBtnOkText: '#84cc16',
+        switchTrack: '#84cc1688',
+        switchTrackActive: '#84cc16',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#84cc16',
+        border: '#4d5a3f55',
+        divider: '#21291a',
+        highlight: '#84cc16',
+        addButtonBg: 'rgba(132, 204, 22, 0.20)',
+        addButtonBorder: '#84cc16',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkFuchsia: {
+        background: '#141014',
+        card: '#1c161c',
+        cardLighter: '#261e26',
+        cardBorder: '#5a4d5a55',
+        settingBlock: '#211a21',
+        text: '#fefefe',
+        textSecondary: '#e3b8e3',
+        textTitle: '#ffffff',
+        textDesc: '#d8aad8',
+        snackbarBg: '#1c161c',
+        snackbarText: '#ffffff',
+        modalBg: '#1c161c',
+        modalText: '#fefefe',
+        modalBtnBg: '#322632',
+        modalBtnText: '#e3b8e3',
+        modalBtnOkBg: 'rgba(217, 70, 239, 0.20)',
+        modalBtnOkText: '#d946ef',
+        switchTrack: '#d946ef88',
+        switchTrackActive: '#d946ef',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#d946ef',
+        border: '#5a4d5a55',
+        divider: '#261e26',
+        highlight: '#d946ef',
+        addButtonBg: 'rgba(217, 70, 239, 0.20)',
+        addButtonBorder: '#d946ef',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+    darkSlate: {
+        background: '#121415',
+        card: '#181c1e',
+        cardLighter: '#22282a',
+        cardBorder: '#4f585a55',
+        settingBlock: '#1c2224',
+        text: '#fefefe',
+        textSecondary: '#c0c8cd',
+        textTitle: '#ffffff',
+        textDesc: '#b2bbc0',
+        snackbarBg: '#181c1e',
+        snackbarText: '#ffffff',
+        modalBg: '#181c1e',
+        modalText: '#fefefe',
+        modalBtnBg: '#293134',
+        modalBtnText: '#c0c8cd',
+        modalBtnOkBg: 'rgba(100, 116, 139, 0.20)',
+        modalBtnOkText: '#64748b',
+        switchTrack: '#64748b88',
+        switchTrackActive: '#64748b',
+        switchThumb: '#e0e0e0',
+        switchThumbActive: '#64748b',
+        border: '#4f585a55',
+        divider: '#22282a',
+        highlight: '#64748b',
+        addButtonBg: 'rgba(100, 116, 139, 0.20)',
+        addButtonBorder: '#64748b',
+        cancelButtonBg: 'rgba(239, 68, 68, 0.16)',
+        cancelButtonBorder: '#ef4444',
+    },
+
 };
 
 const variables = {
@@ -419,6 +839,13 @@ const normalizeBorderMode = (mode) => {
     return 'subtle';
 };
 
+const normalizeLayoutMode = (mode) => {
+    if (['list', 'grid'].includes(mode)) {
+        return mode;
+    }
+    return 'list';
+};
+
 const getSystemTheme = () => {
     try {
         const systemTheme = Appearance.getColorScheme();
@@ -433,6 +860,7 @@ export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeModeState] = useState('system');
     const [accentMode, setAccentModeState] = useState('blue');
     const [navigationMode, setNavigationMode] = useState('floating');
+    const [layoutMode, setLayoutMode] = useState('list');
     const [headerMode, setHeaderMode] = useState('minimized');
     const [borderMode, setBorderMode] = useState('subtle');
     const [theme, setTheme] = useState(getSystemTheme());
@@ -444,11 +872,12 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedBorderMode] = await Promise.all([
+                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedLayoutMode, storedBorderMode] = await Promise.all([
                     AsyncStorage.getItem(THEME_STORAGE_KEY),
                     AsyncStorage.getItem(ACCENT_STORAGE_KEY),
                     AsyncStorage.getItem(NAVIGATION_MODE_KEY),
                     AsyncStorage.getItem(HEADER_MODE_KEY),
+                    AsyncStorage.getItem(LAYOUT_MODE_KEY),
                     AsyncStorage.getItem(BORDER_MODE_KEY),
                 ]);
 
@@ -457,12 +886,14 @@ export const ThemeProvider = ({ children }) => {
                     const loadedAccent = storedAccent && VALID_ACCENTS.includes(storedAccent) ? storedAccent : 'blue';
                     const loadedFloatingNav = storedNavMode !== null ? storedNavMode : 'floating';
                     const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'minimized';
+                    const loadedLayoutMode = storedLayoutMode !== null ? storedLayoutMode : 'list';
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
 
                     setThemeModeState(loadedTheme);
                     setAccentModeState(loadedAccent);
                     setNavigationMode(loadedFloatingNav);
                     setHeaderMode(loadedHeaderMode);
+                    setLayoutMode(storedLayoutMode)
                     setBorderMode(loadedBorderMode);
 
                     // Set initial theme based on loaded preference
@@ -510,6 +941,14 @@ export const ThemeProvider = ({ children }) => {
         }
     }, [navigationMode, isLoading]);
 
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(LAYOUT_MODE_KEY, layoutMode !== null ? layoutMode : 'list').catch(e =>
+                console.warn('Failed to save layout mode preference:', e)
+            );
+        }
+    }, [layoutMode, isLoading]);
+
     // Save headerMode to AsyncStorage when it changes
     useEffect(() => {
         if (!isLoading) {
@@ -546,6 +985,14 @@ export const ThemeProvider = ({ children }) => {
             setAccentModeState(accentMode);
         }
     }, [accentMode]);
+
+    // Handle layout mode chnage
+    useEffect(() => {
+        const layout = normalizeAccent(layoutMode);
+        if (layout !== layoutMode) {
+            setLayoutMode(layoutMode);
+        }
+    }, [layoutMode]);
 
     // Normalize theme mode to ensure it is valid
     useEffect(() => {
@@ -601,6 +1048,8 @@ export const ThemeProvider = ({ children }) => {
         headerMode,
         setHeaderMode,
         borderMode,
+        layoutMode,
+        setLayoutMode,
         setBorderMode,
         isBorder: borderMode !== 'none',
         border: borderMode === 'none' ? 0 : borderMode === 'thin' ? variables.borderWidth.thin : borderMode === 'subtle' ? variables.borderWidth.regular : variables.borderWidth.thick,

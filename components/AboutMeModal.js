@@ -72,7 +72,7 @@ export default function AboutMeModal({ visible, onClose }) {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: colors.background,
+            backgroundColor: colors.background ,
             padding: 20,
         },
         closeButton: {

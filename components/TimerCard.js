@@ -27,12 +27,12 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { isBorder, headerMode, border, colors, variables, } = useTheme();
+    const { isBorder, headerMode, border, colors, variables, layoutMode } = useTheme();
     const titleText = timer.title;
     const nameText = timer.personName;
     const { privacyMode } = useSecurity();
-    const privacyTitleText = useMemo(() => getPrivacyText(privacyMode, timer.title), [timer.title, privacyMode]);
-    const privacyNameText = useMemo(() => getPrivacyText(privacyMode, timer.personName), [timer.personName, privacyMode]);
+    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.title), [timer.title, privacyMode]);
+    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 10, privacyMode, timer.personName), [timer.personName, privacyMode]);
 
     const [timerState, setTimerState] = useState({
         now: Date.now(),
@@ -84,6 +84,59 @@ const TimerCard = ({
             detailedTime: getDetailedTimeDisplay({ ...timer, date: targetDate, nextDate }, now)
         };
     }, []);
+
+    const [compactChipIndex, setCompactChipIndex] = useState(null);
+
+    const renderCompactTimeChip = () => {
+        const { timeParts, status } = timerState;
+        const [years, months, days, hours, minutes, seconds] = timeParts;
+
+        const timePartsArray = [
+            { id: 'years', label: 'Years' },
+            { id: 'months', label: 'Months' },
+            { id: 'days', label: 'Days' },
+            { id: 'hours', label: 'Hours' },
+            { id: 'minutes', label: 'Minutes' },
+            { id: 'seconds', label: 'Seconds' },
+        ];
+
+        const nonZeroParts = timePartsArray.filter(part => {
+            switch (part.id) {
+                case 'years': return years !== 0;
+                case 'months': return months !== 0;
+                case 'days': return days !== 0;
+                case 'hours': return hours !== 0;
+                case 'minutes': return minutes !== 0;
+                case 'seconds': return seconds !== 0;
+                default: return false;
+            }
+        });
+
+        if (nonZeroParts.length === 0 || status === 'completed') {
+            return (
+                <View style={styles.chipContainer}>
+                    <Text style={styles.chipText}>Completed</Text>
+                </View>
+            );
+        }
+        if (compactChipIndex === null) setCompactChipIndex(nonZeroParts.length - 1);
+        const currentChip = nonZeroParts[compactChipIndex % nonZeroParts.length];
+
+        return (
+            <TouchableOpacity
+                style={[
+                    styles.chip,
+                    { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
+                ]}
+                onPress={() => setCompactChipIndex(compactChipIndex + 1)}
+                activeOpacity={0.8}
+            >
+                <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
+                    {getChippedTime(currentChip.id, timeParts)} {currentChip.label}
+                </Text>
+            </TouchableOpacity>
+        );
+    };
 
     function calculateNextOccurrence(timer, now) {
         if (!timer.isRecurring || !timer.recurrenceInterval) {
@@ -267,7 +320,6 @@ const TimerCard = ({
         }
     };
 
-    // Create styles function (moved to useMemo)
     function createStyles() {
         return StyleSheet.create({
             timerItem: {
@@ -277,6 +329,11 @@ const TimerCard = ({
                 marginBottom: 10,
                 borderWidth: border,
                 borderColor: !isBorder ? 0 : (searchText === '' || privacyMode !== 'off') ? colors.border : colors.highlight + '3a',
+                minWidth: '48%',
+                maxWidth: '100%',
+                marginVertical: 6,
+                marginRight: layoutMode === 'grid' ? '1.5%' : 0,
+                marginLeft: layoutMode === 'grid' ? '0.5%' : 0,
             },
             header: {
                 flexDirection: 'row',
@@ -571,7 +628,44 @@ const TimerCard = ({
         <>
             <ViewShot ref={cardRef} options={{ format: 'png', quality: 1 }}>
                 <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
-                    <View style={cardStyle}>
+                    {layoutMode === 'grid' ? (<View style={cardStyle}>
+                        <View style={styles.header}>
+                            <Text style={[styles.timerTitle, { paddingLeft: 0 }]}>
+                                {privacyTitleText}
+                            </Text>
+                            {timer.personName && (
+                                <Text style={[styles.namePill, { marginHorizontal: 0 }]}>
+                                    {privacyNameText}
+                                </Text>
+                            )}
+                        </View>
+
+                        <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
+                            {renderCompactTimeChip()}
+                        </View>
+
+                        {timer.isCountdown && timer.isRecurring && (
+                            <View
+                                style={{
+                                    height: 6,
+                                    width: '100%',
+                                    backgroundColor: colors.highlight + '20',
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                    marginTop: 12
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: `${timerState.progressPct}%`,
+                                        height: '100%',
+                                        backgroundColor: colors.highlight + 'b0',
+                                        borderRadius: 8
+                                    }}
+                                />
+                            </View>
+                        )}
+                    </View>) : (<View style={cardStyle}>
                         <View style={styles.header}>
                             {privacyMode === 'off' ? (
                                 <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
@@ -666,7 +760,7 @@ const TimerCard = ({
                                 </Text>
                             </View>
                         )}
-                    </View>
+                    </View>)}
                 </TouchableOpacity>
             </ViewShot>
 
@@ -778,7 +872,7 @@ const TimerCard = ({
                                             <Text style={styles.timeLabel}>
                                                 {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
                                             </Text>
-                                            {timer.isCountdown && timerState.status === 'ongoing'&& (
+                                            {timer.isCountdown && timerState.status === 'ongoing' && (
                                                 <Text
                                                     style={{
                                                         color: colors.textDesc,

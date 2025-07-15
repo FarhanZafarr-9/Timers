@@ -28,6 +28,7 @@ const BottomSheetPicker = ({
     maxHeight = screenHeight * 0.6,
     pillsPerRow = 2,
     defaultValue = null,
+    note
 }) => {
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
@@ -231,14 +232,15 @@ const BottomSheetPicker = ({
             justifyContent: 'center',
             borderRadius: variables.radius.sm,
             borderWidth: border,
-            borderColor: colors.border
-
+            borderColor: colors.border,
         },
         desc: {
             fontSize: 14,
             fontWeight: '500',
             color: colors.textDesc,
-            height: 20
+            marginHorizontal: 20,
+            lineHeight: 20,
+            flexWrap:'wrap'
         },
     });
 
@@ -270,7 +272,7 @@ const BottomSheetPicker = ({
                 {option.icon && (
                     <View style={styles.pillIcon}>
                         {React.cloneElement(option.icon, {
-                            color: option.icon.props.color ? option.icon.props.color : isSelected ? colors.background : colors.text,
+                            color: isSelected ? colors.background : option.icon.props.color ? option.icon.props.color : colors.text,
                             size: option.icon.props.size || 16
                         })}
                     </View>
@@ -341,7 +343,7 @@ const BottomSheetPicker = ({
                                 </TouchableOpacity>
                             </View>
                         )}
-                        
+
                         {selectedOption && selectedOption.description && <View style={styles.descContainer}>
                             <Text style={styles.desc}>
                                 Info :  {selectedOption.description}
@@ -364,7 +366,11 @@ const BottomSheetPicker = ({
                             )}
                         </ScrollView>
 
-                        
+                        {note && <View style={[styles.descContainer, { marginTop: 0, marginBlock: 20 }]}>
+                            <Text style={styles.desc}>
+                                Note :  {note}
+                            </Text>
+                        </View>}
 
                         <View style={styles.actionButtons}>
                             <TouchableOpacity

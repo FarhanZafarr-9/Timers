@@ -13,7 +13,7 @@ import { getPrivacyText } from '../utils/functions';
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
     const [quickAddVisible, setQuickAddVisible] = useState(false);
-    const { variables, colors, isBorder, border } = useTheme();
+    const { variables, colors, isBorder, border, layoutMode } = useTheme();
     const { privacyMode } = useSecurity();
 
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
@@ -37,7 +37,7 @@ export default function HomeScreen({ navigation }) {
     const [isTyping, setIsTyping] = useState(false);
     const quoteTextOpacity = useRef(new Animated.Value(0)).current;
     const quoteScale = useRef(new Animated.Value(0.95)).current;
-    const privacyText = useMemo(() => getPrivacyText(privacyMode, 'Favourite'), [privacyMode]);
+    const privacyText = useMemo(() => getPrivacyText(10, privacyMode, 'Favourite'), [privacyMode]);
 
     useEffect(() => {
         const interval = setInterval(() => {
