@@ -509,7 +509,7 @@ export default function SettingsScreen() {
                                 options={layoutOptions}
                                 onChange={setLayoutMode}
                                 title={'Layout'}
-                                placeholder="Select layout mode"
+                                placeholder="ayout"
                                 colors={colors}
                                 variables={variables}
                                 defaultValue="list"
