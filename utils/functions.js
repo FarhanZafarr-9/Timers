@@ -4,6 +4,9 @@ import { Icons } from '../assets/icons';
 import { MaterialIcons } from '@expo/vector-icons';
 // utils/checkForUpdate.js
 import * as Updates from 'expo-updates';
+import React from 'react';
+import { View, Text } from 'react-native';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 
 export async function checkForUpdateAndReload() {
     if (__DEV__) {
@@ -126,6 +129,21 @@ export const layoutOptions = [
         value: 'grid',
         icon: <Icons.Ion name="grid-outline" size={16} />,
         description: 'Compact multi-column view'
+    }
+];
+
+export const progressOptions = [
+    {
+        label: 'Linear',
+        value: 'linear',
+        icon: <Icons.Ion name="remove-outline" size={16} />,
+        description: 'Simple horizontal progress bar'
+    },
+    {
+        label: 'Wave',
+        value: 'wave',
+        icon: <Icons.Ion name="pulse-outline" size={16} />,
+        description: 'Animated wave style progress'
     }
 ];
 
@@ -354,9 +372,45 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.23';
+export const appVersion = '1.0.24';
 
 export const changelog = [
+    {
+        "version": "1.0.25",
+        "date": "2025-07-16",
+        "title": "Waves, Toasts & Grid Refinements",
+        "major": true,
+        "changes": [
+            { "type": "new", "text": "Added wave progress animations (experimental)" },
+            { "type": "new", "text": "Introduced toast message notifications for quick feedback" },
+            { "type": "fixed", "text": "Resolved grid layout issues causing overflow and misalignment" },
+            { "type": "fixed", "text": "Fixed missing import for Linking causing crash on update page open" },
+            { "type": "fixed", "text": "Fixed icon clipping on small widths in timer cards and settings" },
+            { "type": "fixed", "text": "Fixed icon and text alignment on minimized header mode" },
+            { "type": "fixed", "text": "Minor internal optimizations and cleanup" },
+            { "type": "improved", "text": "Polished grid card styling for better balance and visuals" },
+            { "type": "improved", "text": "Enhanced timer card prop handling to support varied layouts" },
+            { "type": "improved", "text": "Better font and size adaptation in privacy modes to fit width gracefully" },
+            { "type": "wip", "text": "Wave progress might lag or feel jittery; optimizations in progress" },
+            { "type": "wip", "text": "Some jerkiness and lag is anticipated and will be fixed soon!" },
+            { "type": "wip", "text": "New Pomodoro Timer page coming soon!" }
+        ]
+    },
+    {
+        "version": "1.0.24",
+        "date": "2025-07-16",
+        "title": "Fresh Themes & UI Upgrades",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Added 7 new accent themes including Fuchsia" },
+            { "type": "new", "text": "Introduced app updates card for changelogs & feedback" },
+            { "type": "wip", "text": "Added grid mode for timer cards" },
+            { "type": "improved", "text": "Enhanced bottom sheet pickers with smoother UX" },
+            { "type": "improved", "text": "More privacy options for timer visibility" },
+            { "type": "improved", "text": "UI tweaks for better consistency & flow" },
+            { "type": "fixed", "text": "Minor optimizations and bug fixes" }
+        ]
+    },
     {
         "version": "1.0.23",
         "date": "2025-07-16",
@@ -619,6 +673,117 @@ export const changelog = [
         ]
     }
 ];
+
+export const toastConfig = (colors, variables, border) => ({
+    success: (props) => (
+        <BaseToast
+            {...props}
+            style={{
+                backgroundColor: colors.modalBg,
+                borderLeftWidth: 4,
+                borderLeftColor: colors.highlight,
+                borderWidth: border,
+                borderColor: colors.border,
+                borderRadius: variables.radius.lg,
+                paddingVertical: 8,
+                shadowColor: '#000',
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 6
+            }}
+            contentContainerStyle={{
+                paddingHorizontal: 15
+            }}
+            text1Style={{
+                color: colors.highlight,
+                fontSize: 15,
+                fontWeight: '700',
+                height: 20
+            }}
+            text2Style={{
+                color: colors.text,
+                fontSize: 14,
+                fontWeight: '400',
+                marginTop: 2,
+                height: 20
+            }}
+        />
+    ),
+    error: (props) => (
+        <ErrorToast
+            {...props}
+            style={{
+                backgroundColor: colors.modalBg,
+                borderLeftWidth: 4,
+                borderLeftColor: '#ef4444',
+                borderWidth: border,
+                borderColor: colors.border,
+                borderRadius: variables.radius.lg,
+                paddingVertical: 8,
+                shadowColor: '#000',
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 6
+            }}
+            contentContainerStyle={{
+                paddingHorizontal: 15
+            }}
+            text1Style={{
+                color: '#ef4444',
+                fontSize: 15,
+                fontWeight: '700'
+            }}
+            text2Style={{
+                color: colors.text,
+                fontSize: 14,
+                fontWeight: '400',
+                marginTop: 2,
+                height: 20
+            }}
+        />
+    ),
+    info: ({ text1, text2 }) => (
+        <View style={{
+            backgroundColor: colors.modalBg,
+            borderLeftWidth: 4,
+            borderLeftColor: colors.highlight,
+            borderWidth: border,
+            borderColor: colors.border,
+            borderRadius: variables.radius.lg,
+            paddingHorizontal: 15,
+            paddingVertical: 10,
+            shadowColor: '#000',
+            shadowOpacity: 0.2,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 6,
+            width: '80%',
+            alignSelf: 'center'
+        }}>
+            <Text style={{
+                color: colors.highlight,
+                fontSize: 15,
+                fontWeight: '700',
+                height: 20
+            }}>
+                {text1}
+            </Text>
+            {text2 ? (
+                <Text style={{
+                    color: colors.text,
+                    fontSize: 14,
+                    fontWeight: '400',
+                    marginTop: 2,
+                    height: 20
+                }}>
+                    {text2}
+                </Text>
+            ) : null}
+        </View>
+    )
+});
 
 
 /*

@@ -28,10 +28,12 @@ const ConfirmationBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
+    const [isReallyVisible, setIsReallyVisible] = useState(false);
     const { isBorder, headerMode, border } = useTheme();
 
     useEffect(() => {
         if (visible) {
+            setIsReallyVisible(true);
             showBottomSheet();
         } else {
             hideBottomSheet();
@@ -65,16 +67,19 @@ const ConfirmationBottomSheet = ({
                 duration: 250,
                 useNativeDriver: true,
             }),
-        ]).start();
+        ]).start(() => {
+            setIsReallyVisible(false);
+            onClose();
+        });
     };
 
     const handleConfirm = () => {
         onConfirm();
-        onClose();
+        hideBottomSheet();
     };
 
     const handleCancel = () => {
-        onClose();
+        hideBottomSheet();
     };
 
     const styles = StyleSheet.create({
@@ -169,11 +174,9 @@ const ConfirmationBottomSheet = ({
         },
     });
 
-    if (!visible) return null;
-
     return (
         <Modal
-            visible={visible}
+            visible={isReallyVisible}
             transparent
             animationType="none"
             onRequestClose={handleCancel}

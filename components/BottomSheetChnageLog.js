@@ -21,11 +21,13 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
     const [lastShownVersion, setLastShownVersionState] = useState(null);
+    const [isReallyVisible, setIsReallyVisible] = useState(false);
+    const [selectedTag, setSelectedTag] = useState("all");
 
     const { colors, variables, isBorder, headerMode, border } = useTheme();
 
     const latest = changelog[0];
-    const updateNeeded = (!forced && lastShownVersion !== latest.version && latest.version === appVersion);
+    const updateNeeded = (lastShownVersion !== latest.version && latest.version !== appVersion);
 
     useEffect(() => {
         const fetchVersion = async () => {
@@ -37,34 +39,68 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
 
     useEffect(() => {
         if (visible) {
-            Animated.parallel([
-                Animated.timing(translateY, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(opacity, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-            if (!forced) setLastShownVersion(latest.version);
+            setIsReallyVisible(true);
+            showBottomSheet();
+            if (!forced) setLastShownVersion(appVersion);
         } else {
-            Animated.parallel([
-                Animated.timing(translateY, {
-                    toValue: screenHeight,
-                    duration: 250,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(opacity, {
-                    toValue: 0,
-                    duration: 250,
-                    useNativeDriver: true,
-                }),
-            ]).start();
+            hideBottomSheet();
         }
     }, [visible]);
+
+    const showBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
+    const hideBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: screenHeight,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setIsReallyVisible(false);
+            onClose();
+        });
+    };
+
+    const handleClose = () => {
+        hideBottomSheet();
+    };
+
+    const getBulletColor = (type) => {
+        switch (type) {
+            case "new": return "#4CAF50";
+            case "improved": return "#2196F3";
+            case "fixed": return "#F44336";
+            case "wip": return "#FF9800";
+            case "removed": return "#9C27B0";
+            case "security": return "#009688";
+            default: return colors.text;
+        }
+    };
+
+    const tags = ["all", ...new Set(latest.changes.map(c => c.type))];
+
+    const filteredChanges = selectedTag === "all"
+        ? latest.changes
+        : latest.changes.filter(change => change.type === selectedTag);
 
     const styles = StyleSheet.create({
         overlay: {
@@ -118,14 +154,19 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
             paddingVertical: 6,
             borderRadius: variables.radius.circle
         },
+        pill: {
+            borderWidth: 1,
+            borderRadius: 20,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            marginRight: 8,
+            marginBottom: 8
+        },
         changeItem: {
             flexDirection: 'row',
             alignItems: 'flex-start',
             marginBottom: 12,
             paddingHorizontal: 20,
-        },
-        changeTextContainer: {
-            flex: 1,
         },
         changeText: {
             fontSize: 15,
@@ -135,9 +176,8 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
         bullet: {
             width: 6,
             height: 6,
-            backgroundColor: colors.text,
             borderRadius: 3,
-            marginTop: 6,
+            marginTop: 7,
             marginRight: 10,
         },
         majorNotice: {
@@ -153,6 +193,7 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
             borderRadius: 10,
             alignItems: 'center',
             marginTop: 10,
+            marginHorizontal: 20,
         },
         updateButtonText: {
             color: colors.background,
@@ -170,21 +211,21 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
 
     return (
         <Modal
-            visible={visible}
+            visible={isReallyVisible}
             transparent
             animationType="none"
-            onRequestClose={onClose}
+            onRequestClose={() => { if (!(latest.major && updateNeeded)) onClose(); }}
             statusBarTranslucent
         >
             <Animated.View style={[styles.overlay, { opacity }]}>
                 <TouchableOpacity
                     style={{ flex: 1 }}
-                    onPress={onClose}
+                    onPress={() => {
+                        if (!(latest.major && updateNeeded)) onClose();
+                    }}
                     activeOpacity={1}
                 />
-                <Animated.View
-                    style={[styles.bottomSheet, { transform: [{ translateY }] }]}
-                >
+                <Animated.View style={[styles.bottomSheet, { transform: [{ translateY }] }]}>
                     <View style={styles.handle} />
                     <View style={styles.header}>
                         <Icons.Ion name="sparkles" size={20} color={colors.text} />
@@ -195,6 +236,37 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
                     </View>
 
                     <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: 20 }}>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 15 }}>
+                            {tags.map((tag, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    onPress={() => setSelectedTag(tag)}
+                                    activeOpacity={0.8}
+                                    style={[
+                                        styles.pill,
+                                        {
+                                            backgroundColor: selectedTag === tag
+                                                ? getBulletColor(tag)
+                                                : (tag === "all" ? colors.modalBg : getBulletColor(tag) + '20'),
+                                            borderColor: selectedTag === tag
+                                                ? getBulletColor(tag)
+                                                : (tag === "all" ? colors.border : getBulletColor(tag) + 'c0')
+                                        }
+                                    ]}
+                                >
+                                    <Text style={{
+                                        color: selectedTag === tag
+                                            ? colors.background
+                                            : (tag === "all" ? colors.text : getBulletColor(tag)),
+                                        fontSize: 14,
+                                        fontWeight: '600'
+                                    }}>
+                                        {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
                         <Text style={[styles.titleText, { fontSize: 16, marginBottom: 20 }]}>
                             {latest.title}
                         </Text>
@@ -205,19 +277,17 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
                             </Text>
                         )}
 
-                        {latest.changes.map((change, idx) => (
+                        {filteredChanges.map((change, idx) => (
                             <View key={idx} style={styles.changeItem}>
-                                <View style={styles.bullet} />
-                                <View style={styles.changeTextContainer}>
-                                    <Text style={styles.changeText}>{change}</Text>
-                                </View>
+                                <View style={[styles.bullet, { backgroundColor: getBulletColor(change.type) }]} />
+                                <Text style={styles.changeText}>{change.text}</Text>
                             </View>
                         ))}
 
                         {latest.major && updateNeeded && (
                             <TouchableOpacity
                                 style={styles.updateButton}
-                                onPress={() => Linking.openURL("https://github.com/YourRepo/releases")}
+                                onPress={() => Linking.openURL("https://github.com/FarhanZafarr-9/Timers/releases")}
                                 activeOpacity={0.8}
                             >
                                 <Text style={styles.updateButtonText}>Go to Update Page</Text>

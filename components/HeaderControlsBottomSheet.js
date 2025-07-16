@@ -28,11 +28,16 @@ const HeaderControlsBottomSheet = ({
 }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
+    const [isReallyVisible, setIsReallyVisible] = useState(false);
     const { isBorder, headerMode, border } = useTheme();
 
     useEffect(() => {
-        if (visible) showBottomSheet();
-        else hideBottomSheet();
+        if (visible) {
+            setIsReallyVisible(true);
+            showBottomSheet();
+        } else {
+            hideBottomSheet();
+        }
     }, [visible]);
 
     const showBottomSheet = () => {
@@ -62,7 +67,25 @@ const HeaderControlsBottomSheet = ({
                 duration: 250,
                 useNativeDriver: true,
             }),
-        ]).start();
+        ]).start(() => {
+            setIsReallyVisible(false);
+            onClose();
+        });
+    };
+
+    const handleAdd = () => {
+        onAdd();
+        hideBottomSheet();
+    };
+
+    const handleBatchToggle = () => {
+        onBatchToggle();
+        hideBottomSheet();
+    };
+
+    const handleSortChange = (val) => {
+        onSortChange(val);
+        hideBottomSheet();
     };
 
     const styles = StyleSheet.create({
@@ -154,20 +177,18 @@ const HeaderControlsBottomSheet = ({
         },
     });
 
-    if (!visible) return null;
-
     return (
         <Modal
-            visible={visible}
+            visible={isReallyVisible}
             transparent
             animationType="none"
-            onRequestClose={onClose}
+            onRequestClose={hideBottomSheet}
             statusBarTranslucent
         >
             <Animated.View style={[styles.overlay, { opacity }]}>
                 <TouchableOpacity
                     style={{ flex: 1 }}
-                    onPress={onClose}
+                    onPress={hideBottomSheet}
                     activeOpacity={1}
                 />
                 <Animated.View
@@ -182,7 +203,7 @@ const HeaderControlsBottomSheet = ({
                             <BottomSheetPicker
                                 value={sortValue}
                                 options={sortOptions}
-                                onChange={(val) => { onSortChange(val); onClose(); }}
+                                onChange={handleSortChange}
                                 placeholder="Sort by"
                                 colors={colors}
                                 variables={variables}
@@ -194,7 +215,7 @@ const HeaderControlsBottomSheet = ({
                             {/* Batch Delete Toggle */}
                             <TouchableOpacity
                                 style={[styles.button, styles.deleteButton]}
-                                onPress={() => { onBatchToggle(); onClose(); }}
+                                onPress={handleBatchToggle}
                                 activeOpacity={0.8}
                             >
                                 <MaterialIcons
@@ -210,7 +231,7 @@ const HeaderControlsBottomSheet = ({
                             {/* Add Button */}
                             <TouchableOpacity
                                 style={[styles.button, styles.addButton]}
-                                onPress={() => { onAdd(); onClose(); }}
+                                onPress={handleAdd}
                                 activeOpacity={0.8}
                             >
                                 <MaterialIcons name="add" size={16} color={colors.background} />

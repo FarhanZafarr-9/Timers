@@ -12,17 +12,17 @@ import Snackbar from '../components/SnackBar';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions } from '../utils/functions';
+import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions } from '../utils/functions';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
 import ModernSwitch from '../components/ModernSwitch';
 import BottomSheetChangelog from '../components/BottomSheetChnageLog';
 import { checkForUpdateAndReload } from '../utils/functions';
+import Toast from 'react-native-toast-message';
 
 export default function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
 
     const {
-        theme,
         accentMode,
         setAccentModeState,
         colors,
@@ -35,10 +35,13 @@ export default function SettingsScreen() {
         setHeaderMode,
         borderMode,
         setBorderMode,
-        isBorder,
         border,
         layoutMode,
-        setLayoutMode
+        setLayoutMode,
+        progressMode,
+        setProgressMode,
+        defaultUnit,
+        setDefaultUnit,
     } = useTheme();
 
     const {
@@ -66,7 +69,6 @@ export default function SettingsScreen() {
 
     const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
-    const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const [populateDisabled, setPopulateDisabled] = useState(false);
     const [passwordModalMode, setPasswordModalMode] = useState('set');
     const [confirmVisible, setConfirmVisible] = useState(false);
@@ -75,17 +77,21 @@ export default function SettingsScreen() {
     const [showExtra, setShowExtra] = useState(0);
     const DIRECTORY_KEY = 'download_directory_uri';
     const [mounted, setMounted] = useState(false);
-    const [messages, setMessages] = useState([]);
     const [directoryUri, setDirectoryUri] = useState(null);
     const [showChangelog, setShowChangelog] = useState(false);
 
-    const addMessage = useCallback((text) => {
-        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setMessages(prev => [...prev, { id, text }]);
-    }, []);
+    const showToast = (type, text1, text2 = '') => {
+        Toast.show({
+            type,
+            text1,
+            text2,
+        });
+    };
 
-    const removeMessage = useCallback((messageId) => {
-        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const addMessage = useCallback((text, type = 'info') => {
+        showToast(type, capitalize(type), text);
     }, []);
 
     const handleReportBug = () => {
@@ -266,7 +272,7 @@ export default function SettingsScreen() {
     const clearTimers = async () => {
         showConfirm('Are you sure you want to clear all timers?', async () => {
             await clearAllTimers();
-            addMessage('All timers have been cleared.');
+            addMessage('All timers have been cleared.', 'success');
         });
     };
 
@@ -274,7 +280,7 @@ export default function SettingsScreen() {
         if (populateDisabled) return;
         setPopulateDisabled(true);
         await initializeTimers();
-        addMessage('Sample timers have been added.');
+        addMessage('Sample timers have been added.', 'success');
         setTimeout(() => setPopulateDisabled(false), 2000);
     };
 
@@ -285,7 +291,7 @@ export default function SettingsScreen() {
                 addMessage('Please select an export folder first');
                 const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
                 if (!permission.granted) {
-                    addMessage('Export cancelled - no folder selected');
+                    addMessage('Export cancelled - no folder selected', 'error');
                     return;
                 }
                 const uri = permission.directoryUri;
@@ -308,10 +314,10 @@ export default function SettingsScreen() {
                 encoding: FileSystem.EncodingType.UTF8,
             });
 
-            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}`);
+            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}`, 'success');
         } catch (err) {
             console.log('[EXPORT ERROR]', err);
-            addMessage('Export failed: ' + (err.message || ''));
+            addMessage('Export failed: ' + (err.message || ''), 'error');
         }
     };
 
@@ -331,15 +337,15 @@ export default function SettingsScreen() {
                 if (Array.isArray(loadedTimers)) {
                     const timers = loadedTimers.map(obj => new Timer(obj));
                     setTimersAndSave(timers);
-                    addMessage('Timers loaded from JSON.');
+                    addMessage('Timers loaded from JSON.', 'success');
                 } else {
-                    addMessage('Invalid JSON format.');
+                    addMessage('Invalid JSON format.', 'error');
                 }
             } else {
                 addMessage('No file selected.');
             }
         } catch (e) {
-            addMessage('Failed to load timers.');
+            addMessage('Failed to load timers.', 'error');
         }
     };
 
@@ -389,14 +395,6 @@ export default function SettingsScreen() {
             paddingX={15}
         >
             {mounted && <>
-                {messages.map((msg, idx) => (
-                    <Snackbar
-                        key={msg.id}
-                        text={msg.text}
-                        onClose={() => removeMessage(msg.id)}
-                        style={{ bottom: 300 + (messages.length - 1 - idx) * 48 }}
-                    />
-                ))}
 
                 {/* APPEARANCE SETTINGS */}
                 <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
@@ -443,6 +441,26 @@ export default function SettingsScreen() {
                                 variables={variables}
                                 defaultValue={'default'}
                                 pillsPerRow={3}
+                            />
+                        </TouchableOpacity>
+
+                        {/* Theme Mode Picker */}
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
+                            <Icons.Ion name='analytics-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Progress</Text>
+                                <Text style={styles.settingDesc}>Choose progress mode</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={progressMode}
+                                options={progressOptions}
+                                onChange={setProgressMode}
+                                title={'Progress'}
+                                placeholder="Select progress"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue={'linear'}
+                                note={'Wavy motion might be more battery performant and jittery, its still under development'}
                             />
                         </TouchableOpacity>
 
@@ -517,6 +535,37 @@ export default function SettingsScreen() {
                             />
                         </TouchableOpacity>
 
+                        {layoutMode === 'grid' && (
+                            <TouchableOpacity
+                                style={styles.settingBlock}
+                                onPress={() => {
+                                    const newUnit = defaultUnit !== 'seconds' ? 'seconds' : 'auto';
+                                    addMessage(`Default unit set to ${newUnit}.`, 'info');
+                                    setDefaultUnit(newUnit);
+                                }}
+                            >
+                                <Icons.Ion name='speedometer-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                                <View style={styles.settingTextBlock}>
+                                    <Text style={styles.settingTitle}>Default Unit</Text>
+                                    <Text style={styles.settingDesc}>Set the default unit as seconds</Text>
+                                </View>
+                                <ModernSwitch
+                                    value={defaultUnit === 'seconds'}
+                                    onValueChange={() => {
+                                        const newUnit = defaultUnit !== 'seconds' ? 'seconds' : 'auto';
+                                        addMessage(`Default unit set to ${newUnit}.`, 'info');
+                                        setDefaultUnit(newUnit);
+                                    }}
+                                    trackColor={{
+                                        false: colors.switchTrack,
+                                        true: colors.switchTrackActive,
+                                    }}
+                                    thumbColor={!(defaultUnit === 'seconds') ? colors.switchThumbActive : colors.switchThumb}
+                                    style={{ transform: [{ scaleY: 1 }] }}
+                                />
+                            </TouchableOpacity>
+                        )}
+
                         {/* Navigation Mode Picker */}
                         <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
                             <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
@@ -549,12 +598,30 @@ export default function SettingsScreen() {
                     opacity: card3Opacity
                 }}>
                     <View style={styles.card}>
+                        {/* Privacy Mode Picker */}
+                        <TouchableOpacity style={[styles.settingBlock]} activeOpacity={1} >
+                            <Icons.Ion name="eye-off-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Privacy Mode</Text>
+                                <Text style={styles.settingDesc}>Masks timer names and titles</Text>
+                            </View>
+                            <BottomSheetPicker
+                                value={privacyMode}
+                                options={privacyOptions}
+                                onChange={setPrivacyModeValue}
+                                title={'Privacy'}
+                                placeholder="Select mode"
+                                colors={colors}
+                                variables={variables}
+                            />
+                        </TouchableOpacity>
+
                         {/* Fingerprint Unlock */}
                         {isSensorAvailable ? (
                             <TouchableOpacity
                                 style={styles.settingBlock}
                                 onPress={() => {
-                                    addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
+                                    addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`, 'info');
                                     toggleFingerprint();
                                 }}
                             >
@@ -566,7 +633,7 @@ export default function SettingsScreen() {
                                 <ModernSwitch
                                     value={!!isFingerprintEnabled}
                                     onValueChange={() => {
-                                        addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`);
+                                        addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`, 'info');
                                         toggleFingerprint();
                                     }}
                                     trackColor={{
@@ -581,7 +648,11 @@ export default function SettingsScreen() {
 
                         {/* Password Lock */}
                         <TouchableOpacity
-                            style={styles.settingBlock}
+                            style={[
+                                styles.settingBlock,
+                                isPasswordLockEnabled ? {} : { borderBottomWidth: 0 }
+                            ]}
+
                             onPress={() => {
                                 if (loading) return;
                                 if (!isPasswordLockEnabled) {
@@ -612,7 +683,7 @@ export default function SettingsScreen() {
                                         setPasswordModalVisible(true);
                                     } else {
                                         clearPassword();
-                                        addMessage('Password lock disabled.');
+                                        addMessage('Password lock disabled.', 'info');
                                     }
                                 }}
                                 trackColor={{
@@ -642,24 +713,6 @@ export default function SettingsScreen() {
                                 </Text>
                             </View>
                         </TouchableOpacity>}
-
-                        {/* Privacy Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock, (isFingerprintEnabled || isPasswordLockEnabled) ? {} : { borderBottomWidth: 0 }]} activeOpacity={1} >
-                            <Icons.Ion name="eye-off-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Privacy Mode</Text>
-                                <Text style={styles.settingDesc}>Masks timer names and titles</Text>
-                            </View>
-                            <BottomSheetPicker
-                                value={privacyMode}
-                                options={privacyOptions}
-                                onChange={setPrivacyModeValue}
-                                title={'Privacy'}
-                                placeholder="Select mode"
-                                colors={colors}
-                                variables={variables}
-                            />
-                        </TouchableOpacity>
 
                         {/* Lockout Option Picker */}
                         {shouldUseLockout() && <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
@@ -746,10 +799,10 @@ export default function SettingsScreen() {
                                         const uri = permission.directoryUri;
                                         await AsyncStorage.setItem(DIRECTORY_KEY, uri);
                                         setDirectoryUri(uri);
-                                        addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`);
+                                        addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`, 'info');
                                     }
                                 } catch (err) {
-                                    addMessage('Failed to change directory');
+                                    addMessage('Failed to change directory', 'error');
                                 }
                             }}
                         >
@@ -798,7 +851,7 @@ export default function SettingsScreen() {
                             onPress={async () => {
                                 const status = await checkForUpdateAndReload();
                                 if (status === 'up-to-date') {
-                                    addMessage('Already on latest version');
+                                    addMessage('Already on latest version', 'success');
                                 }
                             }}
                         >
@@ -862,7 +915,7 @@ export default function SettingsScreen() {
                         onSave={(newPassword) => {
                             savePassword(newPassword);
                             setPasswordModalVisible(false);
-                            addMessage('Password updated.');
+                            addMessage('Password updated.', 'success');
                         }}
                         currentPassword={password}
                         mode={passwordModalMode}
@@ -873,6 +926,6 @@ export default function SettingsScreen() {
 
                 <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </>}
-        </ScreenWithHeader>
+        </ScreenWithHeader >
     );
 }

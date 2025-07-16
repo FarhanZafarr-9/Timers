@@ -1,25 +1,39 @@
+// React & React Native core
 import { useEffect, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+
+// Navigation
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+// Screens
 import HomeScreen from './screens/HomeScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AboutScreen from './screens/AboutScreen';
-import CustomTabBar from './components/CustomTabBar';
 import TimersScreen from './screens/TimersScreen';
-import { TimerProvider } from './utils/TimerContext';
-import { StatusBar } from 'expo-status-bar';
-
-import { SecurityProvider, useSecurity } from './utils/SecurityContext';
-import AuthComponent from './utils/AuthComponent';
-import { ThemeProvider, useTheme } from './utils/ThemeContext';
-import { DataProvider } from './utils/DataContext';
+import PomodoroScreen from './screens/PomodoroScreen';
 import SplashScreen from './screens/SplashScreen';
-import { useCheckForUpdate } from './utils/useCheckForUpdate';
+
+// Components
+import CustomTabBar from './components/CustomTabBar';
+import Toast from 'react-native-toast-message';
+import AuthComponent from './utils/AuthComponent';
 import BottomSheetChangelog from './components/BottomSheetChnageLog';
 
+// Context Providers
+import { TimerProvider } from './utils/TimerContext';
+import { SecurityProvider, useSecurity } from './utils/SecurityContext';
+import { ThemeProvider, useTheme } from './utils/ThemeContext';
+import { DataProvider } from './utils/DataContext';
+
+// Hooks
+import { useCheckForUpdate } from './utils/useCheckForUpdate';
+
+// Utils & Helpers
 import { initializeNotifications } from './utils/Notificationhelper';
-import * as Notifications from 'expo-notifications';
-import { checkForUpdateAndReload } from './utils/functions'
+import { checkForUpdateAndReload, toastConfig } from './utils/functions';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function useForceUpdateOnLoad() {
   useEffect(() => {
@@ -30,8 +44,9 @@ export function useForceUpdateOnLoad() {
 const Tab = createBottomTabNavigator();
 
 function AppContent() {
+
   useForceUpdateOnLoad();
-  const { variables, colors } = useTheme();
+  const { variables, colors, border } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
   const [splashDone, setSplashDone] = useState(false);
@@ -44,21 +59,7 @@ function AppContent() {
 
   useEffect(() => {
     initializeNotifications();
-
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📱 Notification received:', notification);
-    });
-
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('👆 Notification tapped:', response);
-    });
-
-    return () => {
-      notificationListener.remove();
-      responseListener.remove();
-    };
   }, []);
-
 
   if ((showSplash && !splashDone) || loading) {
     return (
@@ -81,12 +82,14 @@ function AppContent() {
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
             <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
+            <Tab.Screen name="Pomodoro" component={PomodoroScreen} />
             <Tab.Screen name="Settings" component={SettingsScreen} />
             <Tab.Screen name="About" component={AboutScreen} />
           </Tab.Navigator>
         </NavigationContainer>
       </AuthComponent>
       <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} />
+      <Toast config={toastConfig(colors, variables, border)} />
     </>
   );
 }
