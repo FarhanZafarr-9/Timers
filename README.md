@@ -90,7 +90,7 @@ ChronoX/
   <img src="screenshots/CountUps.jpg" alt="CountUps" width="250" />
   <img src="screenshots/Pomodoro.jpg" alt="Pomodoro Timer" width="250" />
   <img src="screenshots/AboutScreen.jpg" alt="About Screen" width="250" />
-  <img src="screenshots/SetingsTop.jpg" alt="Settings Top" width="250" />
+  <img src="screenshots/SettingsTop.jpg" alt="Settings Top" width="250" />
   <img src="screenshots/SettingsMiddle.jpg" alt="Settings Middle" width="250" />
   <img src="screenshots/SettingsBottom.jpg" alt="Settings Bottom" width="250" />
   <img src="screenshots/AboutMe.jpg" alt="About Me" width="250" />
