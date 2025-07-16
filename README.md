@@ -84,9 +84,17 @@ ChronoX/
 > _A glimpse into the current design (more screenshots & GIFs soon!)_
 
 <div style="display: flex; flex-wrap: wrap; gap: 30px;">
-  <img src="screenshots/home.png" alt="Home Screen" width="250" />
-  <img src="screenshots/timer.png" alt="Timer Detail" width="250" />
-  <img src="screenshots/settings.png" alt="Settings Screen" width="250" />
+  <img src="screenshots/InitialScreen.png" alt="Initial Screen" width="250" />
+  <img src="screenshots/HomeScreen.png" alt="Home Screen" width="250" />
+  <img src="screenshots/CountDowns.png" alt="CountDowns" width="250" />
+  <img src="screenshots/CountUps.png" alt="CountUps" width="250" />
+  <img src="screenshots/Pomodoro.png" alt="Pomodoro Timer" width="250" />
+  <img src="screenshots/AboutScreen.png" alt="About Screen" width="250" />
+  <img src="screenshots/SetingsTop.png" alt="Settings Top" width="250" />
+  <img src="screenshots/SettingsMiddle.png" alt="Settings Middle" width="250" />
+  <img src="screenshots/SettingsBottom.png" alt="Settings Bottom" width="250" />
+  <img src="screenshots/AboutMe.png" alt="About Me" width="250" />
+  <img src="screenshots/ListLayout.png" alt="List Layout" width="250" />
 </div>
 
 ---
