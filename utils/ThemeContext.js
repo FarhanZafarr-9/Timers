@@ -860,7 +860,7 @@ const normalizeDefaultUnit = (unit) => {
     if (VALID_UNITS.includes(unit)) {
         return unit;
     }
-    return 'seconds';
+    return 'auto';
 };
 
 const getSystemTheme = () => {
@@ -881,7 +881,7 @@ export const ThemeProvider = ({ children }) => {
     const [headerMode, setHeaderMode] = useState('minimized');
     const [progressMode, setProgressMode] = useState('linear');
     const [borderMode, setBorderMode] = useState('subtle');
-    const [defaultUnit, setDefaultUnit] = useState('seconds');
+    const [defaultUnit, setDefaultUnit] = useState('auto');
     const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
 
@@ -910,7 +910,7 @@ export const ThemeProvider = ({ children }) => {
                     const loadedLayoutMode = storedLayoutMode !== null ? storedLayoutMode : 'list';
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
                     const loadedProgressMode = storedProgressMode !== null ? storedProgressMode : 'linear';
-                    const loadedDefaultUnit = storedDefaultUnit !== null ? storedDefaultUnit : 'seconds';
+                    const loadedDefaultUnit = storedDefaultUnit !== null ? storedDefaultUnit : 'auto';
 
                     setDefaultUnit(loadedDefaultUnit);
                     setThemeModeState(loadedTheme);

@@ -63,7 +63,7 @@ export const privacyOptions = [
     { label: 'Mask', value: 'mask', icon: <Icons.Ion name="lock-closed-outline" size={16} />, description: 'Mask out title and names on screen' },
     { label: 'Jumble', value: 'jumble', icon: <Icons.Ion name="shuffle-outline" size={16} />, description: 'Scramble title and names into unreadable words' },
     { label: 'Invisible', value: 'invisible', icon: <Icons.Ion name="eye-off-outline" size={16} />, description: 'Hide title and names entirely until changed' },
-    { label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
+    //{ label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
 ];
 
 export const lockoutOptions = [

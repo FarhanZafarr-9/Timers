@@ -32,13 +32,16 @@ const TimerCard = ({
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
-    const titleText = timer.title && timer.title.length > 12
+    const isLongTitle = timer.title && timer.title.length > 12;
+    const titleText = isLongTitle
         ? timer.title.slice(0, 12) + '…'
         : timer.title;
 
-    const nameText = timer.personName && timer.personName.length > 12
+    const isLongName = timer.personName && timer.personName.length > 12;
+    const nameText = isLongName
         ? timer.personName.slice(0, 12) + '…'
         : timer.personName;
+
     const { privacyMode } = useSecurity();
     const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
     const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
@@ -353,7 +356,7 @@ const TimerCard = ({
             },
             timerTitle: {
                 color: colors.textDesc,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 8 : 16,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 14 : 16,
                 fontWeight: 'bold',
                 paddingLeft: 6,
                 height: 25
@@ -394,7 +397,7 @@ const TimerCard = ({
                 borderWidth: border,
                 borderColor: colors.border,
                 color: colors.text,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : 12,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : (isLongName && isLongTitle) ? 10 : 12,
                 fontWeight: 'bold',
             },
             midSection: {
@@ -430,14 +433,14 @@ const TimerCard = ({
             },
             overlayTitle: {
                 color: colors.text,
-                fontSize: 20,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 16 : 20,
                 fontWeight: 'bold',
                 marginBottom: 8,
                 height: 28,
             },
             overlayPersonName: {
                 color: colors.textDesc,
-                fontSize: 14,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12 : (isLongName && isLongTitle) ? 12 : 14,
                 fontWeight: '500',
                 marginBottom: 16,
                 height: 20
