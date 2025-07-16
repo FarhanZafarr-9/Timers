@@ -372,9 +372,30 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.24';
+export const appVersion = '1.0.26';
 
 export const changelog = [
+    {
+        "version": "1.0.26",
+        "date": "2025-07-16",
+        "title": "Waves, Toasts & Grid Refinements",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Added wave progress animations (experimental)" },
+            { "type": "new", "text": "Introduced toast message notifications for quick feedback" },
+            { "type": "fixed", "text": "Resolved grid layout issues causing overflow and misalignment" },
+            { "type": "fixed", "text": "Fixed missing import for Linking causing crash on update page open" },
+            { "type": "fixed", "text": "Fixed icon clipping on small widths in timer cards and settings" },
+            { "type": "fixed", "text": "Fixed icon and text alignment on minimized header mode" },
+            { "type": "fixed", "text": "Minor internal optimizations and cleanup" },
+            { "type": "improved", "text": "Polished grid card styling for better balance and visuals" },
+            { "type": "improved", "text": "Enhanced timer card prop handling to support varied layouts" },
+            { "type": "improved", "text": "Better font and size adaptation in privacy modes to fit width gracefully" },
+            { "type": "wip", "text": "Wave progress might lag or feel jittery; optimizations in progress" },
+            { "type": "wip", "text": "Some jerkiness and lag is anticipated and will be fixed soon!" },
+            { "type": "wip", "text": "New Pomodoro Timer page coming soon!" }
+        ]
+    },
     {
         "version": "1.0.25",
         "date": "2025-07-16",
