@@ -32,32 +32,54 @@ const ExportBottomSheet = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isExporting, setIsExporting] = useState(false);
     const [currentAction, setCurrentAction] = useState(null);
+    const [isReallyVisible, setIsReallyVisible] = useState(false);
     const { border } = useTheme();
 
     useEffect(() => {
         if (visible) {
-            Animated.parallel([
-                Animated.timing(slideAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-            ]).start();
+            setIsReallyVisible(true);
+            showBottomSheet();
         } else {
-            slideAnim.setValue(screenHeight);
-            fadeAnim.setValue(0);
-            setCurrentAction(null);
+            hideBottomSheet();
         }
     }, [visible]);
 
+    const showBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
+    const hideBottomSheet = () => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: screenHeight,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setIsReallyVisible(false);
+            onClose();
+        });
+    };
+
     const closeSheet = () => {
         if (isExporting) return;
-        onClose();
+        hideBottomSheet();
     };
 
     const getOrRequestDirectory = async () => {
@@ -266,7 +288,7 @@ const ExportBottomSheet = ({
             color: colors.highlight,
         },
         shareButtonText: {
-            color: colors.text,
+            color: colors.highlight,
         },
         cancelButton: {
             backgroundColor: colors.cardLighter,
@@ -321,7 +343,7 @@ const ExportBottomSheet = ({
                 ) : (
                     <>
                         <Icons.Ion name={iconName} size={18} color={
-                            action === 'share' ? colors.text : colors.highlight
+                            colors.highlight
                         } />
                         <Text style={[
                             styles.actionButtonText,
@@ -339,7 +361,7 @@ const ExportBottomSheet = ({
 
     return (
         <Modal
-            visible={visible}
+            visible={isReallyVisible}
             transparent={true}
             animationType="none"
             onRequestClose={closeSheet}

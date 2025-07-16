@@ -13,7 +13,8 @@ import { getPrivacyText } from '../utils/functions';
 export default function HomeScreen({ navigation }) {
     const { timers, addTimer } = useTimers();
     const [quickAddVisible, setQuickAddVisible] = useState(false);
-    const { variables, colors, isBorder, border, layoutMode } = useTheme();
+    const { variables, colors, isBorder, border, layoutMode, defaultUnit
+    } = useTheme();
     const { privacyMode } = useSecurity();
 
     const quickActionsOpacity = useRef(new Animated.Value(0)).current;
@@ -437,6 +438,8 @@ export default function HomeScreen({ navigation }) {
                                         isCountdown={timer.isCountdown}
                                         searchText=""
                                         butons="off"
+                                        defaultUnit={defaultUnit}
+                                        layoutMode={'list'}
                                     />
                                 ))}
                             </>) : (<>

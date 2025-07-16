@@ -71,7 +71,7 @@ export default function CollapsibleHeader({
             backgroundColor: colors.settingBlock,
             flexDirection: 'row',
             alignItems: headerMode === 'fixed' ? 'flex-end' : 'center',
-            paddingBottom: headerMode === 'fixed' ?5 : 0,
+            paddingBottom: headerMode === 'fixed' ? 5 : 0,
             paddingTop: headerMode === 'fixed' ? 25 : 0,
             gap: 12,
         },
@@ -113,7 +113,7 @@ export default function CollapsibleHeader({
                         {React.cloneElement(icon, { size: 26, paddingTop: 5 })}
                     </View>
                     <Animated.Text
-                        style={[styles.title, { fontSize: 16, marginLeft: 0, color: colors.text }]}
+                        style={[styles.title, { fontSize: 16, marginLeft: 0, marginTop: 5, color: colors.text }]}
                         numberOfLines={1}
                     >
                         {title}

@@ -6,6 +6,7 @@ import ScreenWithHeader from '../components/ScreenWithHeder';
 import { appVersion } from '../utils/functions';
 import { showToast, appBuild } from '../utils/functions';
 import AboutMeModal from '../components/AboutMeModal';
+import Toast from 'react-native-toast-message';
 
 export default function AboutScreen() {
     const { variables, colors, isBorder, border } = useTheme();
@@ -41,6 +42,14 @@ export default function AboutScreen() {
             ]),
         ]).start();
     }, []);
+
+    const showToast = () => {
+        Toast.show({
+            type: 'info',
+            text1: 'ChronoX',
+            text2: 'This is a beta version and might have bugs.',
+        });
+    }
 
     const handleOpenLink = (url) => {
         Linking.openURL(url).catch(err => console.error("Failed to open URL:", err));
@@ -129,9 +138,9 @@ export default function AboutScreen() {
                     <Image source={require('../assets/logo.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>ChronoX</Text>
-                        <View >
+                        <TouchableOpacity onPress={showToast} >
                             <Text style={styles.versionText}>v{appVersion} - {appBuild}</Text>
-                        </View>
+                        </TouchableOpacity>
                     </View>
                 </Animated.View>
 

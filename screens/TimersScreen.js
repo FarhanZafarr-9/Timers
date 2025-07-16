@@ -12,12 +12,13 @@ import { sortOptions } from '../utils/functions';
 import Snackbar from '../components/SnackBar';
 import uuid from 'react-native-uuid';
 import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet'
+import Toast from 'react-native-toast-message';
 
 export default function TimersScreen({ route }) {
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
-    const { variables, colors, isBorder, border, layoutMode } = useTheme();
+    const { variables, colors, isBorder, border, layoutMode, defaultUnit } = useTheme();
     const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -33,13 +34,18 @@ export default function TimersScreen({ route }) {
     const [confirmAction, setConfirmAction] = useState(() => () => { });
     const [timerToDelete, setTimerToDelete] = useState(null);
 
-    const addMessage = useCallback((text) => {
-        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setMessages(prev => [...prev, { id, text }]);
-    }, []);
+    const showToast = (type, text1, text2 = '') => {
+        Toast.show({
+            type,
+            text1,
+            text2,
+        });
+    };
 
-    const removeMessage = useCallback((messageId) => {
-        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const addMessage = useCallback((text, type = 'info') => {
+        showToast(type, capitalize(type), text);
     }, []);
 
     const handleSortChange = useCallback((method) => {
@@ -113,21 +119,21 @@ export default function TimersScreen({ route }) {
             if (editingTimer && !isDuplicate) {
                 await editTimer(newTimer);
                 setEditingTimer(null);
-                addMessage('Timer updated successfully');
+                addMessage('Timer updated successfully', 'success');
             } else if (!isDuplicate) {
                 await addTimer(newTimer);
-                addMessage('Timer added successfully');
+                addMessage('Timer added successfully', 'success');
             } else {
                 const duplicateTimer = {
                     ...newTimer,
                     id: uuid.v4(),
                 };
                 await addTimer(duplicateTimer);
-                addMessage('Timer duplicated successfully');
+                addMessage('Timer duplicated successfully', 'success');
             }
             setModalVisible(false);
         } catch (error) {
-            addMessage('Error saving timer');
+            addMessage('Error saving timer', 'error');
         }
     }, [editingTimer, editTimer, addTimer, addMessage]);
 
@@ -139,7 +145,7 @@ export default function TimersScreen({ route }) {
     const handleDeleteTimer = useCallback(async (id) => {
         try {
             await removeTimer(id);
-            addMessage('Timer deleted');
+            addMessage('Timer deleted', 'success');
 
             setExpandedCardIds(prev => {
                 const newSet = new Set(prev);
@@ -154,7 +160,7 @@ export default function TimersScreen({ route }) {
             });
 
         } catch (error) {
-            addMessage('Error deleting timer');
+            addMessage('Error deleting timer', 'error');
         }
     }, [removeTimer, addMessage]);
 
@@ -206,6 +212,8 @@ export default function TimersScreen({ route }) {
                 isCountdown={isCountdown}
                 searchText={searchQuery}
                 buttons='on'
+                layoutMode={layoutMode}
+                defaultUnit={defaultUnit}
             />
         );
     }
@@ -219,7 +227,7 @@ export default function TimersScreen({ route }) {
 
         try {
             await Promise.all(idsArray.map(id => removeTimer(id)));
-            addMessage(`Deleted ${idsArray.length} timer${idsArray.length > 1 ? 's' : ''}`);
+            addMessage(`Deleted ${idsArray.length} timer${idsArray.length > 1 ? 's' : ''}`, 'success');
             setSelectedIds(new Set());
             setIsSelectable(false);
             setExpandedCardIds(prev => {
@@ -229,7 +237,7 @@ export default function TimersScreen({ route }) {
             });
             setConfirmVisible(false);
         } catch (error) {
-            addMessage('Error deleting timers');
+            addMessage('Error deleting timers', 'error');
         }
     }, [selectedIds, removeTimer, addMessage]);
 
@@ -340,7 +348,7 @@ export default function TimersScreen({ route }) {
     return (
         <>
             <ScreenWithHeader
-                key={layoutMode}
+                key={`layout-${layoutMode}-unit-${defaultUnit}`}
                 headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down' : 'arrow-up'} size={18} color={colors.highlight} />}
                 headerTitle={isCountdown ? "Countdowns" : "Countups"}
                 borderRadius={variables.radius.lg}
@@ -367,15 +375,6 @@ export default function TimersScreen({ route }) {
                     }
                 }}
             />
-
-            {messages.map((msg, idx) => (
-                <Snackbar
-                    key={msg.id}
-                    text={msg.text}
-                    onClose={() => removeMessage(msg.id)}
-                    style={{ bottom: 100 + (messages.length - 1 - idx) * 48 }}
-                />
-            ))}
 
             <ConfirmationBottomSheet
                 visible={confirmVisible}

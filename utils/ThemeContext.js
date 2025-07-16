@@ -7,9 +7,12 @@ const ACCENT_STORAGE_KEY = 'userAccentPreference'
 const NAVIGATION_MODE_KEY = 'navigationModePreference';
 const LAYOUT_MODE_KEY = 'layoutModePreference'
 const HEADER_MODE_KEY = 'headerModePreference';
+const PROGRESS_MODE_KEY = 'progressModePreference';
+const DEFAULT_UNIT_KEY = 'defaultUnitPreference';
 const BORDER_MODE_KEY = 'borderModePreference';
 const VALID_THEMES = ['light', 'dark', 'system'];
 const VALID_ACCENTS = ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate'];
+const VALID_UNITS = ['seconds', 'minutes', 'hours', 'days', 'auto'];
 
 const palettes = {
     light: {
@@ -846,6 +849,20 @@ const normalizeLayoutMode = (mode) => {
     return 'list';
 };
 
+const normalizeProgressMode = (mode) => {
+    if (['linear', 'wave'].includes(mode)) {
+        return mode;
+    }
+    return 'linear';
+};
+
+const normalizeDefaultUnit = (unit) => {
+    if (VALID_UNITS.includes(unit)) {
+        return unit;
+    }
+    return 'seconds';
+};
+
 const getSystemTheme = () => {
     try {
         const systemTheme = Appearance.getColorScheme();
@@ -862,7 +879,9 @@ export const ThemeProvider = ({ children }) => {
     const [navigationMode, setNavigationMode] = useState('floating');
     const [layoutMode, setLayoutMode] = useState('list');
     const [headerMode, setHeaderMode] = useState('minimized');
+    const [progressMode, setProgressMode] = useState('linear');
     const [borderMode, setBorderMode] = useState('subtle');
+    const [defaultUnit, setDefaultUnit] = useState('seconds');
     const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
 
@@ -872,13 +891,15 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedLayoutMode, storedBorderMode] = await Promise.all([
+                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedLayoutMode, storedBorderMode, storedProgressMode, storedDefaultUnit] = await Promise.all([
                     AsyncStorage.getItem(THEME_STORAGE_KEY),
                     AsyncStorage.getItem(ACCENT_STORAGE_KEY),
                     AsyncStorage.getItem(NAVIGATION_MODE_KEY),
                     AsyncStorage.getItem(HEADER_MODE_KEY),
                     AsyncStorage.getItem(LAYOUT_MODE_KEY),
                     AsyncStorage.getItem(BORDER_MODE_KEY),
+                    AsyncStorage.getItem(PROGRESS_MODE_KEY),
+                    AsyncStorage.getItem(DEFAULT_UNIT_KEY)
                 ]);
 
                 if (isMounted) {
@@ -888,13 +909,17 @@ export const ThemeProvider = ({ children }) => {
                     const loadedHeaderMode = storedHeaderMode !== null ? storedHeaderMode : 'minimized';
                     const loadedLayoutMode = storedLayoutMode !== null ? storedLayoutMode : 'list';
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
+                    const loadedProgressMode = storedProgressMode !== null ? storedProgressMode : 'linear';
+                    const loadedDefaultUnit = storedDefaultUnit !== null ? storedDefaultUnit : 'seconds';
 
+                    setDefaultUnit(loadedDefaultUnit);
                     setThemeModeState(loadedTheme);
                     setAccentModeState(loadedAccent);
                     setNavigationMode(loadedFloatingNav);
                     setHeaderMode(loadedHeaderMode);
                     setLayoutMode(loadedLayoutMode)
                     setBorderMode(loadedBorderMode);
+                    setProgressMode(loadedProgressMode);
 
                     // Set initial theme based on loaded preference
                     setTheme(loadedTheme === 'system' ? getSystemTheme() : loadedTheme);
@@ -958,6 +983,22 @@ export const ThemeProvider = ({ children }) => {
         }
     }, [headerMode, isLoading]);
 
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(PROGRESS_MODE_KEY, progressMode).catch(e =>
+                console.warn('Failed to save progress mode preference:', e)
+            );
+        }
+    }, [progressMode, isLoading]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(DEFAULT_UNIT_KEY, defaultUnit).catch(e =>
+                console.warn('Failed to save default unit preference:', e)
+            );
+        }
+    }, [defaultUnit, isLoading]);
+
     // Handle system theme changes and manual theme changes
     useEffect(() => {
         let subscription = null;
@@ -985,6 +1026,14 @@ export const ThemeProvider = ({ children }) => {
             setAccentModeState(accentMode);
         }
     }, [accentMode]);
+
+    // Handle system accent changes and manual accent changes
+    useEffect(() => {
+        const progress = normalizeProgressMode(progressMode);
+        if (progress !== progressMode) {
+            setProgressMode(progressMode);
+        }
+    }, [progressMode]);
 
     // Handle layout mode chnage
     useEffect(() => {
@@ -1017,6 +1066,13 @@ export const ThemeProvider = ({ children }) => {
             setBorderMode(border);
         }
     }, [borderMode]);
+
+    useEffect(() => {
+        const unit = normalizeDefaultUnit(defaultUnit);
+        if (unit !== defaultUnit) {
+            setDefaultUnit(unit);
+        }
+    }, [defaultUnit]);
 
     const setThemeMode = useCallback((mode) => {
         setThemeModeState(normalizeTheme(mode));
@@ -1051,6 +1107,10 @@ export const ThemeProvider = ({ children }) => {
         layoutMode,
         setLayoutMode,
         setBorderMode,
+        progressMode,
+        setProgressMode,
+        defaultUnit,
+        setDefaultUnit,
         isBorder: borderMode !== 'none',
         border: borderMode === 'none' ? 0 : borderMode === 'thin' ? variables.borderWidth.thin : borderMode === 'subtle' ? variables.borderWidth.regular : variables.borderWidth.thick,
         isLoading,

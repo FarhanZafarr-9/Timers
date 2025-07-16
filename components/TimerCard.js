@@ -7,8 +7,10 @@ import ViewShot from 'react-native-view-shot';
 import ExportBottomSheet from './ExportBottomSheet';
 import { useTheme } from '../utils/ThemeContext';
 import { useSecurity } from '../utils/SecurityContext';
+import Wave from './Wave';
+import WaveProgress from './WaveProgress';
 
-const { height: screenHeight } = Dimensions.get('window');
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 const TimerCard = ({
     timer,
@@ -20,14 +22,16 @@ const TimerCard = ({
     selectable,
     selected = false,
     searchText = '',
-    buttons
+    buttons,
+    defaultUnit,
+    layoutMode
 }) => {
     const [showOverlay, setShowOverlay] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { isBorder, headerMode, border, colors, variables, layoutMode } = useTheme();
+    const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
     const titleText = timer.title && timer.title.length > 12
         ? timer.title.slice(0, 12) + '…'
         : timer.title;
@@ -36,8 +40,8 @@ const TimerCard = ({
         ? timer.personName.slice(0, 12) + '…'
         : timer.personName;
     const { privacyMode } = useSecurity();
-    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
-    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 3 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
+    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
+    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
 
     const [timerState, setTimerState] = useState({
         now: Date.now(),
@@ -90,7 +94,7 @@ const TimerCard = ({
         };
     }, []);
 
-    const [compactChipIndex, setCompactChipIndex] = useState(null);
+    const [compactChipIndex, setCompactChipIndex] = useState(defaultUnit === 'seconds' ? null : 0);
 
     const renderCompactTimeChip = () => {
         const { timeParts, status } = timerState;
@@ -124,6 +128,7 @@ const TimerCard = ({
                 </View>
             );
         }
+
         if (compactChipIndex === null) setCompactChipIndex(nonZeroParts.length - 1);
         const currentChip = nonZeroParts[compactChipIndex % nonZeroParts.length];
 
@@ -131,7 +136,7 @@ const TimerCard = ({
             <TouchableOpacity
                 style={[
                     styles.chip,
-                    { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
+                    { backgroundColor: colors.highlight + '30', borderColor: colors.highlight, }
                 ]}
                 onPress={() => setCompactChipIndex(compactChipIndex + 1)}
                 activeOpacity={0.8}
@@ -348,7 +353,7 @@ const TimerCard = ({
             },
             timerTitle: {
                 color: colors.textDesc,
-                fontSize: 16,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 8 : 16,
                 fontWeight: 'bold',
                 paddingLeft: 6,
                 height: 25
@@ -389,7 +394,7 @@ const TimerCard = ({
                 borderWidth: border,
                 borderColor: colors.border,
                 color: colors.text,
-                fontSize: 12,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : 12,
                 fontWeight: 'bold',
             },
             midSection: {
@@ -633,141 +638,198 @@ const TimerCard = ({
         <>
             <ViewShot ref={cardRef} options={{ format: 'png', quality: 1 }}>
                 <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
-                    {layoutMode === 'grid' ? (<View style={cardStyle}>
-                        <View style={styles.header}>
-                            <Text style={[styles.timerTitle, { paddingLeft: 0 }]}>
-                                {privacyTitleText}
-                            </Text>
-                            {timer.personName && (
-                                <Text style={[styles.namePill, { marginHorizontal: 0 }]}>
-                                    {privacyNameText}
-                                </Text>
-                            )}
-                        </View>
-
-                        <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
-                            {renderCompactTimeChip()}
-                        </View>
-
-                        {timer.isCountdown && timer.isRecurring && (
-                            <View
-                                style={{
-                                    height: 6,
-                                    width: '100%',
-                                    backgroundColor: colors.highlight + '20',
-                                    borderRadius: 6,
-                                    overflow: 'hidden',
-                                    marginTop: 12
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        width: `${timerState.progressPct}%`,
-                                        height: '100%',
-                                        backgroundColor: colors.highlight + 'b0',
-                                        borderRadius: 8
-                                    }}
-                                />
-                            </View>
-                        )}
-                    </View>) : (<View style={cardStyle}>
-                        <View style={styles.header}>
-                            {privacyMode === 'off' ? (
-                                <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
-                                    <HighlightMatchText
-                                        text={titleText}
-                                        textStyle={styles.timerTitle}
-                                        search={searchText}
-                                        colors={colors}
-                                    />
-                                    {timer.isFavourite && <Icons.Material
-                                        name={"favorite"}
-                                        size={10}
-                                        color={colors.highlight}
-                                        style={{ marginBottom: 2 }}
-                                    />}
-                                </View>
-                            ) : (
-                                <Text style={styles.timerTitle}>
+                    {layoutMode === 'grid' ? (
+                        <View style={cardStyle}>
+                            <View style={styles.header}>
+                                <Text style={[styles.timerTitle, { paddingLeft: 0 }]}>
                                     {privacyTitleText}
                                 </Text>
-                            )}
-                            <View style={styles.priorityIndicator}>
                                 {timer.personName && (
-                                    privacyMode === 'off' ? (
+                                    <Text style={[styles.namePill, { marginHorizontal: 0 }]}>
+                                        {privacyNameText}
+                                    </Text>
+                                )}
+                            </View>
+
+                            <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
+                                {renderCompactTimeChip()}
+                            </View>
+
+                            {timer.isCountdown && timer.isRecurring && (
+                                <View>
+                                    {progressMode === 'linear' ? (
+                                        <View
+                                            style={{
+                                                height: 6,
+                                                width: '100%',
+                                                backgroundColor: colors.highlight + '20',
+                                                borderRadius: 6,
+                                                overflow: 'hidden',
+                                                marginTop: 12
+                                            }}
+                                        >
+                                            <View
+                                                style={{
+                                                    width: `${timerState.progressPct}%`,
+                                                    height: '100%',
+                                                    backgroundColor: colors.highlight + 'b0',
+                                                    borderRadius: 8
+                                                }}
+                                            />
+                                        </View>
+                                    ) : (
+                                        <View
+                                            style={{
+                                                height: 20,
+                                                width: '100%',
+                                                backgroundColor: colors.highlight + '20',
+                                                borderRadius: 6,
+                                                overflow: 'hidden',
+                                                marginTop: 12,
+                                            }}
+                                        >
+                                            <WaveProgress
+                                                progressPct={timerState.progressPct}
+                                                amplitude={2}
+                                                frequency={10}
+                                                speed={3000}
+                                                height={20}
+                                                width={screenWidth * 0.38}
+                                                colorCompleted={colors.highlight}
+                                                colorRemaining={colors.highlight + '20'}
+                                            />
+                                        </View>
+
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    ) : (
+                        <View style={cardStyle}>
+                            <View style={styles.header}>
+                                {privacyMode === 'off' ? (
+                                    <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
                                         <HighlightMatchText
-                                            text={nameText}
-                                            textStyle={styles.namePill}
+                                            text={titleText}
+                                            textStyle={styles.timerTitle}
                                             search={searchText}
                                             colors={colors}
                                         />
-                                    ) : (
-                                        <Text style={styles.namePill}>
-                                            {privacyNameText}
-                                        </Text>
-                                    )
+                                        {timer.isFavourite && <Icons.Material
+                                            name={"favorite"}
+                                            size={10}
+                                            color={colors.highlight}
+                                            style={{ marginBottom: 2 }}
+                                        />}
+                                    </View>
+                                ) : (
+                                    <Text style={styles.timerTitle}>
+                                        {privacyTitleText}
+                                    </Text>
                                 )}
+                                <View style={styles.priorityIndicator}>
+                                    {timer.personName && (
+                                        privacyMode === 'off' ? (
+                                            <HighlightMatchText
+                                                text={nameText}
+                                                textStyle={styles.namePill}
+                                                search={searchText}
+                                                colors={colors}
+                                            />
+                                        ) : (
+                                            <Text style={styles.namePill}>
+                                                {privacyNameText}
+                                            </Text>
+                                        )
+                                    )}
+                                </View>
                             </View>
-                        </View>
 
-                        <View style={styles.midSection}>
-                            <Text style={styles.timerQuickInfo}>
-                                {renderTimeDisplay()}
-                            </Text>
-                            <Icons.Material
-                                name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                                size={18}
-                                color={colors.text}
-                                style={{ opacity: 0.5 }}
-                            />
-                        </View>
-                        {timer.isCountdown && timer.isRecurring && (
-                            <View
-                                style={{
+                            <View style={styles.midSection}>
+                                <Text style={styles.timerQuickInfo}>
+                                    {renderTimeDisplay()}
+                                </Text>
+                                <Icons.Material
+                                    name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                    size={18}
+                                    color={colors.text}
+                                    style={{ opacity: 0.5 }}
+                                />
+                            </View>
+                            {timer.isCountdown && timer.isRecurring && (
+                                <View style={{
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     marginTop: 8,
                                     gap: 10,
                                     width: '100%',
                                     justifyContent: 'flex-start'
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        height: 6,
-                                        width: '85%',
-                                        backgroundColor: colors.highlight + '20',
-                                        borderRadius: 6,
-                                        overflow: 'hidden'
-                                    }}
-                                >
-                                    <View
+                                }}>
+                                    <>
+                                        {progressMode === 'linear' ? (
+                                            <View
+                                                style={{
+                                                    height: 6,
+                                                    width: '85%',
+                                                    backgroundColor: colors.highlight + '20',
+                                                    borderRadius: 6,
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                <View
+                                                    style={{
+                                                        width: `${timerState.progressPct}%`,
+                                                        height: '100%',
+                                                        backgroundColor: colors.highlight + 'b0',
+                                                        borderRadius: 8
+                                                    }}
+                                                />
+                                            </View>
+                                        ) : (
+                                            <View
+                                                style={{
+                                                    height: 20,
+                                                    backgroundColor: colors.highlight + '20',
+                                                    borderRadius: 6,
+                                                    overflow: 'visible',
+                                                }}
+                                            >
+                                                <WaveProgress
+                                                    progressPct={timerState.progressPct}
+                                                    amplitude={5}
+                                                    frequency={10}
+                                                    speed={3500}
+                                                    height={20}
+                                                    width={screenWidth * 0.74}
+                                                    colorCompleted={colors.highlight}
+                                                    colorRemaining={colors.highlight + '20'}
+                                                />
+                                            </View>
+
+                                        )}
+                                    </>
+
+                                    <Text
                                         style={{
-                                            width: `${timerState.progressPct}%`,
-                                            height: '100%',
-                                            backgroundColor: colors.highlight + 'b0',
-                                            borderRadius: 8
+                                            color: colors.textDesc,
+                                            fontSize: 12,
+                                            fontWeight: '500',
+                                            opacity: 0.8,
+                                            width: '15%',
+                                            lineHeight: 20,
+                                            paddingLeft: 10,
+                                            alignSelf: 'center'
                                         }}
-                                    />
+                                    >
+                                        {timerState.progressPct.toFixed(2)} %
+                                    </Text>
                                 </View>
-                                <Text
-                                    style={{
-                                        color: colors.textDesc,
-                                        fontSize: 12,
-                                        fontWeight: '500',
-                                        opacity: 0.8,
-                                        marginLeft: 8,
-                                        width: '15%',
-                                        marginBottom: 2
-                                    }}
-                                >
-                                    {timerState.progressPct.toFixed(2)} %
-                                </Text>
-                            </View>
-                        )}
-                    </View>)}
+
+                            )}
+                        </View>
+                    )}
                 </TouchableOpacity>
-            </ViewShot>
+            </ViewShot >
 
             {/* Bottom Sheet Overlay */}
             <Modal
@@ -952,10 +1014,10 @@ const TimerCard = ({
                         </TouchableWithoutFeedback>
                     </Animated.View>
                 </TouchableWithoutFeedback>
-            </Modal>
+            </Modal >
 
             {/* Export Bottom Sheet */}
-            <ExportBottomSheet
+            < ExportBottomSheet
                 visible={showExportModal}
                 onClose={() => setShowExportModal(false)}
                 cardRef={cardRef}

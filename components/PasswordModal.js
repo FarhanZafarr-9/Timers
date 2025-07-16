@@ -50,6 +50,7 @@ export default function PasswordBottomSheet({
 
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
+    const [isReallyVisible, setIsReallyVisible] = useState(false);
 
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -68,6 +69,7 @@ export default function PasswordBottomSheet({
 
     useEffect(() => {
         if (visible) {
+            setIsReallyVisible(true);
             setResetMode(mode === 'reset');
             showBottomSheet();
         } else {
@@ -114,7 +116,10 @@ export default function PasswordBottomSheet({
                 duration: 250,
                 useNativeDriver: true,
             }),
-        ]).start();
+        ]).start(() => {
+            setIsReallyVisible(false);
+            handleClose();
+        });
     };
 
     const styles = StyleSheet.create({
@@ -423,10 +428,10 @@ export default function PasswordBottomSheet({
 
     return (
         <Modal
-            visible={visible}
+            visible={isReallyVisible}
             transparent
             animationType="none"
-            onRequestClose={handleClose}
+            onRequestClose={hideBottomSheet}
             statusBarTranslucent
         >
             <KeyboardAvoidingView
@@ -436,7 +441,7 @@ export default function PasswordBottomSheet({
                 <Animated.View style={[styles.overlay, { opacity }]}>
                     <TouchableOpacity
                         style={{ flex: 1 }}
-                        onPress={handleClose}
+                        onPress={hideBottomSheet}
                         activeOpacity={1}
                     />
                     <Animated.View
