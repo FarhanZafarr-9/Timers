@@ -76,6 +76,69 @@ export const lockoutOptions = [
     { label: '30 minutes', value: '1800000', icon: <Icons.Ion name="timer-outline" size={16} />, description: 'Long lunch-break protection' },
 ];
 
+export const pomodoroOptions = [
+    {
+        label: '15 seconds',
+        value: '15000',
+        icon: <Icons.Ion name="flash-outline" size={16} />,
+        description: 'A quick burst to test focus or preview the flow.',
+    },
+    {
+        label: '30 seconds',
+        value: '30000',
+        icon: <Icons.Ion name="time-outline" size={16} />,
+        description: 'Just enough to breathe or clear your mind.',
+    },
+    {
+        label: '1 minute',
+        value: '60000',
+        icon: <Icons.Ion name="alarm-outline" size={16} />,
+        description: 'One solid minute to plan or prep.',
+    },
+    {
+        label: '5 minutes',
+        value: '300000',
+        icon: <Icons.Ion name="timer-outline" size={16} />,
+        description: 'Great for microtasks or meditation breaks.',
+    },
+    {
+        label: '10 minutes',
+        value: '600000',
+        icon: <Icons.Ion name="timer-outline" size={16} />,
+        description: 'Enough time to enter light focus mode.',
+    },
+    {
+        label: '15 minutes',
+        value: '900000',
+        icon: <Icons.Ion name="timer-outline" size={16} />,
+        description: 'A mini sprint to knock out small goals.',
+    },
+    {
+        label: '25 minutes (Classic)',
+        value: '1500000',
+        icon: <Icons.Ion name="rocket-outline" size={16} />,
+        description: 'The OG Pomodoro — pure focus, no fluff.',
+    },
+    {
+        label: '30 minutes',
+        value: '1800000',
+        icon: <Icons.Ion name="timer-outline" size={16} />,
+        description: 'Perfect balance for study or deep dive work.',
+    },
+    {
+        label: '1 hour',
+        value: '3600000',
+        icon: <Icons.Ion name="hourglass-outline" size={16} />,
+        description: 'Deep work mode — no distractions allowed.',
+    },
+    {
+        label: '2 hours',
+        value: '7200000',
+        icon: <Icons.Ion name="hourglass-outline" size={16} />,
+        description: 'For ultra focus or extended creative flow.',
+    },
+];
+
 export const sortOptions = [
     { label: 'Priority', value: 'priority', icon: <MaterialIcons name="flag" size={16} />, description: 'Red flags first, greens last' },
     { label: 'Time Left', value: 'timeLeft', icon: <MaterialIcons name="hourglass-empty" size={16} />, description: 'Nearest deadline rises to top' },
@@ -372,9 +435,33 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.26';
+export const appVersion = '1.0.27';
 
 export const changelog = [
+    {
+        "version": "1.0.27",
+        "date": "2025-07-16",
+        "title": "Pomodoro v1, Wave Fixes & Layout Polishing",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Initial version of new Pomodoro screen is now available (V1)" },
+            { "type": "new", "text": "Added default seconds toggle for better grid mode visibility" },
+
+            { "type": "improved", "text": "Optimized wave progress bar rendering to avoid width and percentage issues" },
+            { "type": "improved", "text": "Simplified wave progress logic to reduce lag and improve app fluidity" },
+            { "type": "improved", "text": "Improved pickers with better spacing and alignment" },
+            { "type": "improved", "text": "Enhanced positioning and responsiveness for control elements in timer" },
+            { "type": "improved", "text": "Reduced calculations to boost performance and smoothness" },
+            { "type": "improved", "text": "Improved text sizing and spacing across privacy modes for consistency" },
+
+            { "type": "fixed", "text": "Resolved minor UI bugs and alignment issues" },
+            { "type": "fixed", "text": "Fixed title spacing and name overflow in compact privacy modes" },
+
+            { "type": "wip", "text": "Moji privacy mode removed temporarily due to formatting conflicts, under redevelopment" },
+            { "type": "wip", "text": "Wave progress still under polish; smoothing and rendering optimizations ongoing" },
+            { "type": "wip", "text": "Pomodoro screen still in development; more testing and debugging required" }
+        ]
+    },
     {
         "version": "1.0.26",
         "date": "2025-07-16",

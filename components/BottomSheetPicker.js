@@ -136,12 +136,14 @@ const BottomSheetPicker = ({
         },
         pillsContainer: {
             padding: 20,
+            marginBottom: 0,
+
+            marginVertical: 20
         },
         pillsGrid: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'space-between',
-            gap: 12,
         },
         pill: {
             flexDirection: 'row',
@@ -156,7 +158,7 @@ const BottomSheetPicker = ({
             minHeight: 36,
             flex: pillsPerRow === 1 ? 1 : 0,
             width: pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`,
-            marginBottom: 10,
+            marginBottom: 25,
 
         },
         selectedPill: {
@@ -240,7 +242,7 @@ const BottomSheetPicker = ({
             color: colors.textDesc,
             marginHorizontal: 20,
             lineHeight: 20,
-            flexWrap:'wrap'
+            flexWrap: 'wrap'
         },
     });
 
@@ -352,8 +354,8 @@ const BottomSheetPicker = ({
 
                         <ScrollView
                             style={styles.pillsContainer}
-                            showsVerticalScrollIndicator={false}
-                            bounces={false}
+                            showsVerticalScrollIndicator={true}
+                            bounces={true}
                         >
                             {options.length > 0 ? (
                                 <View style={styles.pillsGrid}>
@@ -366,7 +368,7 @@ const BottomSheetPicker = ({
                             )}
                         </ScrollView>
 
-                        {note && <View style={[styles.descContainer, { marginTop: 0, marginBlock: 20 }]}>
+                        {note && <View style={[styles.descContainer, { marginTop: 20, marginBottom: 20 }]}>
                             <Text style={styles.desc}>
                                 Note :  {note}
                             </Text>
