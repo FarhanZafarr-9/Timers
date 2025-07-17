@@ -368,7 +368,7 @@ const BottomSheetPicker = ({
                             )}
                         </ScrollView>
 
-                        {note && <View style={[styles.descContainer, { marginTop: 20, marginBottom: 20 }]}>
+                        {note && <View style={[styles.descContainer, { marginTop: 0, marginBottom: 20 }]}>
                             <Text style={styles.desc}>
                                 Note :  {note}
                             </Text>

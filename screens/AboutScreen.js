@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
-import ScreenWithHeader from '../components/ScreenWithHeder';
+import ScreenWithHeader from '../components/ScreenWithHeader';
 import { appVersion } from '../utils/functions';
 import { appBuild } from '../utils/functions';
 import AboutMeModal from '../components/AboutMeModal';

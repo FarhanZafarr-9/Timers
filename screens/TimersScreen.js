@@ -6,7 +6,7 @@ import HeaderControls from '../components/HeaderControls';
 import { useTimers } from '../utils/TimerContext';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
-import ScreenWithHeader from '../components/ScreenWithHeder';
+import ScreenWithHeader from '../components/ScreenWithHeader';
 import { useSecurity } from '../utils/SecurityContext';
 import { sortOptions } from '../utils/functions';
 import Snackbar from '../components/SnackBar';

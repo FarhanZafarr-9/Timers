@@ -4,7 +4,7 @@ import { useTimers } from '../utils/TimerContext';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import AddTimerModal from '../components/AddTimerModal';
-import ScreenWithHeader from '../components/ScreenWithHeder';
+import ScreenWithHeader from '../components/ScreenWithHeader';
 import TimerCard from '../components/TimerCard';
 import { useSecurity } from '../utils/SecurityContext';
 import { quotes } from '../utils/functions';
