@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
 import HighlightMatchText from './HighlightMatchText';
@@ -63,6 +63,27 @@ const TimerCard = ({
 
     const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
 
+    const getChippedTime = (unit, timeParts) => {
+        const [years, months, days, hours, minutes, seconds] = timeParts;
+        const totalMs =
+            years * 365 * 24 * 60 * 60 * 1000 +
+            months * 30.44 * 24 * 60 * 60 * 1000 +
+            days * 24 * 60 * 60 * 1000 +
+            hours * 60 * 60 * 1000 +
+            minutes * 60 * 1000 +
+            seconds * 1000;
+
+        switch (unit) {
+            case 'years': return (totalMs / (365 * 24 * 60 * 60 * 1000)).toFixed(2);
+            case 'months': return (totalMs / (30.44 * 24 * 60 * 60 * 1000)).toFixed(2);
+            case 'days': return (totalMs / (24 * 60 * 60 * 1000)).toFixed(2);
+            case 'hours': return (totalMs / (60 * 60 * 1000)).toFixed(2);
+            case 'minutes': return (totalMs / (60 * 1000)).toFixed(2);
+            case 'seconds': return (totalMs / 1000).toFixed(0);
+            default: return '';
+        }
+    };
+
     const calculateTimerState = useCallback((now) => {
         const timer = timerRef.current;
         let targetDate = timer.date;
@@ -99,7 +120,8 @@ const TimerCard = ({
 
     const [compactChipIndex, setCompactChipIndex] = useState(defaultUnit === 'seconds' ? null : 0);
 
-    const renderCompactTimeChip = () => {
+    // Memoize compact time chip for better performance
+    const renderCompactTimeChip = useMemo(() => {
         const { timeParts, status } = timerState;
         const [years, months, days, hours, minutes, seconds] = timeParts;
 
@@ -149,7 +171,7 @@ const TimerCard = ({
                 </Text>
             </TouchableOpacity>
         );
-    };
+    }, [timerState.timeParts, timerState.status, compactChipIndex, colors.highlight, styles.chip, styles.chipContainer, styles.chipText]);
 
     function calculateNextOccurrence(timer, now) {
         if (!timer.isRecurring || !timer.recurrenceInterval) {
@@ -195,7 +217,8 @@ const TimerCard = ({
     useEffect(() => {
         let mounted = true;
         let lastUpdateTime = 0;
-        const updateInterval = 100;
+        // Reduce update frequency for better performance - 200ms is sufficient for most timers
+        const updateInterval = 200;
 
         const updateTimer = () => {
             if (!mounted) return;
@@ -214,6 +237,9 @@ const TimerCard = ({
             cancelAnimationFrame(frameId);
         };
     }, [calculateTimerState]);
+
+    // Helper functions moved outside to prevent recreation
+
 
     // Memoized render functions
     const renderTimeChips = useMemo(() => {
@@ -310,28 +336,6 @@ const TimerCard = ({
             );
         };
     }, [timerState.timeParts, timerState.status]);
-
-    // Helper functions moved outside to prevent recreation
-    const getChippedTime = (unit, timeParts) => {
-        const [years, months, days, hours, minutes, seconds] = timeParts;
-        const totalMs =
-            years * 365 * 24 * 60 * 60 * 1000 +
-            months * 30.44 * 24 * 60 * 60 * 1000 +
-            days * 24 * 60 * 60 * 1000 +
-            hours * 60 * 60 * 1000 +
-            minutes * 60 * 1000 +
-            seconds * 1000;
-
-        switch (unit) {
-            case 'years': return (totalMs / (365 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'months': return (totalMs / (30.44 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'days': return (totalMs / (24 * 60 * 60 * 1000)).toFixed(2);
-            case 'hours': return (totalMs / (60 * 60 * 1000)).toFixed(2);
-            case 'minutes': return (totalMs / (60 * 1000)).toFixed(2);
-            case 'seconds': return (totalMs / 1000).toFixed(0);
-            default: return '';
-        }
-    };
 
     function createStyles() {
         return StyleSheet.create({
@@ -644,18 +648,26 @@ const TimerCard = ({
                     {layoutMode === 'grid' ? (
                         <View style={cardStyle}>
                             <View style={styles.header}>
-                                <Text style={[styles.timerTitle, { paddingLeft: 0 }]}>
+                                <Text style={[
+                                    styles.timerTitle,
+                                    { paddingLeft: 0 },
+                                    privacyMode === 'invisible' && { color: colors.settingBlock }
+                                ]}>
                                     {privacyTitleText}
                                 </Text>
                                 {timer.personName && (
-                                    <Text style={[styles.namePill, { marginHorizontal: 0 }]}>
+                                    <Text style={[
+                                        styles.namePill,
+                                        { marginHorizontal: 0 },
+                                        privacyMode === 'invisible' && { color: colors.highlight + '00' }
+                                    ]}>
                                         {privacyNameText}
                                     </Text>
                                 )}
                             </View>
 
                             <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
-                                {renderCompactTimeChip()}
+                                {renderCompactTimeChip}
                             </View>
 
                             {timer.isCountdown && timer.isRecurring && (
@@ -724,7 +736,10 @@ const TimerCard = ({
                                         />}
                                     </View>
                                 ) : (
-                                    <Text style={styles.timerTitle}>
+                                    <Text style={[
+                                        styles.timerTitle,
+                                        privacyMode === 'invisible' && { color: colors.settingBlock }
+                                    ]}>
                                         {privacyTitleText}
                                     </Text>
                                 )}
@@ -738,7 +753,10 @@ const TimerCard = ({
                                                 colors={colors}
                                             />
                                         ) : (
-                                            <Text style={styles.namePill}>
+                                            <Text style={[
+                                                styles.namePill,
+                                                privacyMode === 'invisible' && { color: colors.highlight + '00' }
+                                            ]}>
                                                 {privacyNameText}
                                             </Text>
                                         )
@@ -853,7 +871,10 @@ const TimerCard = ({
 
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
                                         {/* Title and Person */}
-                                        <Text style={styles.overlayTitle}>
+                                        <Text style={[
+                                            styles.overlayTitle,
+                                            privacyMode === 'invisible' && { color: colors.modalBg }
+                                        ]}>
                                             {privacyTitleText}
                                         </Text>
 
@@ -864,7 +885,10 @@ const TimerCard = ({
 
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
                                         {timer.personName && (
-                                            <Text style={styles.overlayPersonName}>
+                                            <Text style={[
+                                                styles.overlayPersonName,
+                                                privacyMode === 'invisible' && { color: colors.modalBg }
+                                            ]}>
                                                 For: {privacyNameText}
                                             </Text>
                                         )}
@@ -1134,4 +1158,18 @@ function getFormattedDate(timer, now) {
     });
 }
 
-export default TimerCard;
+// Memoize the entire component to prevent unnecessary re-renders
+export default memo(TimerCard, (prevProps, nextProps) => {
+    // Custom comparison for better performance
+    const propsToCompare = [
+        'timer', 'selected', 'searchText', 'layoutMode', 'defaultUnit', 'buttons'
+    ];
+
+    return propsToCompare.every(prop => {
+        if (prop === 'timer') {
+            // Deep comparison for timer object
+            return JSON.stringify(prevProps.timer) === JSON.stringify(nextProps.timer);
+        }
+        return prevProps[prop] === nextProps[prop];
+    });
+});

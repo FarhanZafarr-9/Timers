@@ -2,12 +2,12 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated, Dimensions,
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import PasswordBottomSheet from '../components/PasswordModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import Timer from '../classes/Timer';
-import ScreenWithHeader from '../components/ScreenWithHeder';
+import ScreenWithHeader from '../components/ScreenWithHeader';
 import Snackbar from '../components/SnackBar';
 import { useTheme } from '../utils/ThemeContext';
 import BottomSheetPicker from '../components/BottomSheetPicker';
@@ -19,7 +19,10 @@ import BottomSheetChangelog from '../components/BottomSheetChnageLog';
 import { checkForUpdateAndReload } from '../utils/functions';
 import Toast from 'react-native-toast-message';
 
-export default function SettingsScreen() {
+// Move screen dimensions to module level to avoid recalculation
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function SettingsScreen() {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
 
     const {
@@ -67,8 +70,6 @@ export default function SettingsScreen() {
         return null;
     }
 
-    const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-
     const [populateDisabled, setPopulateDisabled] = useState(false);
     const [passwordModalMode, setPasswordModalMode] = useState('set');
     const [confirmVisible, setConfirmVisible] = useState(false);
@@ -94,19 +95,19 @@ export default function SettingsScreen() {
         showToast(type, capitalize(type), text);
     }, []);
 
-    const handleReportBug = () => {
+    const handleReportBug = useCallback(() => {
         const email = 'farhanzafarr.9@gmail.com';
         const subject = 'Bug Report - ChronoX App';
         const body = 'Please describe the bug you encountered:';
         Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    };
+    }, []);
 
-    const handleSuggestion = () => {
+    const handleSuggestion = useCallback(() => {
         const email = 'farhanzafarr.9@gmail.com';
         const subject = 'Suggestion - ChronoX App';
         const body = 'Please describe the suggestion you came upon:';
         Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    };
+    }, []);
 
     const card1Translate = useRef(new Animated.Value(-50)).current;
     const card2Translate = useRef(new Animated.Value(-50)).current;
@@ -210,7 +211,7 @@ export default function SettingsScreen() {
         loadDirectory();
     }, []);
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         card: {
             backgroundColor: 'transparent',
             marginBottom: 15,
@@ -261,28 +262,28 @@ export default function SettingsScreen() {
             fontSize: 12,
             marginLeft: 12,
         },
-    });
+    }), [colors, variables, border]);
 
-    const showConfirm = (text, action) => {
+    const showConfirm = useCallback((text, action) => {
         setConfirmText(text);
         setConfirmAction(() => action);
         setConfirmVisible(true);
-    };
+    }, []);
 
-    const clearTimers = async () => {
+    const clearTimers = useCallback(async () => {
         showConfirm('Are you sure you want to clear all timers?', async () => {
             await clearAllTimers();
             addMessage('All timers have been cleared.', 'success');
         });
-    };
+    }, [showConfirm, clearAllTimers, addMessage]);
 
-    const populateTimers = async () => {
+    const populateTimers = useCallback(async () => {
         if (populateDisabled) return;
         setPopulateDisabled(true);
         await initializeTimers();
         addMessage('Sample timers have been added.', 'success');
         setTimeout(() => setPopulateDisabled(false), 2000);
-    };
+    }, [populateDisabled, initializeTimers, addMessage]);
 
     const exportToJson = async () => {
         try {
@@ -349,7 +350,7 @@ export default function SettingsScreen() {
         }
     };
 
-    const formatDirectoryPath = (uri) => {
+    const formatDirectoryPath = useCallback((uri) => {
         if (!uri) return '';
 
         try {
@@ -375,13 +376,13 @@ export default function SettingsScreen() {
             console.warn('Error formatting path:', e);
             return uri;
         }
-    };
+    }, []);
 
-    const PathDisplay = ({ path, style }) => {
+    const PathDisplay = useCallback(({ path, style }) => {
         if (!path) return null;
         const formatted = formatDirectoryPath(path);
         return <Text style={style}>{formatted}</Text>;
-    };
+    }, [formatDirectoryPath]);
 
     return (
         <ScreenWithHeader
@@ -460,7 +461,7 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue={'linear'}
-                                note={'Wavy motion might be more battery performant and jittery, its still under development'}
+                                note={'Wavy motion is stabled, but still under development'}
                             />
                         </TouchableOpacity>
 
@@ -926,7 +927,10 @@ export default function SettingsScreen() {
                 )}
 
                 <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
-            </>}
+            </>
+            }
         </ScreenWithHeader >
     );
 }
+
+export default memo(SettingsScreen);

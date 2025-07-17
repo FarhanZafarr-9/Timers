@@ -62,7 +62,8 @@ export const privacyOptions = [
     { label: 'Off', value: 'off', icon: <Icons.Ion name="eye-outline" size={16} />, description: 'Everything visible, no masking' },
     { label: 'Mask', value: 'mask', icon: <Icons.Ion name="lock-closed-outline" size={16} />, description: 'Mask out title and names on screen' },
     { label: 'Jumble', value: 'jumble', icon: <Icons.Ion name="shuffle-outline" size={16} />, description: 'Scramble title and names into unreadable words' },
-    { label: 'Invisible', value: 'invisible', icon: <Icons.Ion name="eye-off-outline" size={16} />, description: 'Hide title and names entirely until changed' },
+    { label: 'Invisible', value: 'invisible', icon: <Icons.Ion name="eye-off-outline" size={16} />, description: 'Text appears invisible but layout is preserved' },
+    { label: 'Ghost', value: 'ghost', icon: <Icons.Ion name="remove-circle-outline" size={16} />, description: 'Text is completely hidden without occupying space' },
     //{ label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
 ];
 
@@ -283,7 +284,10 @@ export const getPrivacyText = (maxCharsLimit, privacyMode, inputText) => {
             result = emojiText(truncated);
             break;
         case 'invisible':
-            result = '';
+            result = truncated;
+            break;
+        case 'ghost':
+            result = null;
             break;
         case 'mask':
             result = maskText(truncated);
@@ -293,7 +297,7 @@ export const getPrivacyText = (maxCharsLimit, privacyMode, inputText) => {
     }
 
 
-    return isLong && privacyMode !== 'invisible' ? result + '...' : result;
+    return isLong && privacyMode !== 'ghost' && result !== null ? result + '...' : result;
 };
 
 export const showToast = (msg) => {
@@ -435,9 +439,34 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.27';
+export const appVersion = '1.0.28';
 
 export const changelog = [
+    {
+        "version": "1.0.28",
+        "date": "2025-07-16",
+        "title": "Pomodoro, Ghost Mode & Performance Boosts",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Introduced new Ghost privacy mode with subtle display masking" },
+
+            { "type": "improved", "text": "Pomodoro screen refined with better layout, interactions, and visual polish" },
+            { "type": "improved", "text": "Wave component upgraded for smoother animation and improved responsiveness" },
+            { "type": "improved", "text": "WaveProgress logic restructured for better performance and fluid transitions" },
+            { "type": "improved", "text": "CustomTabBar tweaked for better rendering and lower lag during tab switches" },
+            { "type": "improved", "text": "Settings screen now renders faster with better layout consistency" },
+            { "type": "improved", "text": "Invisible privacy mode enhanced for more stable layout and adaptive rendering" },
+            { "type": "improved", "text": "Timer card rendering optimized for lower CPU usage and smoother updates" },
+            { "type": "improved", "text": "Efficiency improvements in timer calculations and animations" },
+
+            { "type": "fixed", "text": "Reduced jerkiness and lag across animations and layout transitions" },
+            { "type": "fixed", "text": "Resolved minor layout glitches and inconsistent margins in various components" },
+
+            { "type": "wip", "text": "Further improvements to Pomodoro screen UI/UX planned" },
+            { "type": "wip", "text": "Upcoming customizations to enhance Pomodoro experience" },
+            { "type": "wip", "text": "Wave and tab bar components under ongoing performance tuning" }
+        ]
+    },
     {
         "version": "1.0.27",
         "date": "2025-07-16",

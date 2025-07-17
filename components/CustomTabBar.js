@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Icons } from '../assets/icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../utils/ThemeContext';
@@ -16,12 +16,177 @@ import {
 import BottomProfileSheet from './BottomProfileSheet';
 import { useData } from '../utils/DataContext';
 
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+
+const memoizedStyles = (navigationMode, insets, variables, colors, border, userData) => StyleSheet.create({
+    bgContainer: {
+        position: 'absolute',
+        bottom: navigationMode === 'floating' ? 20 + insets.bottom : navigationMode === 'fixed' ? 0 : undefined,
+        left: 0,
+        right: 0,
+        marginHorizontal: navigationMode === 'floating' ? 35 : 0,
+        height: navigationMode === 'floating' ? 50 : navigationMode === 'fixed' ? 60 : 0,
+        borderTopLeftRadius: variables.radius.xl,
+        borderTopRightRadius: variables.radius.xl,
+        borderBottomRightRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
+        borderBottomLeftRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
+        overflow: 'hidden',
+        zIndex: 10,
+    },
+    container: {
+        flexDirection: 'row',
+        backgroundColor: navigationMode === 'floating' ? colors.card : colors.cardLighter,
+        borderColor: colors.cardBorder,
+        borderTopWidth: border,
+        borderBottomWidth: navigationMode === 'floating' ? border : 0,
+        borderRightWidth: border,
+        borderLeftWidth: border,
+        borderTopLeftRadius: variables.radius.xl,
+        borderTopRightRadius: variables.radius.xl,
+        borderBottomRightRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
+        borderBottomLeftRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
+        alignItems: 'center',
+        height: navigationMode === 'floating' ? 50 : navigationMode === 'fixed' ? 60 : 0,
+        paddingHorizontal: 10,
+        elevation: 10,
+    },
+    tab: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        marginHorizontal: 2,
+    },
+    tabContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: variables.radius.circle,
+        minHeight: 35,
+    },
+    activeTabContent: {
+        backgroundColor: colors.highlight,
+    },
+    tabText: {
+        color: colors.background,
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginLeft: 6,
+    },
+    menuButton: {
+        position: 'absolute',
+        right: border !== 'collapsible' ? 40 : 80,
+        top: border === 'fixed' ? insets.top : insets.top + 25,
+        zIndex: 20,
+    },
+    sideNavContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: screenWidth * 0.7,
+        height: '100%',
+        backgroundColor: colors.card,
+        borderTopRightRadius: 18,
+        borderBottomRightRadius: 18,
+        paddingTop: insets.top + 12,
+        borderWidth: border,
+        borderColor: colors.cardBorder,
+        paddingHorizontal: 12,
+        zIndex: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 3, height: 0 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 12,
+    },
+    sideNavHeader: {
+        paddingBottom: 8,
+        marginBottom: 8,
+    },
+    sideNavTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text,
+        letterSpacing: -0.2,
+    },
+    sideNavItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        borderRadius: 10,
+        marginBottom: 3,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    sideNavItemActive: {
+        backgroundColor: colors.highlight,
+    },
+    sideNavItemInactive: {
+        backgroundColor: colors.card,
+    },
+    sideNavText: {
+        fontSize: 14,
+        color: colors.text,
+        fontWeight: '500',
+        flex: 1,
+    },
+    sideNavTextActive: {
+        color: colors.background,
+        fontWeight: '600',
+    },
+    sideNavBadge: {
+        backgroundColor: colors.highlight,
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        minWidth: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sideNavBadgeText: {
+        fontSize: 10,
+        color: colors.background,
+        fontWeight: '600',
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 20,
+    },
+    closeButton: {
+        position: 'absolute',
+        right: 12,
+        top: insets.top + 12,
+        zIndex: 40,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.background + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rippleEffect: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 10,
+        opacity: 0.1,
+    },
+});
+
 const CustomNavigation = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
     const { variables, colors, navigationMode, headerMode, isBorder, border } = useTheme();
+    const styles = memoizedStyles(navigationMode, insets, variables, colors, border, userData);
     const { userData } = useData();
     const { width } = Dimensions.get('window');
-    const [expanded, setExpanded] = useState(0);
 
     const screenWidth = width;  // already imported from Dimensions
     const tabCount = state.routes.length;
@@ -96,7 +261,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
         Animated.parallel([...animations, ...focusedAnimations]).start();
     }, [state.index, sideNavOpen, navigationMode]);
 
-    const openSideNav = () => {
+    const openSideNav = useCallback(() => {
         setSideNavOpen(true);
         Animated.parallel([
             Animated.timing(sideNavTranslateX, {
@@ -112,9 +277,9 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 useNativeDriver: true,
             })
         ]).start();
-    };
+    }, [sideNavTranslateX, overlayOpacity]);
 
-    const closeSideNav = () => {
+    const closeSideNav = useCallback(() => {
         Animated.parallel([
             Animated.timing(sideNavTranslateX, {
                 toValue: -width,
@@ -129,7 +294,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 useNativeDriver: true,
             })
         ]).start(() => setSideNavOpen(false));
-    };
+    }, [sideNavTranslateX, overlayOpacity, width]);
 
     const getIconName = (routeName) => {
         switch (routeName) {
@@ -148,7 +313,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
         }
     };
 
-    const renderTabBar = () => {
+    const renderTabBar = useCallback(() => {
         const floating = navigationMode === 'floating';
         const fixed = navigationMode === 'fixed';
         const side = navigationMode === 'side';
@@ -159,8 +324,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 bottom: floating ? 20 + insets.bottom : fixed ? 0 : undefined,
                 left: 0,
                 right: 0,
-                marginHorizontal: floating ? 40 : 0,
-                height: floating ? 50 : fixed ? 60 : 0,
+                marginHorizontal: floating ? 30 : 0,
+                height: floating ? 45 : fixed ? 60 : 0,
                 borderTopLeftRadius: variables.radius.xl,
                 borderTopRightRadius: variables.radius.xl,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
@@ -181,7 +346,7 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 alignItems: 'center',
-                height: floating ? 50 : fixed ? 60 : 0,
+                height: floating ? 45 : fixed ? 60 : 0,
                 paddingHorizontal: 10,
                 elevation: 10,
             },
@@ -324,9 +489,9 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 </View>
             </View>
         );
-    };
+    });
 
-    const renderSideNavigation = () => {
+    const renderSideNavigation = useCallback(() => {
         if (navigationMode !== 'side') return null;
 
         const styles = StyleSheet.create({
@@ -437,36 +602,6 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                 borderRadius: 10,
                 opacity: 0.1,
             },
-            footerSection: {
-                marginTop: 'auto',
-                paddingTop: 12,
-                borderTopWidth: 1,
-                borderTopColor: colors.cardBorder,
-            },
-            userProfile: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 10,
-                backgroundColor: colors.highlight + '05',
-                marginBottom: 14,
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            userAvatar: {
-                width: 36,
-                height: 36,
-                borderRadius: 6,
-                backgroundColor: userData.profilePic ? 'transparent' : colors.highlight,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 8,
-            },
-            userInfo: { flex: 1 },
-            userName: { fontSize: 13, fontWeight: '500', color: colors.text },
-            userStatus: { fontSize: 10, color: colors.textDesc, opacity: 0.7 },
-            avatar: { width: '100%', height: '100%', borderRadius: 8 },
         });
 
         const allRoutes = [...state.routes];
@@ -487,9 +622,9 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                         <Icons.Ion name="close" size={20} color={colors.text} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.sideNavHeader} onPress={() => setExpanded(expanded == 5 ? 0 : expanded + 1)} activeOpacity={1}>
+                    <View style={styles.sideNavHeader} activeOpacity={1}>
                         <Text style={styles.sideNavTitle}>Menu</Text>
-                    </TouchableOpacity>
+                    </View>
 
                     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
                         {allRoutes.map((route, index) => {
@@ -543,35 +678,10 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
                             );
                         })}
                     </ScrollView>
-
-                    {expanded === 5 && (
-                        <View style={styles.footerSection}>
-                            <View style={styles.userProfile}>
-                                <View style={styles.userAvatar}>
-                                    {!userData.profilePic && (
-                                        <Icons.Ion name="person" size={16} color={colors.background} />
-                                    )}
-                                    {userData.profilePic && (
-                                        <Image source={{ uri: userData.profilePic }} style={styles.avatar} />
-                                    )}
-                                </View>
-                                <View style={styles.userInfo}>
-                                    <Text style={styles.userName}>{userData.name}</Text>
-                                    <Text style={styles.userStatus}>{userData.profession}</Text>
-                                </View>
-                                <Icons.Ion
-                                    name="settings-outline"
-                                    size={16}
-                                    color={colors.textDesc}
-                                    onPress={() => setIsProfileSheetVisible(true)}
-                                />
-                            </View>
-                        </View>
-                    )}
                 </Animated.View>
             </>
         );
-    };
+    });
 
     return (
         <>
@@ -582,4 +692,4 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
     );
 };
 
-export default CustomNavigation;
+export default React.memo(CustomNavigation);

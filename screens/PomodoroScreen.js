@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Dimensions, Animated, ScrollView } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
-import ScreenWithHeader from '../components/ScreenWithHeder';
+import ScreenWithHeader from '../components/ScreenWithHeader';
 import { Icons } from '../assets/icons';
 import BottomSheetPicker from '../components/BottomSheetPicker';
 import WaveProgress from '../components/WaveProgress';
 import { pomodoroOptions, quotes } from '../utils/functions';
 import Toast from 'react-native-toast-message';
 import { scheduleNotification, cancelScheduledNotification } from '../utils/Notificationhelper';
-import ModernSwitch from '../components/ModernSwitch'
+import ModernSwitch from '../components/ModernSwitch';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -280,6 +280,8 @@ export default function PomodoroScreen() {
             return;
         }
         clearInterval(intervalRef.current);
+        // Store the current elapsed time when pausing
+        elapsedRef.current = Date.now() - startTimeRef.current;
         setIsPaused(true);
         setIsRunning(false);
     };
@@ -298,7 +300,7 @@ export default function PomodoroScreen() {
     };
 
     const remainingMs = Math.max(duration - (progress * duration), 0);
-    const formattedTime = new Date(remainingMs).toISOString().substr(11, 8);
+    const formattedTime = new Date(remainingMs).toISOString().substring(11, 19);
 
     // Get current session info
     // Get current session info with expanded options
@@ -375,9 +377,30 @@ export default function PomodoroScreen() {
     };
 
     const getStatusText = () => {
-        if (isRunning) return '🟢 Running';
-        if (isPaused) return '⏸️ Paused';
-        return '⏱️ Ready';
+        if (isRunning) return (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icons.Ion name="play" size={12} color={colors.text} />
+                <Text style={[styles.statusText, { color: getStatusColor(), marginLeft: 6 }]}>
+                    Running
+                </Text>
+            </View>
+        );
+        if (isPaused) return (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icons.Ion name="pause" size={12} color={colors.text} />
+                <Text style={[styles.statusText, { color: getStatusColor(), marginLeft: 6 }]}>
+                    Paused
+                </Text>
+            </View>
+        );
+        return (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icons.Ion name="timer-outline" size={12} color={colors.text} />
+                <Text style={[styles.statusText, { color: getStatusColor(), marginLeft: 6 }]}>
+                    Ready
+                </Text>
+            </View>
+        );
     };
 
     const styles = StyleSheet.create({
@@ -589,9 +612,7 @@ export default function PomodoroScreen() {
                                     }
                                 ]}
                             >
-                                <Text style={[styles.statusText, { color: getStatusColor() }]}>
-                                    {getStatusText()}
-                                </Text>
+                                {getStatusText()}
                             </Animated.View>
                         </View>
 
@@ -625,7 +646,7 @@ export default function PomodoroScreen() {
                                     Progress: {(progress * 100).toFixed(2)}%
                                 </Text>
                                 <Text style={styles.progressLabel}>
-                                    Elapsed: {new Date((progress * duration)).toISOString().substr(11, 8)}
+                                    Elapsed: {new Date((progress * duration)).toISOString().substring(11, 19)}
                                 </Text>
                             </View>
                         </View>
