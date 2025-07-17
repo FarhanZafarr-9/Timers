@@ -31,7 +31,7 @@ export default function Wave({
         };
     }, [speed]);
 
-    const points = 1000;
+    const points = 300;
     const dx = width / points;
     let path = '';
 

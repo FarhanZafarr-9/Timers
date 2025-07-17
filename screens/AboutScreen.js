@@ -4,7 +4,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import ScreenWithHeader from '../components/ScreenWithHeder';
 import { appVersion } from '../utils/functions';
-import { showToast, appBuild } from '../utils/functions';
+import { appBuild } from '../utils/functions';
 import AboutMeModal from '../components/AboutMeModal';
 import Toast from 'react-native-toast-message';
 

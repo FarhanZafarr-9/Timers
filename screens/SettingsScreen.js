@@ -613,6 +613,7 @@ export default function SettingsScreen() {
                                 placeholder="Select mode"
                                 colors={colors}
                                 variables={variables}
+                                note={'Emoji mode has been  removed due to its adaptability issues, but no worries, its still under development'}
                             />
                         </TouchableOpacity>
 

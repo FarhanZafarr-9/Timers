@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Keyboard, TouchableWithoutFeedback, View, Text, ActivityIndicator, StyleSheet, TextInput, Image, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { useSecurity } from './SecurityContext';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
-import { showToast } from './functions';
+import Toast from 'react-native-toast-message';
 import { AppState } from 'react-native';
 import PasswordBottomSheet from '../components/PasswordModal';
 import logo from '../assets/logo.png'
@@ -12,7 +12,7 @@ import { quotes } from './functions';
 const { width, height } = Dimensions.get('window');
 
 const AuthComponent = ({ children }) => {
-    const { variables, colors, isBorder, border } = useTheme();
+    const { variables, colors, border } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const {
@@ -43,6 +43,16 @@ const AuthComponent = ({ children }) => {
     const [showResetModal, setShowResetModal] = useState(false);
     const [wasAccessedFromRecents, setWasAccessedFromRecents] = useState(false);
     const [appState, setAppState] = useState(AppState.currentState);
+
+    const showToast = (type, text1, text2 = '') => {
+        Toast.show({ type, text1, text2 });
+    };
+
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const addMessage = useCallback((text, type = 'info') => {
+        showToast(type, capitalize(type), text);
+    }, []);
 
 
     const [hasMounted, setHasMounted] = useState(false);
@@ -196,7 +206,7 @@ const AuthComponent = ({ children }) => {
             await unlockApp();
             setAuthenticated(true);
         } else {
-            showToast('Fingerprint authentication failed. Please try again.');
+            addMeesage('Fingerprint authentication failed. Please try again.');
         }
     };
 
@@ -432,7 +442,7 @@ const AuthComponent = ({ children }) => {
             setShowPasswordInput(false);
 
         } else {
-            showToast('Incorrect password');
+            addMessage('Incorrect password', 'error');
         }
     };
 
@@ -448,11 +458,11 @@ const AuthComponent = ({ children }) => {
         try {
             await savePassword(newPassword);
             setShowResetModal(false);
-            showToast('Password reset successfully!');
+            addMessage('Password reset successfully!', 'success');
             await unlockApp();
             setAuthenticated(true);
         } catch {
-            showToast('Failed to reset password. Please try again.');
+            addMessage('Failed to reset password. Please try again.', 'error');
         }
     };
 

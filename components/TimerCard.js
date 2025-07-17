@@ -640,7 +640,7 @@ const TimerCard = ({
     return (
         <>
             <ViewShot ref={cardRef} options={{ format: 'png', quality: 1 }}>
-                <TouchableOpacity onPress={handleCardPress} activeOpacity={0.7}>
+                <TouchableOpacity onPress={handleCardPress} activeOpacity={1}>
                     {layoutMode === 'grid' ? (
                         <View style={cardStyle}>
                             <View style={styles.header}>
@@ -673,7 +673,7 @@ const TimerCard = ({
                                         >
                                             <View
                                                 style={{
-                                                    width: `${timerState.progressPct}%`,
+                                                    width: `${Math.round(timerState.progressPct)}%`,
                                                     height: '100%',
                                                     backgroundColor: colors.highlight + 'b0',
                                                     borderRadius: 8
@@ -684,22 +684,20 @@ const TimerCard = ({
                                         <View
                                             style={{
                                                 height: 20,
-                                                width: '100%',
+                                                width: (screenWidth * 0.38) * (timerState.progressPct / 100),
+                                                maxWidth: screenWidth * 0.38,
                                                 backgroundColor: colors.highlight + '20',
                                                 borderRadius: 6,
                                                 overflow: 'hidden',
                                                 marginTop: 12,
                                             }}
                                         >
-                                            <WaveProgress
-                                                progressPct={timerState.progressPct}
-                                                amplitude={2}
+                                            <Wave
+                                                amplitude={4}
                                                 frequency={10}
                                                 speed={3000}
                                                 height={20}
-                                                width={screenWidth * 0.38}
-                                                colorCompleted={colors.highlight}
-                                                colorRemaining={colors.highlight + '20'}
+                                                color={colors.highlight}
                                             />
                                         </View>
 
@@ -766,7 +764,7 @@ const TimerCard = ({
                                     marginTop: 8,
                                     gap: 10,
                                     width: '100%',
-                                    justifyContent: 'flex-start'
+                                    justifyContent: 'space-between'
                                 }}>
                                     <>
                                         {progressMode === 'linear' ? (
@@ -792,20 +790,18 @@ const TimerCard = ({
                                             <View
                                                 style={{
                                                     height: 20,
-                                                    backgroundColor: colors.highlight + '20',
+                                                    width: (screenWidth * 0.74) * (timerState.progressPct / 100),
+                                                    maxWidth: screenWidth * 0.74,
                                                     borderRadius: 6,
-                                                    overflow: 'visible',
+                                                    overflow: 'hidden',
                                                 }}
                                             >
-                                                <WaveProgress
-                                                    progressPct={timerState.progressPct}
-                                                    amplitude={5}
+                                                <Wave
+                                                    amplitude={6}
                                                     frequency={10}
                                                     speed={3500}
                                                     height={20}
-                                                    width={screenWidth * 0.74}
-                                                    colorCompleted={colors.highlight}
-                                                    colorRemaining={colors.highlight + '20'}
+                                                    color={colors.highlight}
                                                 />
                                             </View>
 
