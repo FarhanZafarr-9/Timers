@@ -1,6 +1,6 @@
 import { Text } from 'react-native';
 
-const HighlightMatchText = ({ text, textStyle, search, colors }) => {
+const HighlightText = ({ text, textStyle, search, colors }) => {
 
     if (!search) return <Text style={textStyle}>{text}</Text>;
 
@@ -35,4 +35,4 @@ const HighlightMatchText = ({ text, textStyle, search, colors }) => {
     );
 };
 
-export default HighlightMatchText;
+export default HighlightText;

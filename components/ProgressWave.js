@@ -5,7 +5,7 @@ import Wave from './Wave'; // assuming your existing Wave component is here
 // Get screen width once at module level to avoid repeated calls
 const screenWidth = Dimensions.get('window').width;
 
-export default React.memo(function WaveProgress({
+export default React.memo(function ProgressWave({
     progressPct = 50,
     amplitude = 3,
     frequency = 2,

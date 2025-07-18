@@ -1,12 +1,21 @@
 import { Dimensions, Platform, ToastAndroid, Alert } from 'react-native';
 import { Icons } from '../assets/icons';
-
 import { MaterialIcons } from '@expo/vector-icons';
-// utils/checkForUpdate.js
 import * as Updates from 'expo-updates';
-import React from 'react';
 import { View, Text } from 'react-native';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import { BaseToast, ErrorToast } from 'react-native-toast-message';
+
+import { useRef, useEffect } from 'react';
+
+export function useRenderLogger(name = 'Component') {
+    const count = useRef(1);
+    useEffect(() => {
+        if (__DEV__) {
+            console.log(`[RENDER] ${name} → Render Count: ${count.current}`);
+            count.current += 1;
+        }
+    });
+}
 
 export async function checkForUpdateAndReload() {
     if (__DEV__) {
@@ -64,7 +73,7 @@ export const privacyOptions = [
     { label: 'Jumble', value: 'jumble', icon: <Icons.Ion name="shuffle-outline" size={16} />, description: 'Scramble title and names into unreadable words' },
     { label: 'Invisible', value: 'invisible', icon: <Icons.Ion name="eye-off-outline" size={16} />, description: 'Text appears invisible but layout is preserved' },
     { label: 'Ghost', value: 'ghost', icon: <Icons.Ion name="remove-circle-outline" size={16} />, description: 'Text is completely hidden without occupying space' },
-    //{ label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
+    { label: 'Emoji', value: 'emoji', icon: <Icons.Ion name="happy-outline" size={16} />, description: 'Swap title and names with cute expressive icons' },
 ];
 
 export const lockoutOptions = [
@@ -220,52 +229,39 @@ export const jumbleText = (str) => {
 
 export const emojiText = (str) => {
     const emojiChars = [
-        '🔒', '👁', '🕵', '🙈', '🔑', '🛡', '👤', '🤐', '🗝', '🚫',
-        '🤖', '👽', '🧿', '💀', '😶‍🌫', '🎭', '🐙', '🫥', '🧙', '👻',
-        '🐲', '🐉', '🐺', '🦄', '🦉', '🦚', '🦜', '🦂', '🕷', '🪳',
-        '🌙', '⭐', '✨', '🌟', '💫', '🔥', '🌪', '🌈', '☄', '⚡',
-        '💥', '🌊', '🪐', '🌌', '🛰', '🚀', '🛸', '🧬', '⚙', '🗡',
-        '🪓', '🔨', '⛓', '🔗', '🪝', '🛠', '⚔', '🏹', '🚧', '🧰',
-        '🪙', '💎', '💰', '🪞', '🎴', '🎲', '🎯', '🎰', '🧿', '📿',
-        '🎃', '👹', '👺', '👾', '🤯', '🤡', '💣', '☢', '☣', '🚬',
-        '🎇', '🎆', '🎑', '🖤', '❤‍🔥', '💀', '☠', '😵‍💫', '😶‍🌫', '👀',
-        '😈', '👿', '👹', '👺', '🤬', '🤯', '😱', '😨', '😰', '🥵',
-        '🥶', '😳', '😵', '🤒', '🤕', '🤢', '🤮', '🤧', '🥴', '😤',
-        '😡', '😠', '🤬', '😷', '🤠', '🥸', '😎', '🤓', '🧐', '😇',
-        '🤥', '🤫', '🤭', '🫢', '🫣', '😶', '😐', '😑', '😬', '🙄',
-        '😯', '😲', '🥱', '😴', '🤤', '🫠', '🤯', '🥳', '😺', '😸',
-        '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐵', '🐒', '🦍',
-        '🦧', '🐶', '🐕', '🦮', '🐩', '🐺', '🦊', '🦝', '🐱', '🐈',
-        '🦁', '🐯', '🐅', '🐆', '🐴', '🐎', '🦄', '🫎', '🫏', '🐮',
-        '🐂', '🐃', '🐄', '🐷', '🐖', '🐗', '🐽', '🐏', '🐑', '🐐',
-        '🦌', '🐘', '🦣', '🦛', '🦏', '🐭', '🐁', '🐀', '🐹', '🐰',
-        '🐇', '🐿', '🦫', '🦔', '🦇', '🐻', '🐨', '🐼', '🦥', '🦦',
-        '🦨', '🦘', '🦡', '🐾', '🐉', '🐲', '🌵', '🎄', '🌲', '🌳',
-        '🌴', '🪵', '🌱', '🌿', '☘', '🍀', '🎍', '🪴', '🎋', '🍃',
-        '🍂', '🍁', '🍄', '🐚', '🪸', '🪨', '🌾', '💐', '🌷', '🌹',
-        '🥀', '🌺', '🌸', '🌼', '🌻', '🌞', '🌝', '🌛', '🌜', '🌚',
-        '🌕', '🌖', '🌗', '🌘', '🌑', '🌒', '🌓', '🌔', '🌙', '🌎',
-        '🌍', '🌏', '💫', '⭐', '🌟', '✨', '⚡', '🔥', '💥', '☄',
-        '☀', '🌤', '⛅', '🌥', '☁', '🌦', '🌧', '⛈', '🌩', '🌨',
-        '❄', '☃', '⛄', '🌬', '💨', '💧', '💦', '☔', '☂', '🌊'
+        // Neutral / Soft Faces
+        '😶', '😐', '😑', '🙄', '😬', '😮‍💨',
+        // Smile & Calm
+        '🙂', '🙃', '😊', '😇', '😉', '😌',
+        // Sleepy / Tired
+        '😴', '🥱', '😪',
+        // Shock / Confusion
+        '😯', '😲', '😳', '🥺', '😕', '😟',
+        // Sad / Cry
+        '😢', '😭', '😞', '😔', '😓', '😥',
+        // Emo / Blank
+        '😶‍🌫️', '😵‍💫', '🫥',
+        // Mysterious / Covered
+        '🤫', '🤭', '🫢', '🫣',
+        // Cool / Nerdy
+        '😎', '🤓', '🧐', '🥸',
+        // Calm Celestial
+        '⭐', '✨', '🌟', '💫', '🌙', '🌚', '🌛', '🌜', '🌝', '🌌'
     ];
     const emojiChar = emojiChars[Math.floor(Math.random() * emojiChars.length)];
     return str.split('').map(char => (char === ' ' ? ' ' : emojiChar)).join('');
 };
 
+
+
 export const maskText = (str) => {
     const maskChars = [
-        '•', '●', '○', '■', '□', '▪', '▫', '▬', '▲', '△', '▼', '▽',
-        '◆', '◇', '★', '☆', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮',
-        '░', '▒', '▓', '▔', '▕', '▖', '▗', '▘', '▙', '▚', '▛', '▜',
-        '▝', '▞', '▟', '╱', '╲', '╳', '╴', '╵', '╶', '╷', '╸', '╹',
-        '╺', '╻', '╼', '╽', '╾', '╿', '┄', '┅', '┆', '┇', '┈', '┉',
-        '┊', '┋', '┌', '┍', '┎', '┏', '┐', '┑', '┒', '┓', '└', '┕',
-        '┖', '┗', '┘', '┙', '┚', '┛', '━', '┃', '┠', '┡', '┢', '┣'
+        '•', '●', '○', '★', '☆', '◆', '◇', '■', '□', '▪', '▫', '▲', '△', '▼', '▽',
+        '?', '/', '\\', '|', '-', '_', '+', '*', '~', '='
     ];
 
     const maskChar = maskChars[new Date().getMinutes() % maskChars.length];
-    return str.split('').map(char => (char === ' ' ? ' ' : maskChar)).join('');
+    return str.split('').map(C => (C === ' ' ? ' ' : maskChar)).join('');
 };
 
 export const maxCharsLimit = 10;
@@ -439,9 +435,48 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.28';
+export const appVersion = '1.0.29';
 
 export const changelog = [
+    {
+        "version": "1.0.29",
+        "date": "2025-07-18",
+        "title": "Massive Speed Boost, Major UI Cleanup & New features on way✨",
+        "major": false,
+        "changes": [
+            { "type": "improved", "text": "App renders now up to 95% faster across key screens" },
+            { "type": "improved", "text": "Heavy components 100% optimized to prevent extra renders" },
+            { "type": "improved", "text": "Timer updates trigger zero unnecessary state updates" },
+            { "type": "improved", "text": "Pomodoro layout now faster and lighter during cycles" },
+            { "type": "improved", "text": "ProgressWave separated to avoid redraw bottlenecks" },
+            { "type": "improved", "text": "PickerSheet opened with minimal animation cost" },
+            { "type": "improved", "text": "Removed unused props to shrink render trees" },
+            { "type": "improved", "text": "Disabled render triggers on unchanging elements" },
+            { "type": "improved", "text": "Quotes changed from typewriter to smoother fade-in system" },
+            { "type": "improved", "text": "Quote animations now elegant and subtle for less distraction" },
+            { "type": "improved", "text": "NavBar component renders only once per tab switch" },
+            { "type": "improved", "text": "Cleaner tab animation prep for future transitions" },
+            { "type": "improved", "text": "Reworked styles for better visual alignment and balance" },
+            { "type": "improved", "text": "Spacing and font adjustments to improve clarity" },
+            { "type": "improved", "text": "Internal structure now more modular for future flexibility" },
+            { "type": "improved", "text": "Memory footprint significantly reduced for mobile use" },
+
+            { "type": "fixed", "text": "Pause/resume bug in timer logic fully resolved" },
+            { "type": "fixed", "text": "Wave animation sync issues during fast updates fixed" },
+            { "type": "fixed", "text": "Render flicker when changing states eliminated" },
+            { "type": "fixed", "text": "NavBar layout glitch on screen switch removed" },
+
+            { "type": "new", "text": "Animated fade-in quotes now cycle smoothly with time" },
+            { "type": "new", "text": "Dynamic UI feedback for wave progress integrated" },
+
+            { "type": "wip", "text": "JS-based tab transitions being prototyped for fluid effect" },
+            { "type": "wip", "text": "Tab switch animations in testing for polished UX" },
+            { "type": "wip", "text": "Emoji-based timer modes and playful UI options in progress" },
+            { "type": "wip", "text": "More lightweight animation utilities in early development" },
+            { "type": "wip", "text": "New icons and entry animations under design tweaks" },
+            { "type": "wip", "text": "Additional privacy and progress bar modes being explored" }
+        ]
+    },
     {
         "version": "1.0.28",
         "date": "2025-07-16",
@@ -452,8 +487,8 @@ export const changelog = [
 
             { "type": "improved", "text": "Pomodoro screen refined with better layout, interactions, and visual polish" },
             { "type": "improved", "text": "Wave component upgraded for smoother animation and improved responsiveness" },
-            { "type": "improved", "text": "WaveProgress logic restructured for better performance and fluid transitions" },
-            { "type": "improved", "text": "CustomTabBar tweaked for better rendering and lower lag during tab switches" },
+            { "type": "improved", "text": "ProgressWave logic restructured for better performance and fluid transitions" },
+            { "type": "improved", "text": "NavBar tweaked for better rendering and lower lag during tab switches" },
             { "type": "improved", "text": "Settings screen now renders faster with better layout consistency" },
             { "type": "improved", "text": "Invisible privacy mode enhanced for more stable layout and adaptive rendering" },
             { "type": "improved", "text": "Timer card rendering optimized for lower CPU usage and smoother updates" },

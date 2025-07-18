@@ -7,7 +7,7 @@ import {
     scheduleNotification,
     cancelScheduledNotification,
     clearAllScheduledNotifications
-} from './Notificationhelper';
+} from './Notify';
 
 const TimerContext = createContext();
 const manager = new TimerManager();

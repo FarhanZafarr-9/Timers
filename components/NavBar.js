@@ -13,7 +13,6 @@ import {
     Platform,
     Image,
 } from 'react-native';
-import BottomProfileSheet from './BottomProfileSheet';
 import { useData } from '../utils/DataContext';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
@@ -181,7 +180,7 @@ const memoizedStyles = (navigationMode, insets, variables, colors, border, userD
     },
 });
 
-const CustomNavigation = ({ state, descriptors, navigation }) => {
+const NavBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
     const { variables, colors, navigationMode, headerMode, isBorder, border } = useTheme();
     const styles = memoizedStyles(navigationMode, insets, variables, colors, border, userData);
@@ -687,9 +686,8 @@ const CustomNavigation = ({ state, descriptors, navigation }) => {
         <>
             {renderTabBar()}
             {renderSideNavigation()}
-            <BottomProfileSheet visible={isProfileSheetVisible} onClose={() => setIsProfileSheetVisible(false)} colors={colors} variables={variables} />
         </>
     );
 };
 
-export default React.memo(CustomNavigation);
+export default React.memo(NavBar);

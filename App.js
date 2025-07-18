@@ -7,18 +7,18 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Screens
-import HomeScreen from './screens/HomeScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import AboutScreen from './screens/AboutScreen';
-import TimersScreen from './screens/TimersScreen';
-import PomodoroScreen from './screens/PomodoroScreen';
-import SplashScreen from './screens/SplashScreen';
+import Home from './screens/Home';
+import Settings from './screens/Settings';
+import About from './screens/About';
+import Timers from './screens/Timers';
+import Pomodoro from './screens/Pomodoro';
+import Splash from './screens/Splash';
 
 // Components
-import CustomTabBar from './components/CustomTabBar';
+import NavBar from './components/NavBar';
 import Toast from 'react-native-toast-message';
-import AuthComponent from './utils/AuthComponent';
-import BottomSheetChangelog from './components/BottomSheetChnageLog';
+import AuthContext from './utils/AuthContext';
+import ChnageLogSheet from './components/ChnageLogSheet';
 
 // Context Providers
 import { TimerProvider } from './utils/TimerContext';
@@ -30,10 +30,8 @@ import { DataProvider } from './utils/DataContext';
 import { useCheckForUpdate } from './utils/useCheckForUpdate';
 
 // Utils & Helpers
-import { initializeNotifications } from './utils/Notificationhelper';
+import { initializeNotifications } from './utils/Notify';
 import { checkForUpdateAndReload, toastConfig } from './utils/functions';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function useForceUpdateOnLoad() {
   useEffect(() => {
@@ -65,7 +63,7 @@ function AppContent() {
     return (
       <>
         <StatusBar hidden />
-        <SplashScreen visible colors={colors} variables={variables} />
+        <Splash visible colors={colors} variables={variables} />
       </>
     );
   }
@@ -73,22 +71,22 @@ function AppContent() {
   return (
     <>
       <StatusBar hidden />
-      <AuthComponent>
+      <AuthContext>
         <NavigationContainer>
           <Tab.Navigator
-            tabBar={(props) => <CustomTabBar {...props} />}
+            tabBar={(props) => <NavBar {...props} />}
             screenOptions={{ headerShown: false }}
           >
-            <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="CountUps" component={TimersScreen} initialParams={{ mode: 'countup' }} />
-            <Tab.Screen name="CountDowns" component={TimersScreen} initialParams={{ mode: 'countdown' }} />
-            <Tab.Screen name="Pomodoro" component={PomodoroScreen} />
-            <Tab.Screen name="Settings" component={SettingsScreen} />
-            <Tab.Screen name="About" component={AboutScreen} />
+            <Tab.Screen name="Home" component={Home} />
+            <Tab.Screen name="CountUps" component={Timers} initialParams={{ mode: 'countup' }} />
+            <Tab.Screen name="CountDowns" component={Timers} initialParams={{ mode: 'countdown' }} />
+            <Tab.Screen name="Pomodoro" component={Pomodoro} />
+            <Tab.Screen name="Settings" component={Settings} />
+            <Tab.Screen name="About" component={About} />
           </Tab.Navigator>
         </NavigationContainer>
-      </AuthComponent>
-      <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} />
+      </AuthContext>
+      <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} />
       <Toast config={toastConfig(colors, variables, border)} />
     </>
   );

@@ -6,10 +6,10 @@ import {
     StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import HeaderControlsBottomSheet from './HeaderControlsBottomSheet';
+import HeaderSheet from './HeaderSheet';
 import { useTheme } from '../utils/ThemeContext';
 
-const HeaderControls = ({
+const HeaderActions = ({
     title,
     searchQuery,
     setSearchQuery,
@@ -130,7 +130,7 @@ const HeaderControls = ({
                 </View>
             </View>
 
-            <HeaderControlsBottomSheet
+            <HeaderSheet
                 visible={sheetVisible}
                 onClose={() => setSheetVisible(false)}
                 onAdd={onAdd}
@@ -146,4 +146,4 @@ const HeaderControls = ({
     ) : <></>;
 };
 
-export default HeaderControls;
+export default HeaderActions;

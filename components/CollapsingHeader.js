@@ -3,7 +3,7 @@ import { Animated, View, StyleSheet } from 'react-native';
 import { shouldForceCollapsed, MAX_HEADER_HEIGHT, MIN_HEADER_HEIGHT, HEADER_MARGIN_TOP } from '../utils/functions';
 import { useTheme } from '../utils/ThemeContext';
 
-export default function CollapsibleHeader({
+export default function CollapsingHeader({
     icon,
     title,
     scrollY,

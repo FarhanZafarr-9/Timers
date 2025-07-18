@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Icons } from '../assets/icons';
-import HighlightMatchText from './HighlightMatchText';
+import HighlightText from './HighlightText';
 import { getPrivacyText } from '../utils/functions';
 import ViewShot from 'react-native-view-shot';
-import ExportBottomSheet from './ExportBottomSheet';
+import ExportSheet from './ExportSheet';
 import { useTheme } from '../utils/ThemeContext';
 import { useSecurity } from '../utils/SecurityContext';
 import Wave from './Wave';
-import WaveProgress from './WaveProgress';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -26,11 +25,18 @@ const TimerCard = ({
     defaultUnit,
     layoutMode
 }) => {
+
     const [showOverlay, setShowOverlay] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const showOverlayRef = useRef(false);
+
+    // Update ref when showOverlay changes
+    useEffect(() => {
+        showOverlayRef.current = showOverlay;
+    }, [showOverlay]);
     const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
     const isLongTitle = timer.title && timer.title.length > 12;
     const titleText = isLongTitle
@@ -46,14 +52,9 @@ const TimerCard = ({
     const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
     const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
 
-    const [timerState, setTimerState] = useState({
-        now: Date.now(),
-        progressPct: 0,
-        timeParts: [0, 0, 0, 0, 0, 0],
+    const [staticTimerData, setStaticTimerData] = useState({
         formattedDate: '',
-        status: 'ongoing',
-        recurrenceCount: 0,
-        detailedTime: '0 seconds'
+        recurrenceCount: 0
     });
 
     const cardRef = useRef();
@@ -62,6 +63,44 @@ const TimerCard = ({
     timerRef.current = timer;
 
     const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
+
+    // Memoize static styles that don't change
+    const staticStyles = useMemo(() => ({
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        midSection: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 8,
+        },
+        alignItemsFlexStart: {
+            alignItems: 'flex-start',
+            marginTop: 8
+        },
+        flexRowGap8: {
+            flexDirection: 'row',
+            gap: 8,
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
+        marginBottom2: {
+            marginBottom: 2
+        },
+        opacity05: {
+            opacity: 0.5
+        },
+        paddingLeft0: {
+            paddingLeft: 0
+        },
+        marginHorizontal0: {
+            marginHorizontal: 0
+        }
+    }), []);
 
     const getChippedTime = (unit, timeParts) => {
         const [years, months, days, hours, minutes, seconds] = timeParts;
@@ -84,8 +123,9 @@ const TimerCard = ({
         }
     };
 
-    const calculateTimerState = useCallback((now) => {
+    const calculateStaticTimerData = useCallback(() => {
         const timer = timerRef.current;
+        const now = Date.now();
         let targetDate = timer.date;
         let nextDate = timer.nextDate;
         let recurrenceCount = 0;
@@ -101,28 +141,62 @@ const TimerCard = ({
             }
         }
 
-        const timeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
-        const progressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
-        const status = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
-            ? 'completed'
-            : 'ongoing';
-
         return {
-            now,
-            progressPct,
-            timeParts,
             formattedDate: getFormattedDate({ ...timer, date: targetDate, nextDate }, now),
-            status,
-            recurrenceCount,
-            detailedTime: getDetailedTimeDisplay({ ...timer, date: targetDate, nextDate }, now)
+            recurrenceCount
         };
     }, []);
 
     const [compactChipIndex, setCompactChipIndex] = useState(defaultUnit === 'seconds' ? null : 0);
 
-    // Memoize compact time chip for better performance
-    const renderCompactTimeChip = useMemo(() => {
-        const { timeParts, status } = timerState;
+    // Optimized compact time chip component - memoized to prevent re-renders
+    const CompactTimeChip = useMemo(() => memo(() => {
+        const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
+        const [status, setStatus] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const animationFrameRef = useRef(null);
+        const lastUpdateRef = useRef(0);
+
+        timerRef.current = timer;
+
+        const updateTimeParts = useCallback(() => {
+            const now = Date.now();
+            if (now - lastUpdateRef.current < 200) {
+                animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+                return;
+            }
+            lastUpdateRef.current = now;
+
+            const timer = timerRef.current;
+            let targetDate = timer.date;
+            let nextDate = timer.nextDate;
+
+            if (timer.isRecurring && timer.date < now) {
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
+            }
+
+            const newTimeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
+            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
+                ? 'completed'
+                : 'ongoing';
+
+            setTimeParts(newTimeParts);
+            setStatus(newStatus);
+
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+        }, []);
+
+        useEffect(() => {
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+            return () => {
+                if (animationFrameRef.current) {
+                    cancelAnimationFrame(animationFrameRef.current);
+                }
+            };
+        }, [updateTimeParts]);
+
         const [years, months, days, hours, minutes, seconds] = timeParts;
 
         const timePartsArray = [
@@ -171,7 +245,7 @@ const TimerCard = ({
                 </Text>
             </TouchableOpacity>
         );
-    }, [timerState.timeParts, timerState.status, compactChipIndex, colors.highlight, styles.chip, styles.chipContainer, styles.chipText]);
+    }), [compactChipIndex, colors.highlight, styles.chip, styles.chipContainer, styles.chipText, getChippedTime]);
 
     function calculateNextOccurrence(timer, now) {
         if (!timer.isRecurring || !timer.recurrenceInterval) {
@@ -215,127 +289,437 @@ const TimerCard = ({
     }
 
     useEffect(() => {
-        let mounted = true;
-        let lastUpdateTime = 0;
-        // Reduce update frequency for better performance - 200ms is sufficient for most timers
-        const updateInterval = 200;
-
-        const updateTimer = () => {
-            if (!mounted) return;
-
-            const now = Date.now();
-            if (now - lastUpdateTime >= updateInterval) {
-                lastUpdateTime = now;
-                setTimerState(calculateTimerState(now));
-            }
-            requestAnimationFrame(updateTimer);
-        };
-
-        const frameId = requestAnimationFrame(updateTimer);
-        return () => {
-            mounted = false;
-            cancelAnimationFrame(frameId);
-        };
-    }, [calculateTimerState]);
+        // Calculate static data once on mount and when timer changes
+        setStaticTimerData(calculateStaticTimerData());
+    }, [calculateStaticTimerData, timer]);
 
     // Helper functions moved outside to prevent recreation
 
 
-    // Memoized render functions
-    const renderTimeChips = useMemo(() => {
-        return () => {
-            const { timeParts, status } = timerState;
-            const [years, months, days, hours, minutes, seconds] = timeParts;
+    // Optimized time chips component - memoized to prevent re-renders
+    const TimeChipsDisplay = useMemo(() => memo(() => {
+        const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
+        const [status, setStatus] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const animationFrameRef = useRef(null);
+        const lastUpdateRef = useRef(0);
 
-            const timePartsArray = [
-                { value: years, label: 'y', id: 'years', fullLabel: 'Years' },
-                { value: months, label: 'mo', id: 'months', fullLabel: 'Months' },
-                { value: days, label: 'd', id: 'days', fullLabel: 'Days' },
-                { value: hours, label: 'h', id: 'hours', fullLabel: 'Hours' },
-                { value: minutes, label: 'm', id: 'minutes', fullLabel: 'Minutes' },
-                { value: seconds, label: 's', id: 'seconds', fullLabel: 'Seconds' },
-            ];
-            const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+        timerRef.current = timer;
 
-            if (nonZeroParts.length === 0 || status === 'completed') {
-                return (
-                    <View style={styles.chipContainer}>
-                        <Text style={styles.chipText}>Completed</Text>
-                    </View>
-                );
+        const updateTimeParts = useCallback(() => {
+            const now = Date.now();
+            if (now - lastUpdateRef.current < 200) {
+                animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+                return;
+            }
+            lastUpdateRef.current = now;
+
+            const timer = timerRef.current;
+            let targetDate = timer.date;
+            let nextDate = timer.nextDate;
+
+            if (timer.isRecurring && timer.date < now) {
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
             }
 
-            if (activeChip) {
-                const chip = timePartsArray.find(part => part.id === activeChip);
-                if (!chip) return null;
-                return (
-                    <View style={styles.chipContainer}>
-                        <TouchableOpacity
-                            style={[
-                                styles.chip,
-                                { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
-                            ]}
-                            onPress={() => setActiveChip(null)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
-                                {getChippedTime(chip.id, timeParts)} {chip.fullLabel}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                );
-            }
+            const newTimeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
+            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
+                ? 'completed'
+                : 'ongoing';
 
+            setTimeParts(newTimeParts);
+            setStatus(newStatus);
+
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+        }, []);
+
+        useEffect(() => {
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+            return () => {
+                if (animationFrameRef.current) {
+                    cancelAnimationFrame(animationFrameRef.current);
+                }
+            };
+        }, [updateTimeParts]);
+
+        const [years, months, days, hours, minutes, seconds] = timeParts;
+
+        const timePartsArray = [
+            { value: years, label: 'y', id: 'years', fullLabel: 'Years' },
+            { value: months, label: 'mo', id: 'months', fullLabel: 'Months' },
+            { value: days, label: 'd', id: 'days', fullLabel: 'Days' },
+            { value: hours, label: 'h', id: 'hours', fullLabel: 'Hours' },
+            { value: minutes, label: 'm', id: 'minutes', fullLabel: 'Minutes' },
+            { value: seconds, label: 's', id: 'seconds', fullLabel: 'Seconds' },
+        ];
+        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+
+        if (nonZeroParts.length === 0 || status === 'completed') {
             return (
                 <View style={styles.chipContainer}>
-                    {nonZeroParts.map(part => (
-                        <TouchableOpacity
-                            key={part.id}
-                            style={styles.chip}
-                            onPress={() => setActiveChip(part.id)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.chipText}>{part.value}{part.label}</Text>
-                        </TouchableOpacity>
-                    ))}
+                    <Text style={styles.chipText}>Completed</Text>
                 </View>
             );
-        };
-    }, [activeChip, colors.highlight, styles, timerState.timeParts, timerState.status]);
+        }
 
-    const renderTimeDisplay = useMemo(() => {
-        return () => {
-            const { timeParts, status } = timerState;
-            const [years, months, days, hours, minutes, seconds] = timeParts;
-
-            const timePartsArray = [
-                { value: years, label: 'y', id: 'years' },
-                { value: months, label: 'mo', id: 'months' },
-                { value: days, label: 'd', id: 'days' },
-                { value: hours, label: 'h', id: 'hours' },
-                { value: minutes, label: 'm', id: 'minutes' },
-                { value: seconds, label: 's', id: 'seconds' },
-            ];
-
-            const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-            const prefix = status === 'completed' ? 'Completed' : `${timer.isCountdown ? 'Left : ' : 'Elapsed : '}`;
-
+        if (activeChip) {
+            const chip = timePartsArray.find(part => part.id === activeChip);
+            if (!chip) return null;
             return (
-                <>
-                    <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
-                    {prefix === 'Completed' ? null : (
-                        nonZeroParts.length > 0
-                            ? nonZeroParts.map((part, idx) => (
-                                <Text style={{ fontSize: 14 }} key={part.id}>
-                                    {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
-                                </Text>
-                            ))
-                            : <Text style={{ fontSize: 14 }}>0s</Text>
-                    )}
-                </>
+                <View style={styles.chipContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.chip,
+                            { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
+                        ]}
+                        onPress={() => setActiveChip(null)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
+                            {getChippedTime(chip.id, timeParts)} {chip.fullLabel}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             );
-        };
-    }, [timerState.timeParts, timerState.status]);
+        }
+
+        return (
+            <View style={styles.chipContainer}>
+                {nonZeroParts.map(part => (
+                    <TouchableOpacity
+                        key={part.id}
+                        style={styles.chip}
+                        onPress={() => setActiveChip(part.id)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.chipText}>{part.value}{part.label}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
+    }), [activeChip, colors.highlight, styles.chip, styles.chipContainer, styles.chipText, getChippedTime]);
+
+    // Optimized time display component - memoized to prevent re-renders
+    const TimeDisplay = useMemo(() => memo(() => {
+        const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
+        const [status, setStatus] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const animationFrameRef = useRef(null);
+        const lastUpdateRef = useRef(0);
+
+        timerRef.current = timer;
+
+        const updateTimeParts = useCallback(() => {
+            const now = Date.now();
+            if (now - lastUpdateRef.current < 200) {
+                animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+                return;
+            }
+            lastUpdateRef.current = now;
+
+            const timer = timerRef.current;
+            let targetDate = timer.date;
+            let nextDate = timer.nextDate;
+
+            if (timer.isRecurring && timer.date < now) {
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
+            }
+
+            const newTimeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
+            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
+                ? 'completed'
+                : 'ongoing';
+
+            setTimeParts(newTimeParts);
+            setStatus(newStatus);
+
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+        }, []);
+
+        useEffect(() => {
+            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
+            return () => {
+                if (animationFrameRef.current) {
+                    cancelAnimationFrame(animationFrameRef.current);
+                }
+            };
+        }, [updateTimeParts]);
+
+        const [years, months, days, hours, minutes, seconds] = timeParts;
+
+        const timePartsArray = [
+            { value: years, label: 'y', id: 'years' },
+            { value: months, label: 'mo', id: 'months' },
+            { value: days, label: 'd', id: 'days' },
+            { value: hours, label: 'h', id: 'hours' },
+            { value: minutes, label: 'm', id: 'minutes' },
+            { value: seconds, label: 's', id: 'seconds' },
+        ];
+
+        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
+        const prefix = status === 'completed' ? 'Completed' : `${timer.isCountdown ? 'Left : ' : 'Elapsed : '}`;
+
+        return (
+            <>
+                <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{prefix}</Text>
+                {prefix === 'Completed' ? null : (
+                    nonZeroParts.length > 0
+                        ? nonZeroParts.map((part, idx) => (
+                            <Text style={{ fontSize: 14 }} key={part.id}>
+                                {part.value}{part.label}{idx !== nonZeroParts.length - 1 ? ' ' : ''}
+                            </Text>
+                        ))
+                        : <Text style={{ fontSize: 14 }}>0s</Text>
+                )}
+            </>
+        );
+    }), [timer.isCountdown]);
+
+    // Optimized progress bar component - memoized to prevent re-renders
+    const ProgressBar = useMemo(() => memo(({ layoutMode }) => {
+        const [progressPct, setProgressPct] = useState(0);
+        const timerRef = useRef(timer);
+        const animationFrameRef = useRef(null);
+        const lastUpdateRef = useRef(0);
+
+        timerRef.current = timer;
+
+        const updateProgress = useCallback(() => {
+            const now = Date.now();
+            if (now - lastUpdateRef.current < 200) {
+                animationFrameRef.current = requestAnimationFrame(updateProgress);
+                return;
+            }
+            lastUpdateRef.current = now;
+
+            const timer = timerRef.current;
+            let targetDate = timer.date;
+            let nextDate = timer.nextDate;
+
+            if (timer.isRecurring && timer.date < now) {
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
+            }
+
+            const newProgressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
+            setProgressPct(newProgressPct);
+
+            animationFrameRef.current = requestAnimationFrame(updateProgress);
+        }, []);
+
+        useEffect(() => {
+            if (timer.isCountdown && timer.isRecurring) {
+                animationFrameRef.current = requestAnimationFrame(updateProgress);
+            }
+            return () => {
+                if (animationFrameRef.current) {
+                    cancelAnimationFrame(animationFrameRef.current);
+                }
+            };
+        }, [updateProgress, timer.isCountdown, timer.isRecurring]);
+
+        if (!timer.isCountdown || !timer.isRecurring) {
+            return null;
+        }
+
+        if (layoutMode === 'grid') {
+            return (
+                <View>
+                    {progressMode === 'linear' ? (
+                        <View
+                            style={{
+                                height: 6,
+                                width: '100%',
+                                backgroundColor: colors.highlight + '20',
+                                borderRadius: 6,
+                                overflow: 'hidden',
+                                marginTop: 12
+                            }}
+                        >
+                            <View
+                                style={{
+                                    width: `${Math.round(progressPct)}%`,
+                                    height: '100%',
+                                    backgroundColor: colors.highlight + 'b0',
+                                    borderRadius: 8
+                                }}
+                            />
+                        </View>
+                    ) : (
+                        <View
+                            style={{
+                                height: 20,
+                                width: (screenWidth * 0.38) * (progressPct / 100),
+                                maxWidth: screenWidth * 0.38,
+                                backgroundColor: colors.highlight + '20',
+                                borderRadius: 6,
+                                overflow: 'hidden',
+                                marginTop: 12,
+                            }}
+                        >
+                            <Wave
+                                amplitude={4}
+                                frequency={10}
+                                speed={3000}
+                                height={20}
+                                color={colors.highlight}
+                            />
+                        </View>
+                    )}
+                </View>
+            );
+        } else {
+            return (
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginTop: 8,
+                    gap: 10,
+                    width: '100%',
+                    justifyContent: 'space-between'
+                }}>
+                    <>
+                        {progressMode === 'linear' ? (
+                            <View
+                                style={{
+                                    height: 6,
+                                    width: '85%',
+                                    backgroundColor: colors.highlight + '20',
+                                    borderRadius: 6,
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: `${progressPct}%`,
+                                        height: '100%',
+                                        backgroundColor: colors.highlight + 'b0',
+                                        borderRadius: 8
+                                    }}
+                                />
+                            </View>
+                        ) : (
+                            <View
+                                style={{
+                                    height: 20,
+                                    width: (screenWidth * 0.74) * (progressPct / 100),
+                                    maxWidth: screenWidth * 0.74,
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <Wave
+                                    amplitude={6}
+                                    frequency={10}
+                                    speed={3500}
+                                    height={20}
+                                    color={colors.highlight}
+                                />
+                            </View>
+                        )}
+                    </>
+
+                    <Text
+                        style={{
+                            color: colors.textDesc,
+                            fontSize: 12,
+                            fontWeight: '500',
+                            opacity: 0.8,
+                            width: '15%',
+                            lineHeight: 20,
+                            paddingLeft: 10,
+                            alignSelf: 'center'
+                        }}
+                    >
+                        {progressPct.toFixed(2)} %
+                    </Text>
+                </View>
+            );
+        }
+    }), [colors.highlight, progressMode, screenWidth]);
+
+    // Optimized detailed progress display for modal - memoized to prevent re-renders
+    const DetailedProgressDisplay = useMemo(() => memo(() => {
+        const [progressPct, setProgressPct] = useState(0);
+        const [status, setStatus] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const animationFrameRef = useRef(null);
+        const lastUpdateRef = useRef(0);
+
+        timerRef.current = timer;
+
+        const updateProgress = useCallback(() => {
+            const now = Date.now();
+            if (now - lastUpdateRef.current < 200) {
+                animationFrameRef.current = requestAnimationFrame(updateProgress);
+                return;
+            }
+            lastUpdateRef.current = now;
+
+            const timer = timerRef.current;
+            let targetDate = timer.date;
+            let nextDate = timer.nextDate;
+
+            if (timer.isRecurring && timer.date < now) {
+                const result = calculateNextOccurrence(timer, now);
+                targetDate = result.nextDate;
+                nextDate = result.nextDate;
+            }
+
+            const newProgressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
+            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
+                ? 'completed'
+                : 'ongoing';
+
+            setProgressPct(newProgressPct);
+            setStatus(newStatus);
+
+            animationFrameRef.current = requestAnimationFrame(updateProgress);
+        }, []);
+
+        useEffect(() => {
+            animationFrameRef.current = requestAnimationFrame(updateProgress);
+            return () => {
+                if (animationFrameRef.current) {
+                    cancelAnimationFrame(animationFrameRef.current);
+                }
+            };
+        }, [updateProgress]);
+
+        if (!timer.isCountdown || status !== 'ongoing') {
+            return null;
+        }
+
+        return (
+            <Text
+                style={{
+                    color: colors.textDesc,
+                    fontSize: 12,
+                    fontWeight: '600',
+                    opacity: 0.8,
+                    marginLeft: 8,
+                    marginBottom: 2
+                }}
+            >
+                {(100 - progressPct).toFixed(4)} %
+            </Text>
+        );
+    }), [colors.textDesc, timer.isCountdown]);
+
+    // Memoized arrow icon component to prevent re-renders
+    const ArrowIcon = useMemo(() => memo(({ colors, showOverlay }) => (
+        <Icons.Material
+            name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+            size={18}
+            color={colors.text}
+            style={staticStyles.opacity05}
+        />
+    )), [staticStyles.opacity05]);
 
     function createStyles() {
         return StyleSheet.create({
@@ -647,10 +1031,10 @@ const TimerCard = ({
                 <TouchableOpacity onPress={handleCardPress} activeOpacity={1}>
                     {layoutMode === 'grid' ? (
                         <View style={cardStyle}>
-                            <View style={styles.header}>
+                            <View style={staticStyles.header}>
                                 <Text style={[
                                     styles.timerTitle,
-                                    { paddingLeft: 0 },
+                                    staticStyles.paddingLeft0,
                                     privacyMode === 'invisible' && { color: colors.settingBlock }
                                 ]}>
                                     {privacyTitleText}
@@ -658,7 +1042,7 @@ const TimerCard = ({
                                 {timer.personName && (
                                     <Text style={[
                                         styles.namePill,
-                                        { marginHorizontal: 0 },
+                                        staticStyles.marginHorizontal0,
                                         privacyMode === 'invisible' && { color: colors.highlight + '00' }
                                     ]}>
                                         {privacyNameText}
@@ -666,63 +1050,18 @@ const TimerCard = ({
                                 )}
                             </View>
 
-                            <View style={{ alignItems: 'flex-start', marginTop: 8 }}>
-                                {renderCompactTimeChip}
+                            <View style={staticStyles.alignItemsFlexStart}>
+                                <CompactTimeChip />
                             </View>
 
-                            {timer.isCountdown && timer.isRecurring && (
-                                <View>
-                                    {progressMode === 'linear' ? (
-                                        <View
-                                            style={{
-                                                height: 6,
-                                                width: '100%',
-                                                backgroundColor: colors.highlight + '20',
-                                                borderRadius: 6,
-                                                overflow: 'hidden',
-                                                marginTop: 12
-                                            }}
-                                        >
-                                            <View
-                                                style={{
-                                                    width: `${Math.round(timerState.progressPct)}%`,
-                                                    height: '100%',
-                                                    backgroundColor: colors.highlight + 'b0',
-                                                    borderRadius: 8
-                                                }}
-                                            />
-                                        </View>
-                                    ) : (
-                                        <View
-                                            style={{
-                                                height: 20,
-                                                width: (screenWidth * 0.38) * (timerState.progressPct / 100),
-                                                maxWidth: screenWidth * 0.38,
-                                                backgroundColor: colors.highlight + '20',
-                                                borderRadius: 6,
-                                                overflow: 'hidden',
-                                                marginTop: 12,
-                                            }}
-                                        >
-                                            <Wave
-                                                amplitude={4}
-                                                frequency={10}
-                                                speed={3000}
-                                                height={20}
-                                                color={colors.highlight}
-                                            />
-                                        </View>
-
-                                    )}
-                                </View>
-                            )}
+                            <ProgressBar layoutMode="grid" />
                         </View>
                     ) : (
                         <View style={cardStyle}>
-                            <View style={styles.header}>
+                            <View style={staticStyles.header}>
                                 {privacyMode === 'off' ? (
-                                    <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
-                                        <HighlightMatchText
+                                    <View style={staticStyles.flexRowGap8}>
+                                        <HighlightText
                                             text={titleText}
                                             textStyle={styles.timerTitle}
                                             search={searchText}
@@ -732,7 +1071,7 @@ const TimerCard = ({
                                             name={"favorite"}
                                             size={10}
                                             color={colors.highlight}
-                                            style={{ marginBottom: 2 }}
+                                            style={staticStyles.marginBottom2}
                                         />}
                                     </View>
                                 ) : (
@@ -746,7 +1085,7 @@ const TimerCard = ({
                                 <View style={styles.priorityIndicator}>
                                     {timer.personName && (
                                         privacyMode === 'off' ? (
-                                            <HighlightMatchText
+                                            <HighlightText
                                                 text={nameText}
                                                 textStyle={styles.namePill}
                                                 search={searchText}
@@ -764,85 +1103,13 @@ const TimerCard = ({
                                 </View>
                             </View>
 
-                            <View style={styles.midSection}>
+                            <View style={staticStyles.midSection}>
                                 <Text style={styles.timerQuickInfo}>
-                                    {renderTimeDisplay()}
+                                    <TimeDisplay />
                                 </Text>
-                                <Icons.Material
-                                    name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                                    size={18}
-                                    color={colors.text}
-                                    style={{ opacity: 0.5 }}
-                                />
+                                <ArrowIcon colors={colors} showOverlay={showOverlay} />
                             </View>
-                            {timer.isCountdown && timer.isRecurring && (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    marginTop: 8,
-                                    gap: 10,
-                                    width: '100%',
-                                    justifyContent: 'space-between'
-                                }}>
-                                    <>
-                                        {progressMode === 'linear' ? (
-                                            <View
-                                                style={{
-                                                    height: 6,
-                                                    width: '85%',
-                                                    backgroundColor: colors.highlight + '20',
-                                                    borderRadius: 6,
-                                                    overflow: 'hidden'
-                                                }}
-                                            >
-                                                <View
-                                                    style={{
-                                                        width: `${timerState.progressPct}%`,
-                                                        height: '100%',
-                                                        backgroundColor: colors.highlight + 'b0',
-                                                        borderRadius: 8
-                                                    }}
-                                                />
-                                            </View>
-                                        ) : (
-                                            <View
-                                                style={{
-                                                    height: 20,
-                                                    width: (screenWidth * 0.74) * (timerState.progressPct / 100),
-                                                    maxWidth: screenWidth * 0.74,
-                                                    borderRadius: 6,
-                                                    overflow: 'hidden',
-                                                }}
-                                            >
-                                                <Wave
-                                                    amplitude={6}
-                                                    frequency={10}
-                                                    speed={3500}
-                                                    height={20}
-                                                    color={colors.highlight}
-                                                />
-                                            </View>
-
-                                        )}
-                                    </>
-
-                                    <Text
-                                        style={{
-                                            color: colors.textDesc,
-                                            fontSize: 12,
-                                            fontWeight: '500',
-                                            opacity: 0.8,
-                                            width: '15%',
-                                            lineHeight: 20,
-                                            paddingLeft: 10,
-                                            alignSelf: 'center'
-                                        }}
-                                    >
-                                        {timerState.progressPct.toFixed(2)} %
-                                    </Text>
-                                </View>
-
-                            )}
+                            <ProgressBar layoutMode="list" />
                         </View>
                     )}
                 </TouchableOpacity>
@@ -879,7 +1146,7 @@ const TimerCard = ({
                                         </Text>
 
                                         <Text style={styles.detailValue}>
-                                            {timerState.formattedDate}
+                                            {staticTimerData.formattedDate}
                                         </Text>
                                     </View>
 
@@ -911,9 +1178,9 @@ const TimerCard = ({
                                                 </View>
                                             )}
 
-                                            {timer.isRecurring && timerState.recurrenceCount > 0 && (
+                                            {timer.isRecurring && staticTimerData.recurrenceCount > 0 && (
                                                 <View style={styles.statusIndicator}>
-                                                    <Text style={styles.statusText}>{timerState.recurrenceCount}</Text>
+                                                    <Text style={styles.statusText}>{staticTimerData.recurrenceCount}</Text>
                                                 </View>
                                             )}
                                             <View style={styles.statusIndicator}>
@@ -946,39 +1213,15 @@ const TimerCard = ({
                                     </View>
 
                                     {/* Time Section */}
-                                    <View
-                                        style={[
-                                            styles.timeSection,
-                                            {
-                                                paddingBottom: (() => {
-                                                    const nonZeroCount = timerState.timeParts.filter(p => p !== 0).length;
-                                                    const nonZeroOverTen = timerState.timeParts.filter(p => p >= 10).length;
-                                                    return (nonZeroCount > 5 && nonZeroOverTen > 2) ? 35 : 0;
-                                                })()
-                                            }
-                                        ]}
-                                    >
+                                    <View style={[styles.timeSection, { paddingBottom: 16 }]}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <Text style={styles.timeLabel}>
                                                 {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
                                             </Text>
-                                            {timer.isCountdown && timerState.status === 'ongoing' && (
-                                                <Text
-                                                    style={{
-                                                        color: colors.textDesc,
-                                                        fontSize: 12,
-                                                        fontWeight: '600',
-                                                        opacity: 0.8,
-                                                        marginLeft: 8,
-                                                        marginBottom: 2
-                                                    }}
-                                                >
-                                                    {(100 - timerState.progressPct).toFixed(4)} %
-                                                </Text>
-                                            )}
+                                            <DetailedProgressDisplay />
                                         </View>
                                         <Text style={styles.timeValue}>
-                                            {renderTimeChips()}
+                                            <TimeChipsDisplay />
                                         </Text>
                                     </View>
                                 </ViewShot>
@@ -1040,7 +1283,7 @@ const TimerCard = ({
             </Modal >
 
             {/* Export Bottom Sheet */}
-            < ExportBottomSheet
+            < ExportSheet
                 visible={showExportModal}
                 onClose={() => setShowExportModal(false)}
                 cardRef={cardRef}

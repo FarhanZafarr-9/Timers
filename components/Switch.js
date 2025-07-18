@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, Pressable, StyleSheet } from 'react-native';
 
-const ModernSwitch = ({
+const Switch = ({
     value,
     onValueChange,
     trackColor = { false: '#ccc', true: '#4cd964' },
@@ -63,4 +63,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ModernSwitch;
+export default Switch;

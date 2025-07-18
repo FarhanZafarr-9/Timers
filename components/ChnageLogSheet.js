@@ -17,7 +17,7 @@ import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
+const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
     const [lastShownVersion, setLastShownVersionState] = useState(null);
@@ -206,7 +206,7 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
     const headline = latest.major && updateNeeded
         ? "Update Available!"
         : updateNeeded
-            ? `Updated to v${latest.version}`
+            ? `Update to v${latest.version}`
             : "Current Version";
 
     return (
@@ -300,4 +300,4 @@ const BottomSheetChangelog = ({ visible, onClose, forced = false }) => {
     );
 };
 
-export default BottomSheetChangelog;
+export default ChnageLogSheet;

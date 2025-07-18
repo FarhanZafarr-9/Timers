@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 
-const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
+const Splash = ({ variables, colors, visible = true, onHide }) => {
     // Animated values for sliding
     const logoSlide = useRef(new Animated.Value(-550)).current; // Start above
     const textSlide = useRef(new Animated.Value(350)).current;  // Start below
@@ -108,4 +108,4 @@ const SplashScreen = ({ variables, colors, visible = true, onHide }) => {
     );
 };
 
-export default SplashScreen;
+export default Splash;

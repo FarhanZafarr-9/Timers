@@ -3,7 +3,7 @@ import { Modal, View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView, A
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 
-export default function AboutMeModal({ visible, onClose }) {
+export default function AboutModal({ visible, onClose }) {
     const { colors, variables, border } = useTheme();
 
     // Create animated values for each card (start with 1 to make them visible initially)
@@ -72,7 +72,7 @@ export default function AboutMeModal({ visible, onClose }) {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: colors.background ,
+            backgroundColor: colors.background,
             padding: 20,
         },
         closeButton: {
