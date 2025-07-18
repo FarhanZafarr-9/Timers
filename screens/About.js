@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
-import ScreenWithHeader from '../components/ScreenWithHeader';
+import HeaderScreen from '../components/HeaderScreen';
 import { appVersion } from '../utils/functions';
 import { appBuild } from '../utils/functions';
-import AboutMeModal from '../components/AboutMeModal';
+import AboutModal from '../components/AboutModal';
 import Toast from 'react-native-toast-message';
 
-export default function AboutScreen() {
-    const { variables, colors, isBorder, border } = useTheme();
-    // Animations
+export default function About() {
+
+    const { variables, colors, border } = useTheme();
     const topCardAnim = useRef(new Animated.Value(-50)).current;
     const descCardAnim = useRef(new Animated.Value(-50)).current;
     const creditsCardAnim = useRef(new Animated.Value(-50)).current;
@@ -122,7 +122,7 @@ export default function AboutScreen() {
     });
 
     return (
-        <ScreenWithHeader
+        <HeaderScreen
             headerIcon={<Icons.Ion name="information-circle" color={colors.highlight} />}
             headerTitle="About"
             borderRadius={variables.radius.md}
@@ -131,7 +131,7 @@ export default function AboutScreen() {
             paddingX={15}
         >
             {showAboutMe && (
-                <AboutMeModal onClose={() => setShowAboutMe(false)} />
+                <AboutModal onClose={() => setShowAboutMe(false)} />
             )}
             <View style={styles.content}>
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
@@ -183,6 +183,6 @@ export default function AboutScreen() {
                 </Animated.View>
 
             </View>
-        </ScreenWithHeader>
+        </HeaderScreen>
     );
 }

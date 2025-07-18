@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,23 +6,20 @@ import {
     StyleSheet,
     TouchableWithoutFeedback,
     Keyboard,
-    Switch,
     Platform,
     Dimensions,
     Animated,
     Modal
 } from 'react-native';
-import { Icons } from '../assets/icons';
-import FloatingLabelInput from './FloatingLabelInput';
+import LabelInput from './LabelInput';
 import { useTheme } from '../utils/ThemeContext';
-import { WheelPicker, WheelPickerInput } from './RollerPickerInput';
-import BottomSheetPicker from './BottomSheetPicker';
+import { WheelPickerInput } from './PickerInput';
+import PickerSheet from './PickerSheet';
 import { priorityOptions, recurrenceOptions } from '../utils/functions';
-import ModernSwitch from './ModernSwitch';
+import Switch from './Switch';
 
 
-const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) => {
-    const priorities = priorityOptions;
+const AddTimer = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) => {
     const [timerData, setTimerData] = useState({
         title: '',
         personName: '',
@@ -468,7 +465,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                             <View style={styles.scrollContent}>
                                 <View style={styles.inputRow}>
                                     <View style={{ width: '45%' }}>
-                                        <FloatingLabelInput
+                                        <LabelInput
                                             label="Person Name"
                                             value={timerData.personName}
                                             onChangeText={text => setTimerData({ ...timerData, personName: text })}
@@ -480,7 +477,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                         />
                                     </View>
                                     <View style={{ width: '50%' }}>
-                                        <FloatingLabelInput
+                                        <LabelInput
                                             label="Title"
                                             value={timerData.title}
                                             onChangeText={text => setTimerData({ ...timerData, title: text })}
@@ -573,7 +570,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
 
                                 <View style={styles.priorityParentContainer}>
                                     <Text style={styles.label}>Priority</Text>
-                                    <BottomSheetPicker
+                                    <PickerSheet
                                         value={timerData.priority}
                                         options={priorityOptions}
                                         onChange={value => {
@@ -595,7 +592,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                     <View style={styles.recurringContainer}>
                                         <Text style={styles.label}>Is Recurring?</Text>
                                         <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                            <ModernSwitch
+                                            <Switch
                                                 value={timerData.isRecurring}
                                                 onValueChange={val =>
                                                     setTimerData({
@@ -620,7 +617,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
 
                                         <View style={{ width: '80%' }}>
-                                            <FloatingLabelInput
+                                            <LabelInput
                                                 label="(i.e 2 days, 1 month)"
                                                 value={timerData.recurrenceInterval}
                                                 onChangeText={text => setTimerData({ ...timerData, recurrenceInterval: text })}
@@ -632,7 +629,7 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
                                             />
                                         </View>
 
-                                        <BottomSheetPicker
+                                        <PickerSheet
                                             value={timerData.recurrenceInterval}
                                             options={recurrenceOptions}
                                             onChange={value => {
@@ -676,4 +673,4 @@ const AddTimerModal = ({ visible, onClose, onAdd, initialData, mode, isDuplicate
     );
 };
 
-export default AddTimerModal;
+export default AddTimer;

@@ -57,4 +57,3 @@ const ScreenWrapper = ({
 };
 
 export default ScreenWrapper;
-  

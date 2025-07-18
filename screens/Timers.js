@@ -1,20 +1,20 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import TimerCard from '../components/TimerCard';
-import AddTimerModal from '../components/AddTimerModal';
-import HeaderControls from '../components/HeaderControls';
+import AddTimer from '../components/AddTimer';
+import HeaderActions from '../components/HeaderActions';
 import { useTimers } from '../utils/TimerContext';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
-import ScreenWithHeader from '../components/ScreenWithHeader';
+import HeaderScreen from '../components/HeaderScreen';
 import { useSecurity } from '../utils/SecurityContext';
 import { sortOptions } from '../utils/functions';
-import Snackbar from '../components/SnackBar';
 import uuid from 'react-native-uuid';
-import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet'
+import ConfirmSheet from '../components/ConfirmSheet'
 import Toast from 'react-native-toast-message';
 
-export default function TimersScreen({ route }) {
+export default function Timers({ route }) {
+
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
@@ -25,7 +25,6 @@ export default function TimersScreen({ route }) {
     const [isModalVisible, setModalVisible] = useState(false);
     const [editingTimer, setEditingTimer] = useState(null);
     const [isDuplicate, setIsDuplicate] = useState(false);
-    const [expandedCardIds, setExpandedCardIds] = useState(new Set());
     const [isSelectable, setIsSelectable] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [sortMethod, setSortMethod] = useState('priority');
@@ -146,13 +145,6 @@ export default function TimersScreen({ route }) {
         try {
             await removeTimer(id);
             addMessage('Timer deleted', 'success');
-
-            setExpandedCardIds(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(id);
-                return newSet;
-            });
-
             setSelectedIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);
@@ -177,21 +169,10 @@ export default function TimersScreen({ route }) {
     const handleCardClick = useCallback((timerId) => {
         if (isSelectable) {
             handleSelect(timerId);
-        } else {
-            setExpandedCardIds(prev => {
-                const newSet = new Set(prev);
-                if (newSet.has(timerId)) {
-                    newSet.delete(timerId);
-                } else {
-                    newSet.add(timerId);
-                }
-                return newSet;
-            });
         }
     }, [isSelectable, handleSelect]);
 
     function renderTimerCard({ item: timer }) {
-        const isExpanded = expandedCardIds.has(timer.id);
         const isSelected = selectedIds.has(timer.id);
 
         return (
@@ -204,7 +185,6 @@ export default function TimersScreen({ route }) {
                     setEditingTimer(timer);
                     setModalVisible(true);
                 }}
-                isExpanded={isExpanded}
                 handleFavourite={toggleFavourite}
                 onClick={() => handleCardClick(timer.id)}
                 selectable={isSelectable}
@@ -230,11 +210,6 @@ export default function TimersScreen({ route }) {
             addMessage(`Deleted ${idsArray.length} timer${idsArray.length > 1 ? 's' : ''}`, 'success');
             setSelectedIds(new Set());
             setIsSelectable(false);
-            setExpandedCardIds(prev => {
-                const newSet = new Set(prev);
-                idsArray.forEach(id => newSet.delete(id));
-                return newSet;
-            });
             setConfirmVisible(false);
         } catch (error) {
             addMessage('Error deleting timers', 'error');
@@ -300,7 +275,7 @@ export default function TimersScreen({ route }) {
     }), [colors, variables]);
 
     const ListHeaderComponent = useMemo(() => (
-        <HeaderControls
+        <HeaderActions
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSearch={setSearchQuery}
@@ -347,7 +322,7 @@ export default function TimersScreen({ route }) {
 
     return (
         <>
-            <ScreenWithHeader
+            <HeaderScreen
                 key={`layout-${layoutMode}-unit-${defaultUnit}`}
                 headerIcon={<Icons.Ion name={mode === 'countdown' ? 'arrow-down' : 'arrow-up'} size={18} color={colors.highlight} />}
                 headerTitle={isCountdown ? "Countdowns" : "Countups"}
@@ -376,7 +351,7 @@ export default function TimersScreen({ route }) {
                 }}
             />
 
-            <ConfirmationBottomSheet
+            <ConfirmSheet
                 visible={confirmVisible}
                 onClose={() => { setConfirmVisible(false); setTimerToDelete(null); }}
                 onConfirm={confirmAction}
@@ -394,7 +369,7 @@ export default function TimersScreen({ route }) {
                 variables={variables}
             />
 
-            <AddTimerModal
+            <AddTimer
                 visible={isModalVisible}
                 onClose={handleModalClose}
                 onAdd={handleAddTimer}

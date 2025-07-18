@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Animated, FlatList } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
-import CollapsibleHeader from './CollapsibleHeader';
+import CollapsingHeader from './CollapsingHeader';
 import ScreenWrapper from './ScreenWrapper';
 import {
     shouldForceCollapsed,
@@ -10,7 +10,7 @@ import {
     HEADER_MARGIN_TOP
 } from '../utils/functions';
 
-export default function ScreenWithHeader({
+export default function HeaderScreen({
     headerIcon,
     headerTitle,
     borderRadius = 0,
@@ -34,7 +34,7 @@ export default function ScreenWithHeader({
 
     return (
         <>
-            <CollapsibleHeader
+            <CollapsingHeader
                 icon={headerIcon}
                 title={headerTitle}
                 scrollY={scrollY}

@@ -13,7 +13,7 @@ import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const ConfirmationBottomSheet = ({
+const ConfirmSheet = ({
     visible,
     onClose,
     onConfirm,
@@ -243,4 +243,4 @@ const ConfirmationBottomSheet = ({
     );
 };
 
-export default ConfirmationBottomSheet;
+export default ConfirmSheet;

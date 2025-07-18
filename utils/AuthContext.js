@@ -5,18 +5,18 @@ import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import Toast from 'react-native-toast-message';
 import { AppState } from 'react-native';
-import PasswordBottomSheet from '../components/PasswordModal';
+import PasswordPrompt from '../components/PasswordPrompt';
 import logo from '../assets/logo.png'
 import { quotes } from './functions';
 
 const { width, height } = Dimensions.get('window');
 
-const AuthComponent = ({ children }) => {
+const AuthContext = ({ children }) => {
     const { variables, colors, border } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const {
-        passwordModalVisible,
+        PasswordPromptVisible,
         justSetPassword,
         setJustSetPassword,
         isFingerprintEnabled,
@@ -604,7 +604,7 @@ const AuthComponent = ({ children }) => {
 
 
 
-    if (passwordModalVisible || justSetPassword) return children;
+    if (PasswordPromptVisible || justSetPassword) return children;
     if (authenticated && !isAppLocked) {
         return children;
     }
@@ -681,10 +681,10 @@ const AuthComponent = ({ children }) => {
                 </Animated.View>
 
 
-                <PasswordBottomSheet visible={showResetModal} onClose={() => setShowResetModal(false)} onSave={handleResetPasswordSave} currentPassword={password} mode="reset" variables={variables} />
+                <PasswordPrompt visible={showResetModal} onClose={() => setShowResetModal(false)} onSave={handleResetPasswordSave} currentPassword={password} mode="reset" variables={variables} />
             </View>
         </TouchableWithoutFeedback>
     );
 };
 
-export default AuthComponent;
+export default AuthContext;

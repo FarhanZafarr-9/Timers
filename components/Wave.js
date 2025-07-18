@@ -28,7 +28,6 @@ export default function Wave({
             phaseValueRef.current = value;
         });
 
-        // Throttled re-render using requestAnimationFrame
         const updateTick = () => {
             setTick(prev => prev + 1);
             animationFrameRef.current = requestAnimationFrame(updateTick);
@@ -43,9 +42,8 @@ export default function Wave({
         };
     }, [speed]);
 
-    // Memoize path calculation with reduced points for better performance
     const path = useMemo(() => {
-        const points = 180; // Reduced from 300 to 100 for better performance
+        const points = 180;
         const dx = width / points;
         let pathString = '';
 
@@ -56,7 +54,7 @@ export default function Wave({
         }
 
         return pathString;
-    }, [width, height, amplitude, frequency, tick]); // tick forces recalculation
+    }, [width, height, amplitude, frequency, tick]);
 
     return (
         <Svg width={width} height={height}>

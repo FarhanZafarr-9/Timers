@@ -20,7 +20,7 @@ import { useTheme } from '../utils/ThemeContext';
 const { height: screenHeight } = Dimensions.get('window');
 const DIRECTORY_KEY = 'download_directory_uri';
 
-const ExportBottomSheet = ({
+const ExportSheet = ({
     visible,
     onClose,
     cardRef,
@@ -494,4 +494,4 @@ const ExportBottomSheet = ({
     );
 };
 
-export default ExportBottomSheet;
+export default ExportSheet;

@@ -1,8 +1,8 @@
-// FloatingLabelInput component for reuse
+// LabelInput component for reuse
 import { useEffect, useRef } from 'react';
 import { TextInput, View, Animated, TouchableOpacity, Text } from 'react-native';
 
-const FloatingLabelInput = ({
+const LabelInput = ({
     label,
     value,
     onChangeText,
@@ -92,4 +92,4 @@ const FloatingLabelInput = ({
     );
 };
 
-export default FloatingLabelInput;
+export default LabelInput;

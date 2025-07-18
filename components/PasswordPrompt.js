@@ -37,7 +37,7 @@ const generateResetCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export default function PasswordBottomSheet({
+export default function PasswordPrompt({
     visible,
     onClose,
     onSave,

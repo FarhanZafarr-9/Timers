@@ -1,28 +1,25 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Animated, Dimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
-import PasswordBottomSheet from '../components/PasswordModal';
+import PasswordPrompt from '../components/PasswordPrompt';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import Timer from '../classes/Timer';
-import ScreenWithHeader from '../components/ScreenWithHeader';
-import Snackbar from '../components/SnackBar';
+import HeaderScreen from '../components/HeaderScreen';
 import { useTheme } from '../utils/ThemeContext';
-import BottomSheetPicker from '../components/BottomSheetPicker';
+import PickerSheet from '../components/PickerSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions } from '../utils/functions';
-import ConfirmationBottomSheet from '../components/ConfirmationBottomSheet';
-import ModernSwitch from '../components/ModernSwitch';
-import BottomSheetChangelog from '../components/BottomSheetChnageLog';
+import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger } from '../utils/functions';
+import ConfirmSheet from '../components/ConfirmSheet';
+import Switch from '../components/Switch';
+import ChnageLogSheet from '../components/ChnageLogSheet';
 import { checkForUpdateAndReload } from '../utils/functions';
 import Toast from 'react-native-toast-message';
 
-// Move screen dimensions to module level to avoid recalculation
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-
-function SettingsScreen() {
+function Settings() {
+    useRenderLogger('Settings')
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
 
     const {
@@ -57,8 +54,8 @@ function SettingsScreen() {
         clearPassword,
         password,
         loading,
-        passwordModalVisible,
-        setPasswordModalVisible,
+        PasswordPromptVisible,
+        setPasswordPromptVisible,
         privacyMode,
         setPrivacyModeValue,
         lockoutMode,
@@ -71,7 +68,7 @@ function SettingsScreen() {
     }
 
     const [populateDisabled, setPopulateDisabled] = useState(false);
-    const [passwordModalMode, setPasswordModalMode] = useState('set');
+    const [PasswordPromptMode, setPasswordPromptMode] = useState('set');
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState(() => () => { });
     const [confirmText, setConfirmText] = useState('');
@@ -385,7 +382,7 @@ function SettingsScreen() {
     }, [formatDirectoryPath]);
 
     return (
-        <ScreenWithHeader
+        <HeaderScreen
             headerIcon={<Icons.Ion name="settings" color={colors.highlight} />}
             headerTitle="Settings"
             borderRadius={variables.radius.lg}
@@ -414,7 +411,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Theme</Text>
                                 <Text style={styles.settingDesc}>Choose app theme</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={themeMode}
                                 options={themeOptions}
                                 onChange={setThemeMode}
@@ -432,7 +429,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Accent</Text>
                                 <Text style={styles.settingDesc}>Choose app accent</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={accentMode}
                                 options={accentOptions}
                                 onChange={setAccentModeState}
@@ -452,7 +449,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Progress</Text>
                                 <Text style={styles.settingDesc}>Choose progress mode</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={progressMode}
                                 options={progressOptions}
                                 onChange={setProgressMode}
@@ -461,7 +458,7 @@ function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue={'linear'}
-                                note={'Wavy motion is stabled, but still under development'}
+                                note={'Wavy motion completely stabled and working fluidly, enjoy ✨'}
                             />
                         </TouchableOpacity>
 
@@ -472,7 +469,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Border</Text>
                                 <Text style={styles.settingDesc}>Choose border mode</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={borderMode}
                                 options={borderOptions}
                                 onChange={setBorderMode}
@@ -504,7 +501,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Header</Text>
                                 <Text style={styles.settingDesc}>Choose header mode</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={headerMode}
                                 options={headerOptions}
                                 onChange={setHeaderMode}
@@ -523,7 +520,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Layout</Text>
                                 <Text style={styles.settingDesc}>Select layout mode</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={layoutMode}
                                 options={layoutOptions}
                                 onChange={setLayoutMode}
@@ -532,7 +529,7 @@ function SettingsScreen() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue="list"
-                                note={"Grid layout shortens privacy text for easier view"}
+                                note={"Grid layout minimizes privacy text for easier view"}
                             />
                         </TouchableOpacity>
 
@@ -550,7 +547,7 @@ function SettingsScreen() {
                                     <Text style={styles.settingTitle}>Default Unit</Text>
                                     <Text style={styles.settingDesc}>Set the default unit as seconds</Text>
                                 </View>
-                                <ModernSwitch
+                                <Switch
                                     value={defaultUnit === 'seconds'}
                                     onValueChange={() => {
                                         const newUnit = defaultUnit !== 'seconds' ? 'seconds' : 'auto';
@@ -574,7 +571,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Navigation</Text>
                                 <Text style={styles.settingDesc}>Select navigation mode</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={navigationMode}
                                 options={navOptions}
                                 onChange={setNavigationMode}
@@ -606,7 +603,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Privacy Mode</Text>
                                 <Text style={styles.settingDesc}>Masks timer names and titles</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={privacyMode}
                                 options={privacyOptions}
                                 onChange={setPrivacyModeValue}
@@ -614,7 +611,7 @@ function SettingsScreen() {
                                 placeholder="Select mode"
                                 colors={colors}
                                 variables={variables}
-                                note={'Emoji mode has been  removed due to its adaptability issues, but no worries, its still under development'}
+                                note={'Emoji mode has been re enabled, enjoy ✨'}
                             />
                         </TouchableOpacity>
 
@@ -632,7 +629,7 @@ function SettingsScreen() {
                                     <Text style={styles.settingTitle}>Fingerprint Unlock</Text>
                                     <Text style={styles.settingDesc}>Enable fingerprint authentication</Text>
                                 </View>
-                                <ModernSwitch
+                                <Switch
                                     value={!!isFingerprintEnabled}
                                     onValueChange={() => {
                                         addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`, 'info');
@@ -658,8 +655,8 @@ function SettingsScreen() {
                             onPress={() => {
                                 if (loading) return;
                                 if (!isPasswordLockEnabled) {
-                                    setPasswordModalMode('set');
-                                    setPasswordModalVisible(true);
+                                    setPasswordPromptMode('set');
+                                    setPasswordPromptVisible(true);
                                 } else {
                                     togglePasswordLock();
                                 }
@@ -670,19 +667,19 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Password Lock</Text>
                                 <Text style={styles.settingDesc}>Enable password authentication</Text>
                                 <TouchableOpacity onPress={() => {
-                                    setPasswordModalMode(isPasswordLockEnabled ? 'change' : 'set');
-                                    setPasswordModalVisible(true);
+                                    setPasswordPromptMode(isPasswordLockEnabled ? 'change' : 'set');
+                                    setPasswordPromptVisible(true);
                                 }}>
 
                                 </TouchableOpacity>
                             </View>
-                            <ModernSwitch
+                            <Switch
                                 value={!!isPasswordLockEnabled}
                                 onValueChange={(val) => {
                                     if (loading) return;
                                     if (val) {
-                                        setPasswordModalMode('set');
-                                        setPasswordModalVisible(true);
+                                        setPasswordPromptMode('set');
+                                        setPasswordPromptVisible(true);
                                     } else {
                                         clearPassword();
                                         addMessage('Password lock disabled.', 'info');
@@ -699,8 +696,8 @@ function SettingsScreen() {
                         {isPasswordLockEnabled && <TouchableOpacity
                             style={styles.settingBlock}
                             onPress={() => {
-                                setPasswordModalMode(isPasswordLockEnabled ? 'change' : 'set');
-                                setPasswordModalVisible(true);
+                                setPasswordPromptMode(isPasswordLockEnabled ? 'change' : 'set');
+                                setPasswordPromptVisible(true);
                             }}
                         >
                             <Icons.Ion name="key-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
@@ -723,7 +720,7 @@ function SettingsScreen() {
                                 <Text style={styles.settingTitle}>Lockout</Text>
                                 <Text style={styles.settingDesc}>Set duration for reauthentication</Text>
                             </View>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={lockoutMode}
                                 options={lockoutOptions}
                                 onChange={setLockoutModeValue}
@@ -896,7 +893,7 @@ function SettingsScreen() {
 
                     </View>
                 </Animated.View>
-                <ConfirmationBottomSheet
+                <ConfirmSheet
                     visible={confirmVisible}
                     onClose={() => setConfirmVisible(false)}
                     onConfirm={confirmAction}
@@ -910,27 +907,27 @@ function SettingsScreen() {
                     variables={variables}
                 />
 
-                {passwordModalVisible && (
-                    <PasswordBottomSheet
-                        visible={passwordModalVisible}
-                        onClose={() => setPasswordModalVisible(false)}
+                {PasswordPromptVisible && (
+                    <PasswordPrompt
+                        visible={PasswordPromptVisible}
+                        onClose={() => setPasswordPromptVisible(false)}
                         onSave={(newPassword) => {
                             savePassword(newPassword);
-                            setPasswordModalVisible(false);
+                            setPasswordPromptVisible(false);
                             addMessage('Password updated.', 'success');
                         }}
                         currentPassword={password}
-                        mode={passwordModalMode}
+                        mode={PasswordPromptMode}
                         colors={colors}
                         variables={variables}
                     />
                 )}
 
-                <BottomSheetChangelog visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
+                <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
             </>
             }
-        </ScreenWithHeader >
+        </HeaderScreen >
     );
 }
 
-export default memo(SettingsScreen);
+export default memo(Settings);

@@ -24,7 +24,7 @@ const getTimeoutByMode = (mode) => {
 export const SecurityProvider = ({ children }) => {
     const [isSensorAvailable, setIsSensorAvailable] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+    const [PasswordPromptVisible, setPasswordPromptVisible] = useState(false);
     const [justSetPassword, setJustSetPassword] = useState(false);
     const [isPasswordLockEnabled, setIsPasswordLockEnabled] = useState(undefined);
     const [isFingerprintEnabled, setIsFingerprintEnabled] = useState(undefined);
@@ -316,8 +316,8 @@ export const SecurityProvider = ({ children }) => {
                 savePassword,
                 clearPassword,
                 checkPassword,
-                passwordModalVisible,
-                setPasswordModalVisible,
+                PasswordPromptVisible,
+                setPasswordPromptVisible,
                 justSetPassword,
                 setJustSetPassword,
                 privacyMode,

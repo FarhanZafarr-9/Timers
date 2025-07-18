@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
     Modal,
     TouchableOpacity,
@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
+import { useRenderLogger } from '../utils/functions';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
-const BottomSheetPicker = ({
+const PickerSheet = ({
     value,
     options,
     onChange,
@@ -30,6 +31,7 @@ const BottomSheetPicker = ({
     defaultValue = null,
     note
 }) => {
+    useRenderLogger(`PickerSheet, ${title}`);
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
@@ -75,7 +77,7 @@ const BottomSheetPicker = ({
             borderRadius: variables.radius.sm,
             paddingVertical: 6,
             paddingHorizontal: 8,
-            backgroundColor: colors.highlight + '0f',
+            backgroundColor: colors.highlight + '2a',
             borderWidth: border,
             borderColor: colors.border,
             minWidth: 60,
@@ -156,10 +158,6 @@ const BottomSheetPicker = ({
             borderColor: colors.border,
             backgroundColor: colors.cardLighter,
             minHeight: 36,
-            flex: pillsPerRow === 1 ? 1 : 0,
-            width: pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`,
-            marginBottom: 25,
-
         },
         selectedPill: {
             backgroundColor: colors.primary || colors.highlight,
@@ -258,40 +256,88 @@ const BottomSheetPicker = ({
         onChange(defaultValue);
     };
 
-    const renderPill = (option) => {
+    // Memoize the animation values for better performance
+    const animationValues = useMemo(() => {
+        return options.reduce((acc, option) => {
+            acc[option.value] = new Animated.Value(1);
+            return acc;
+        }, {});
+    }, [options]);
+
+    // Optimized pill press handler with animation
+    const handlePillPressWithAnimation = useCallback((optionValue) => {
+        const scaleValue = animationValues[optionValue];
+        if (scaleValue) {
+            Animated.sequence([
+                Animated.timing(scaleValue, {
+                    toValue: 1.1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleValue, {
+                    toValue: 1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => handlePillPress(optionValue));
+        } else {
+            handlePillPress(optionValue);
+        }
+    }, [animationValues, handlePillPress]);
+
+    const renderPill = useCallback((option) => {
         const isSelected = value === option.value;
+        const scaleValue = animationValues[option.value];
+
+        // Calculate proper pill width based on pillsPerRow
+        const pillWidth = pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`;
 
         return (
-            <TouchableOpacity
+            <Animated.View
                 key={option.value}
                 style={[
-                    styles.pill,
-                    isSelected && styles.selectedPill,
+                    {
+                        transform: [{ scale: scaleValue || 1 }],
+                        flex: pillsPerRow === 1 ? 1 : 0,
+                        width: pillWidth,
+                        marginBottom: 25,
+                    }
                 ]}
-                onPress={() => handlePillPress(option.value)}
-                activeOpacity={0.8}
             >
-                {option.icon && (
-                    <View style={styles.pillIcon}>
-                        {React.cloneElement(option.icon, {
-                            color: isSelected ? colors.background : option.icon.props.color ? option.icon.props.color : colors.text,
-                            size: option.icon.props.size || 16
-                        })}
-                    </View>
-                )}
-                <Text
+                <TouchableOpacity
                     style={[
-                        styles.pillText,
-                        isSelected && styles.selectedPillText,
+                        styles.pill,
+                        isSelected && styles.selectedPill,
+                        {
+                            width: '100%',
+                            flex: 1,
+                        }
                     ]}
-                    numberOfLines={2}
-                    ellipsizeMode="tail"
+                    onPress={() => handlePillPressWithAnimation(option.value)}
+                    activeOpacity={0.8}
                 >
-                    {option.label}
-                </Text>
-            </TouchableOpacity>
+                    {option.icon && (
+                        <View style={styles.pillIcon}>
+                            {React.cloneElement(option.icon, {
+                                color: isSelected ? colors.background : option.icon.props.color || colors.text,
+                                size: option.icon.props.size || 16,
+                            })}
+                        </View>
+                    )}
+                    <Text
+                        style={[
+                            styles.pillText,
+                            isSelected && styles.selectedPillText,
+                        ]}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                    >
+                        {option.label}
+                    </Text>
+                </TouchableOpacity>
+            </Animated.View>
         );
-    };
+    }, [value, colors, styles, animationValues, handlePillPressWithAnimation, pillsPerRow]);
 
     return (
         <>
@@ -397,4 +443,11 @@ const BottomSheetPicker = ({
     );
 };
 
-export default BottomSheetPicker;
+export default memo(PickerSheet, (prevProps, nextProps) => {
+    return (
+        prevProps.value === nextProps.value &&
+        prevProps.visible === nextProps.visible &&
+        prevProps.colors === nextProps.colors &&
+        prevProps.variables === nextProps.variables
+    );
+});

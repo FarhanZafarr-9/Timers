@@ -9,12 +9,12 @@ import {
     Dimensions
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import BottomSheetPicker from './BottomSheetPicker';
+import PickerSheet from './PickerSheet';
 import { useTheme } from '../utils/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const HeaderControlsBottomSheet = ({
+const HeaderSheet = ({
     visible,
     onClose,
     onAdd,
@@ -200,7 +200,7 @@ const HeaderControlsBottomSheet = ({
                         {/* Priority Picker Row */}
                         <View style={styles.priorityRow}>
                             <Text style={styles.priorityLabel}>Priority</Text>
-                            <BottomSheetPicker
+                            <PickerSheet
                                 value={sortValue}
                                 options={sortOptions}
                                 onChange={handleSortChange}
@@ -245,4 +245,4 @@ const HeaderControlsBottomSheet = ({
     );
 };
 
-export default HeaderControlsBottomSheet;
+export default HeaderSheet;
