@@ -11,8 +11,9 @@ const PROGRESS_MODE_KEY = 'progressModePreference';
 const DEFAULT_UNIT_KEY = 'defaultUnitPreference';
 const BORDER_MODE_KEY = 'borderModePreference';
 const VALID_THEMES = ['light', 'dark', 'system'];
+const FIXED_BORDER_KEY = 'fixedBorderPreference';
 const VALID_ACCENTS = ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate'];
-const VALID_UNITS = ['seconds', 'minutes', 'hours', 'days', 'auto'];
+const VALID_UNITS = ['seconds', 'minutes', 'hours', 'days', 'months', 'years', 'auto'];
 
 const palettes = {
     light: {
@@ -882,6 +883,7 @@ export const ThemeProvider = ({ children }) => {
     const [progressMode, setProgressMode] = useState('linear');
     const [borderMode, setBorderMode] = useState('subtle');
     const [defaultUnit, setDefaultUnit] = useState('auto');
+    const [fixedBorder, setFixedBorder] = useState(false);
     const [theme, setTheme] = useState(getSystemTheme());
     const [isLoading, setIsLoading] = useState(true);
 
@@ -891,7 +893,7 @@ export const ThemeProvider = ({ children }) => {
 
         const loadTheme = async () => {
             try {
-                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedLayoutMode, storedBorderMode, storedProgressMode, storedDefaultUnit] = await Promise.all([
+                const [storedTheme, storedAccent, storedNavMode, storedHeaderMode, storedLayoutMode, storedBorderMode, storedProgressMode, storedDefaultUnit, storedFixedBorder] = await Promise.all([
                     AsyncStorage.getItem(THEME_STORAGE_KEY),
                     AsyncStorage.getItem(ACCENT_STORAGE_KEY),
                     AsyncStorage.getItem(NAVIGATION_MODE_KEY),
@@ -899,7 +901,8 @@ export const ThemeProvider = ({ children }) => {
                     AsyncStorage.getItem(LAYOUT_MODE_KEY),
                     AsyncStorage.getItem(BORDER_MODE_KEY),
                     AsyncStorage.getItem(PROGRESS_MODE_KEY),
-                    AsyncStorage.getItem(DEFAULT_UNIT_KEY)
+                    AsyncStorage.getItem(DEFAULT_UNIT_KEY),
+                    AsyncStorage.getItem(FIXED_BORDER_KEY)
                 ]);
 
                 if (isMounted) {
@@ -911,7 +914,9 @@ export const ThemeProvider = ({ children }) => {
                     const loadedBorderMode = storedBorderMode !== null ? storedBorderMode : 'subtle';
                     const loadedProgressMode = storedProgressMode !== null ? storedProgressMode : 'linear';
                     const loadedDefaultUnit = storedDefaultUnit !== null ? storedDefaultUnit : 'auto';
+                    const loadedFixedBorder = storedFixedBorder !== null ? JSON.parse(storedFixedBorder) : false;
 
+                    setFixedBorder(loadedFixedBorder);
                     setDefaultUnit(loadedDefaultUnit);
                     setThemeModeState(loadedTheme);
                     setAccentModeState(loadedAccent);
@@ -998,6 +1003,14 @@ export const ThemeProvider = ({ children }) => {
             );
         }
     }, [defaultUnit, isLoading]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            AsyncStorage.setItem(FIXED_BORDER_KEY, JSON.stringify(fixedBorder)).catch(e =>
+                console.warn('Failed to save fixed border preference:', e)
+            );
+        }
+    }, [fixedBorder, isLoading]);
 
     // Handle system theme changes and manual theme changes
     useEffect(() => {
@@ -1111,6 +1124,8 @@ export const ThemeProvider = ({ children }) => {
         setProgressMode,
         defaultUnit,
         setDefaultUnit,
+        fixedBorder,
+        setFixedBorder,
         isBorder: borderMode !== 'none',
         border: borderMode === 'none' ? 0 : borderMode === 'thin' ? variables.borderWidth.thin : borderMode === 'subtle' ? variables.borderWidth.regular : variables.borderWidth.thick,
         isLoading,

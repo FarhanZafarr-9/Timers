@@ -1,10 +1,36 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Image, Text, StyleSheet, Animated } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Image, StyleSheet, Animated } from 'react-native';
 
 const Splash = ({ variables, colors, visible = true, onHide }) => {
+
+    const quotes = [
+        "Create what you wish existed.",
+        "Not everything is meant to be forgotten.",
+        "Evrything has a purporse.",
+        "Even silence can be loud.",
+        "Dreams fade when action waits.",
+        "The unknown isn't empty—it's potential.",
+        "Build quietly. Let results speak.",
+        "You're not lost, just exploring.",
+        "Chaos breeds clarity.",
+        "Some scars tell better stories.",
+        "Ordinary today, unforgettable tomorrow.",
+        "Truth hides in whispers.",
+        "Time doesn't heal, it hides.",
+        "You age in silence too.",
+        "The future decays waiting.",
+        "Time forgets nothing.",
+        "Time runs out of us.",
+        "Each second owes the last.",
+        "You peel away, not pass.",
+        "Delay builds your ruin.",
+        "Clocks record your fading.",
+        "Memory echoes louder than moments.",
+    ];
+
     // Animated values for sliding
-    const logoSlide = useRef(new Animated.Value(-550)).current; // Start above
-    const textSlide = useRef(new Animated.Value(350)).current;  // Start below
+    const logoSlide = useRef(new Animated.Value(-550)).current;
+    const textSlide = useRef(new Animated.Value(350)).current;
 
     useEffect(() => {
         if (visible) {
@@ -65,8 +91,9 @@ const Splash = ({ variables, colors, visible = true, onHide }) => {
             textAlign: 'center',
             fontStyle: 'italic',
             fontSize: 16,
-            color: colors.text,
-            fontWeight: '600'
+            color: colors.highlight + 'f0',
+            fontWeight: '600',
+            height: 25
         },
         credits: {
             position: 'absolute',
@@ -77,6 +104,7 @@ const Splash = ({ variables, colors, visible = true, onHide }) => {
             fontSize: 14,
             color: colors.textDesc,
             fontWeight: 'bold',
+            height: 20
         },
     });
 
@@ -96,7 +124,7 @@ const Splash = ({ variables, colors, visible = true, onHide }) => {
                 styles.quote,
                 { transform: [{ translateY: textSlide }] }
             ]}>
-                "Create what you wish existed."
+                {quotes[Math.floor(Math.random() * quotes.length)]}
             </Animated.Text>
             <Animated.Text style={[
                 styles.credits,

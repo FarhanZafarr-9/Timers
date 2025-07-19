@@ -12,7 +12,7 @@ export default function CollapsingHeader({
     borderRadius = 12,
     paddingX = 15
 }) {
-    const { headerMode, isBorder, variables, border } = useTheme();
+    const { headerMode, isBorder, variables, border, fixedBorder } = useTheme();
     const forceCollapsed = shouldForceCollapsed(pageLength);
     const snapThreshold = 45;
 
@@ -62,7 +62,7 @@ export default function CollapsingHeader({
 
     const styles = StyleSheet.create({
         header: {
-            borderRadius: borderRadius,
+            borderRadius: headerMode === 'fixed' ? fixedBorder ? variables.radius.xl : 0 : borderRadius,
             borderColor: colors.border,
             marginBottom: headerMode !== 'collapsible' ? 0 : 16,
             marginTop: headerMode === 'fixed' ? 0 : HEADER_MARGIN_TOP,

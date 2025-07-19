@@ -11,7 +11,7 @@ import HeaderScreen from '../components/HeaderScreen';
 import { useTheme } from '../utils/ThemeContext';
 import PickerSheet from '../components/PickerSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger } from '../utils/functions';
+import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger, unitOptions } from '../utils/functions';
 import ConfirmSheet from '../components/ConfirmSheet';
 import Switch from '../components/Switch';
 import ChnageLogSheet from '../components/ChnageLogSheet';
@@ -42,6 +42,8 @@ function Settings() {
         setProgressMode,
         defaultUnit,
         setDefaultUnit,
+        fixedBorder,
+        setFixedBorder
     } = useTheme();
 
     const {
@@ -525,7 +527,7 @@ function Settings() {
                                 options={layoutOptions}
                                 onChange={setLayoutMode}
                                 title={'Layout'}
-                                placeholder="ayout"
+                                placeholder="Layout"
                                 colors={colors}
                                 variables={variables}
                                 defaultValue="list"
@@ -547,25 +549,22 @@ function Settings() {
                                     <Text style={styles.settingTitle}>Default Unit</Text>
                                     <Text style={styles.settingDesc}>Set the default unit as seconds</Text>
                                 </View>
-                                <Switch
-                                    value={defaultUnit === 'seconds'}
-                                    onValueChange={() => {
-                                        const newUnit = defaultUnit !== 'seconds' ? 'seconds' : 'auto';
-                                        addMessage(`Default unit set to ${newUnit}.`, 'info');
-                                        setDefaultUnit(newUnit);
-                                    }}
-                                    trackColor={{
-                                        false: colors.switchTrack,
-                                        true: colors.switchTrackActive,
-                                    }}
-                                    thumbColor={!(defaultUnit === 'seconds') ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scaleY: 1 }] }}
+                                <PickerSheet
+                                    value={defaultUnit}
+                                    options={unitOptions}
+                                    onChange={setDefaultUnit}
+                                    title={'Unit'}
+                                    placeholder="Unit"
+                                    colors={colors}
+                                    variables={variables}
+                                    defaultValue="auto"
+                                    note={"This default unit is only considered in grid mode"}
                                 />
                             </TouchableOpacity>
                         )}
 
                         {/* Navigation Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: navigationMode === 'fixed' || headerMode === 'fixed' ? 1 : 0 }]} activeOpacity={1}>
                             <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Navigation</Text>
@@ -583,6 +582,34 @@ function Settings() {
                             />
                         </TouchableOpacity>
 
+                        {navigationMode === 'fixed' || headerMode === 'fixed' ? (
+                            <TouchableOpacity
+                                style={[styles.settingBlock, { borderBottomWidth: 0 }]}
+                                onPress={() => {
+                                    addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
+                                    setFixedBorder(!fixedBorder);
+                                }}
+                            >
+                                <Icons.Ion name='' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                                <View style={styles.settingTextBlock}>
+                                    <Text style={styles.settingTitle}>Border radius</Text>
+                                    <Text style={styles.settingDesc}>Rounded coners in fixed modes</Text>
+                                </View>
+                                <Switch
+                                    value={!!fixedBorder}
+                                    onValueChange={() => {
+                                        addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
+                                        setFixedBorder(!fixedBorder);
+                                    }}
+                                    trackColor={{
+                                        false: colors.switchTrack,
+                                        true: colors.switchTrackActive,
+                                    }}
+                                    thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
+                                    style={{ transform: [{ scaleY: 1 }] }}
+                                />
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </Animated.View>
 

@@ -107,7 +107,7 @@ const WheelPicker = ({
     const styles = StyleSheet.create({
         overlay: {
             ...StyleSheet.absoluteFillObject,
-            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
+            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {

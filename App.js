@@ -47,11 +47,10 @@ function AppContent() {
   const { variables, colors, border } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
-  const [splashDone, setSplashDone] = useState(false);
   const [showChangelog, setShowChangelog] = useCheckForUpdate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2500);
+    const timer = setTimeout(() => setShowSplash(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -59,7 +58,7 @@ function AppContent() {
     initializeNotifications();
   }, []);
 
-  if ((showSplash && !splashDone) || loading) {
+  if (showSplash || loading) {
     return (
       <>
         <StatusBar hidden />

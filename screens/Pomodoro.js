@@ -424,8 +424,6 @@ export default function Pomodoro() {
         },
     }), [colors, variables, border]);
 
-    // ... rest of the component code remains the same ...
-    // Callbacks
     const showToast = useCallback((type, text1, text2 = '') => {
         Toast.show({ type, text1, text2 });
     }, []);
@@ -546,11 +544,9 @@ export default function Pomodoro() {
         return () => clearTimeout(timer);
     }, [animations]);
 
-
-
     return (
         <HeaderScreen
-            headerIcon={<Icons.Ion name="hourglass-outline" size={18} color={colors.highlight} />}
+            headerIcon={<Icons.Ion name="ellipse" size={18} color={colors.highlight} />}
             headerTitle="Pomodoro"
             borderRadius={variables.radius.md}
             paddingMargin={15}
