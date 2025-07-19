@@ -155,7 +155,7 @@ export default function About() {
                     </Text>
                 </Animated.View>
 
-                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim }]}>
+                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical:12 }]}>
                     <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
 

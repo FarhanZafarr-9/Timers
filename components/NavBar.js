@@ -15,9 +15,9 @@ import {
 } from 'react-native';
 import { useData } from '../utils/DataContext';
 
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
-const memoizedStyles = (navigationMode, insets, variables, colors, border, userData) => StyleSheet.create({
+const memoizedStyles = (navigationMode, insets, variables, colors, border, fixedBorder) => StyleSheet.create({
     bgContainer: {
         position: 'absolute',
         bottom: navigationMode === 'floating' ? 20 + insets.bottom : navigationMode === 'fixed' ? 0 : undefined,
@@ -180,10 +180,9 @@ const memoizedStyles = (navigationMode, insets, variables, colors, border, userD
     },
 });
 
-const NavBar = ({ state, descriptors, navigation }) => {
+const NavBar = ({ state, navigation }) => {
     const insets = useSafeAreaInsets();
-    const { variables, colors, navigationMode, headerMode, isBorder, border } = useTheme();
-    const styles = memoizedStyles(navigationMode, insets, variables, colors, border, userData);
+    const { variables, colors, navigationMode, headerMode, border, fixedBorder } = useTheme();
     const { userData } = useData();
     const { width } = Dimensions.get('window');
 
@@ -325,8 +324,8 @@ const NavBar = ({ state, descriptors, navigation }) => {
                 right: 0,
                 marginHorizontal: floating ? 30 : 0,
                 height: floating ? 45 : fixed ? 60 : 0,
-                borderTopLeftRadius: variables.radius.xl,
-                borderTopRightRadius: variables.radius.xl,
+                borderTopLeftRadius: floating ? variables.radius.xl : 0,
+                borderTopRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 overflow: 'hidden',
@@ -340,8 +339,8 @@ const NavBar = ({ state, descriptors, navigation }) => {
                 borderBottomWidth: floating ? border : 0,
                 borderRightWidth: border,
                 borderLeftWidth: border,
-                borderTopLeftRadius: variables.radius.xl,
-                borderTopRightRadius: variables.radius.xl,
+                borderTopLeftRadius: fixedBorder ? variables.radius.xl : 0,
+                borderTopRightRadius: fixedBorder ? variables.radius.xl : 0,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 alignItems: 'center',

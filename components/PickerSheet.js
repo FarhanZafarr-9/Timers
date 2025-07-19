@@ -89,7 +89,7 @@ const PickerSheet = ({
         },
         overlay: {
             flex: 1,
-            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
+            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
             justifyContent: 'flex-end',
         },
         bottomSheet: {
@@ -247,41 +247,29 @@ const PickerSheet = ({
     const selectedOption = options.find(opt => opt.value === value);
     const selectedLabel = selectedOption?.label || placeholder;
     const selectedIcon = selectedOption?.icon;
-
-    const handlePillPress = (optionValue) => {
+ 
+    const handlePillPress = useCallback((optionValue) => {
         onChange(optionValue);
-    };
+    }, [onChange]);
 
     const handleClear = () => {
         onChange(defaultValue);
     };
 
     // Memoize the animation values for better performance
-    const animationValues = useMemo(() => {
-        return options.reduce((acc, option) => {
+    const animationValues = useMemo(() =>
+        options.reduce((acc, option) => {
             acc[option.value] = new Animated.Value(1);
             return acc;
-        }, {});
-    }, [options]);
+        }, {}), [options]);
 
     // Optimized pill press handler with animation
     const handlePillPressWithAnimation = useCallback((optionValue) => {
+        handlePillPress(optionValue);
         const scaleValue = animationValues[optionValue];
         if (scaleValue) {
-            Animated.sequence([
-                Animated.timing(scaleValue, {
-                    toValue: 1.1,
-                    duration: 100,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(scaleValue, {
-                    toValue: 1,
-                    duration: 100,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => handlePillPress(optionValue));
-        } else {
-            handlePillPress(optionValue);
+            scaleValue.setValue(1.08);
+            Animated.spring(scaleValue, { toValue: 1, friction: 4, tension: 150, useNativeDriver: true }).start();
         }
     }, [animationValues, handlePillPress]);
 

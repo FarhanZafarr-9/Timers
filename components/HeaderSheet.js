@@ -91,7 +91,7 @@ const HeaderSheet = ({
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90',
+            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90',
             justifyContent: 'flex-end',
         },
         bottomSheet: {

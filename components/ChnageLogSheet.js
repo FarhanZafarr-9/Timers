@@ -80,22 +80,18 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
         });
     };
 
-    const handleClose = () => {
-        hideBottomSheet();
-    };
-
     const getBulletColor = (type) => {
         switch (type) {
-            case "new": return "#4CAF50";
-            case "improved": return "#2196F3";
-            case "fixed": return "#F44336";
-            case "wip": return "#FF9800";
-            case "removed": return "#9C27B0";
-            case "security": return "#009688";
+            case "new": return "#4CAF50";        // Green
+            case "improved": return "#2196F3";   // Blue
+            case "fixed": return "#F44336";      // Red
+            case "wip": return "#FF9800";        // Orange
+            case "removed": return "#9C27B0";    // Purple
+            case "security": return "#009688";   // Teal
+            case "summarized": return "#795548"; // Brown
             default: return colors.text;
         }
     };
-
     const tags = ["all", ...new Set(latest.changes.map(c => c.type))];
 
     const filteredChanges = selectedTag === "all"
@@ -105,7 +101,7 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90',
+            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90',
             justifyContent: 'flex-end',
         },
         bottomSheet: {
@@ -143,7 +139,7 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
             fontSize: 18,
             fontWeight: '600',
             color: colors.text,
-            height: 30
+            height: 30,
         },
         versionDate: {
             fontSize: 12,
@@ -166,7 +162,7 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
             flexDirection: 'row',
             alignItems: 'flex-start',
             marginBottom: 12,
-            paddingHorizontal: 20,
+            paddingHorizontal: 10,
         },
         changeText: {
             fontSize: 15,
@@ -192,8 +188,7 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
             paddingVertical: 10,
             borderRadius: 10,
             alignItems: 'center',
-            marginTop: 10,
-            marginHorizontal: 20,
+            marginBottom: 30
         },
         updateButtonText: {
             color: colors.background,
@@ -277,13 +272,6 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
                             </Text>
                         )}
 
-                        {filteredChanges.map((change, idx) => (
-                            <View key={idx} style={styles.changeItem}>
-                                <View style={[styles.bullet, { backgroundColor: getBulletColor(change.type) }]} />
-                                <Text style={styles.changeText}>{change.text}</Text>
-                            </View>
-                        ))}
-
                         {latest.major && updateNeeded && (
                             <TouchableOpacity
                                 style={styles.updateButton}
@@ -293,6 +281,14 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
                                 <Text style={styles.updateButtonText}>Go to Update Page</Text>
                             </TouchableOpacity>
                         )}
+
+                        {filteredChanges.map((change, idx) => (
+                            <View key={idx} style={styles.changeItem}>
+                                <View style={[styles.bullet, { backgroundColor: getBulletColor(change.type) }]} />
+                                <Text style={styles.changeText}>{change.text}</Text>
+                            </View>
+                        ))}
+
                     </ScrollView>
                 </Animated.View>
             </Animated.View>

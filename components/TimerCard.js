@@ -33,10 +33,10 @@ const TimerCard = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const showOverlayRef = useRef(false);
 
-    // Update ref when showOverlay changes
     useEffect(() => {
         showOverlayRef.current = showOverlay;
     }, [showOverlay]);
+
     const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
     const isLongTitle = timer.title && timer.title.length > 12;
     const titleText = isLongTitle
@@ -64,7 +64,6 @@ const TimerCard = ({
 
     const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
 
-    // Memoize static styles that don't change
     const staticStyles = useMemo(() => ({
         header: {
             flexDirection: 'row',
@@ -147,17 +146,29 @@ const TimerCard = ({
         };
     }, []);
 
-    const [compactChipIndex, setCompactChipIndex] = useState(defaultUnit === 'seconds' ? null : 0);
-
-    // Optimized compact time chip component - memoized to prevent re-renders
     const CompactTimeChip = useMemo(() => memo(() => {
         const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
         const [status, setStatus] = useState('ongoing');
+        const [compactChipIndex, setCompactChipIndex] = useState(5); // Default to seconds
         const timerRef = useRef(timer);
         const animationFrameRef = useRef(null);
         const lastUpdateRef = useRef(0);
 
         timerRef.current = timer;
+
+        // Calculate the appropriate index based on current timeParts and defaultUnit
+        const calculateAutoIndex = useCallback((parts) => {
+            if (defaultUnit === 'auto') {
+                // Find the largest non-zero unit
+                const index = parts.findIndex(part => part > 0);
+                return index !== -1 ? index : 5; // Fallback to seconds if all zero
+            }
+            return defaultUnit === 'years' ? 0 :
+                defaultUnit === 'months' ? 1 :
+                    defaultUnit === 'days' ? 2 :
+                        defaultUnit === 'hours' ? 3 :
+                            defaultUnit === 'minutes' ? 4 : 5;
+        }, [defaultUnit]);
 
         const updateTimeParts = useCallback(() => {
             const now = Date.now();
@@ -185,42 +196,41 @@ const TimerCard = ({
             setTimeParts(newTimeParts);
             setStatus(newStatus);
 
+            // For auto mode, update the index when timeParts change
+            if (defaultUnit === 'auto') {
+                setCompactChipIndex(prevIndex => {
+                    const newIndex = calculateAutoIndex(newTimeParts);
+                    return newIndex !== prevIndex ? newIndex : prevIndex;
+                });
+            }
+
             animationFrameRef.current = requestAnimationFrame(updateTimeParts);
-        }, []);
+        }, [calculateAutoIndex, defaultUnit]);
 
         useEffect(() => {
+            // Initialize with correct index
+            setCompactChipIndex(calculateAutoIndex(timeParts));
             animationFrameRef.current = requestAnimationFrame(updateTimeParts);
             return () => {
                 if (animationFrameRef.current) {
                     cancelAnimationFrame(animationFrameRef.current);
                 }
             };
-        }, [updateTimeParts]);
-
-        const [years, months, days, hours, minutes, seconds] = timeParts;
+        }, [calculateAutoIndex, updateTimeParts]);
 
         const timePartsArray = [
-            { id: 'years', label: 'Years' },
-            { id: 'months', label: 'Months' },
-            { id: 'days', label: 'Days' },
-            { id: 'hours', label: 'Hours' },
-            { id: 'minutes', label: 'Minutes' },
-            { id: 'seconds', label: 'Seconds' },
+            { id: 'years', label: 'Years', index: 0 },
+            { id: 'months', label: 'Months', index: 1 },
+            { id: 'days', label: 'Days', index: 2 },
+            { id: 'hours', label: 'Hours', index: 3 },
+            { id: 'minutes', label: 'Minutes', index: 4 },
+            { id: 'seconds', label: 'Seconds', index: 5 },
         ];
 
-        const nonZeroParts = timePartsArray.filter(part => {
-            switch (part.id) {
-                case 'years': return years !== 0;
-                case 'months': return months !== 0;
-                case 'days': return days !== 0;
-                case 'hours': return hours !== 0;
-                case 'minutes': return minutes !== 0;
-                case 'seconds': return seconds !== 0;
-                default: return false;
-            }
-        });
+        const currentChip = timePartsArray[compactChipIndex];
+        const currentValue = timeParts[currentChip.index];
 
-        if (nonZeroParts.length === 0 || status === 'completed') {
+        if (status === 'completed') {
             return (
                 <View style={styles.chipContainer}>
                     <Text style={styles.chipText}>Completed</Text>
@@ -228,24 +238,31 @@ const TimerCard = ({
             );
         }
 
-        if (compactChipIndex === null) setCompactChipIndex(nonZeroParts.length - 1);
-        const currentChip = nonZeroParts[compactChipIndex % nonZeroParts.length];
-
         return (
             <TouchableOpacity
                 style={[
                     styles.chip,
-                    { backgroundColor: colors.highlight + '30', borderColor: colors.highlight, }
+                    {
+                        backgroundColor: colors.highlight + '30',
+                        borderColor: colors.highlight,
+                    }
                 ]}
-                onPress={() => setCompactChipIndex(compactChipIndex + 1)}
+                onPress={() => {
+                    // Cycle through all units in order
+                    const nextIndex = (compactChipIndex + 1) % timePartsArray.length;
+                    setCompactChipIndex(nextIndex);
+                }}
                 activeOpacity={0.8}
             >
-                <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
+                <Text style={[styles.chipText, {
+                    fontWeight: 'bold',
+                    color: colors.highlight
+                }]}>
                     {getChippedTime(currentChip.id, timeParts)} {currentChip.label}
                 </Text>
             </TouchableOpacity>
         );
-    }), [compactChipIndex, colors.highlight, styles.chip, styles.chipContainer, styles.chipText, getChippedTime]);
+    }), [defaultUnit, colors, styles, getChippedTime]);
 
     function calculateNextOccurrence(timer, now) {
         if (!timer.isRecurring || !timer.recurrenceInterval) {
@@ -289,14 +306,9 @@ const TimerCard = ({
     }
 
     useEffect(() => {
-        // Calculate static data once on mount and when timer changes
         setStaticTimerData(calculateStaticTimerData());
     }, [calculateStaticTimerData, timer]);
 
-    // Helper functions moved outside to prevent recreation
-
-
-    // Optimized time chips component - memoized to prevent re-renders
     const TimeChipsDisplay = useMemo(() => memo(() => {
         const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
         const [status, setStatus] = useState('ongoing');
@@ -401,7 +413,6 @@ const TimerCard = ({
         );
     }), [activeChip, colors.highlight, styles.chip, styles.chipContainer, styles.chipText, getChippedTime]);
 
-    // Optimized time display component - memoized to prevent re-renders
     const TimeDisplay = useMemo(() => memo(() => {
         const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
         const [status, setStatus] = useState('ongoing');
@@ -479,7 +490,6 @@ const TimerCard = ({
         );
     }), [timer.isCountdown]);
 
-    // Optimized progress bar component - memoized to prevent re-renders
     const ProgressBar = useMemo(() => memo(({ layoutMode }) => {
         const [progressPct, setProgressPct] = useState(0);
         const timerRef = useRef(timer);
@@ -643,7 +653,6 @@ const TimerCard = ({
         }
     }), [colors.highlight, progressMode, screenWidth]);
 
-    // Optimized detailed progress display for modal - memoized to prevent re-renders
     const DetailedProgressDisplay = useMemo(() => memo(() => {
         const [progressPct, setProgressPct] = useState(0);
         const [status, setStatus] = useState('ongoing');
@@ -711,7 +720,6 @@ const TimerCard = ({
         );
     }), [colors.textDesc, timer.isCountdown]);
 
-    // Memoized arrow icon component to prevent re-renders
     const ArrowIcon = useMemo(() => memo(({ colors, showOverlay }) => (
         <Icons.Material
             name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
@@ -796,7 +804,7 @@ const TimerCard = ({
             },
             overlay: {
                 flex: 1,
-                backgroundColor: (headerMode === 'fixed' ? colors.settingBlock : colors.background) + '90', // for modals
+                backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
                 justifyContent: 'flex-end',
             },
             bottomSheet: {
@@ -964,7 +972,6 @@ const TimerCard = ({
         });
     }
 
-    // Optimized callbacks
     const handleEdit = useCallback(() => {
         closeOverlay();
         onEdit(timer);
@@ -1013,7 +1020,6 @@ const TimerCard = ({
         });
     }, [slideAnim, fadeAnim]);
 
-    // Create card style
     const cardStyle = useMemo(() => ({
         ...styles.timerItem,
         ...(selected && {
@@ -1401,18 +1407,19 @@ function getFormattedDate(timer, now) {
     });
 }
 
-// Memoize the entire component to prevent unnecessary re-renders
 export default memo(TimerCard, (prevProps, nextProps) => {
-    // Custom comparison for better performance
-    const propsToCompare = [
-        'timer', 'selected', 'searchText', 'layoutMode', 'defaultUnit', 'buttons'
-    ];
+    // Basic prop comparison
+    if (prevProps.selected !== nextProps.selected) return false;
+    if (prevProps.searchText !== nextProps.searchText) return false;
+    if (prevProps.layoutMode !== nextProps.layoutMode) return false;
+    if (prevProps.defaultUnit !== nextProps.defaultUnit) return false;
+    if (prevProps.buttons !== nextProps.buttons) return false;
 
-    return propsToCompare.every(prop => {
-        if (prop === 'timer') {
-            // Deep comparison for timer object
-            return JSON.stringify(prevProps.timer) === JSON.stringify(nextProps.timer);
-        }
-        return prevProps[prop] === nextProps[prop];
+    // Deep comparison for timer object - only check relevant properties
+    const timerProps = ['id', 'title', 'personName', 'date', 'isRecurring', 'recurrenceInterval',
+        'isCountdown', 'isFavourite', 'priority', 'nextDate'];
+
+    return timerProps.every(prop => {
+        return prevProps.timer[prop] === nextProps.timer[prop];
     });
 });

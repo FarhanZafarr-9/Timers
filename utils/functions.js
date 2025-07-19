@@ -220,6 +220,51 @@ export const progressOptions = [
     }
 ];
 
+export const unitOptions = [
+    {
+        label: 'Auto',
+        value: 'auto',
+        icon: <Icons.Material name="autorenew" size={16} />,
+        description: 'Smartly chooses the best unit based on duration'
+    },
+    {
+        label: 'Seconds',
+        value: 'seconds',
+        icon: <Icons.Material name="timer" size={16} />,
+        description: 'Precision timing down to the second'
+    },
+    {
+        label: 'Minutes',
+        value: 'minutes',
+        icon: <Icons.Material name="timer-3" size={16} />,
+        description: 'Minute-level granularity'
+    },
+    {
+        label: 'Hours',
+        value: 'hours',
+        icon: <Icons.Material name="access-time" size={16} />,
+        description: 'Track time by the hour'
+    },
+    {
+        label: 'Days',
+        value: 'days',
+        icon: <Icons.Material name="today" size={16} />,
+        description: 'Daily progress tracking'
+    },
+    {
+        label: 'Months',
+        value: 'months',
+        icon: <Icons.Material name="date-range" size={16} />,
+        description: 'Month-by-month overview'
+    },
+    {
+        label: 'Years',
+        value: 'years',
+        icon: <Icons.Material name="event" size={16} />,
+        description: 'Long-term year tracking'
+    },
+];
+
 export const jumbleText = (str) => {
     // Replace each character with a random letter (except spaces)
     return str.split('').map(char =>
@@ -435,9 +480,36 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.29';
+export const appVersion = '1.0.30';
 
 export const changelog = [
+    {
+        "version": "1.0.30",
+        "date": "2025-07-19",
+        "title": "Layout Polish, Dynamic Quotes & Under-the-Hood Gains",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "BorderRadius mode added for fixed header/navigation: choose between flat or rounded UI feel" },
+            { "type": "new", "text": "Grid mode now supports all time units (years, months, days, hrs, mins, secs) for better clarity" },
+            { "type": "new", "text": "Splash screen quote list expanded with new dark-light duality messages for deeper experience" },
+
+            { "type": "improved", "text": "Card layouts further optimized for faster rendering and better spacing" },
+            { "type": "improved", "text": "Chips in grid layout better handle unit changes without default conversion glitches" },
+            { "type": "improved", "text": "Quote system upgraded for smoother transitions and varied timing" },
+            { "type": "improved", "text": "Rendering issues, minor visual bugs and lag points further ironed out" },
+            { "type": "improved", "text": "Multiple layout consistency tweaks and refined component behaviors" },
+
+            { "type": "wip", "text": "JS-based tab transitions and animations in early testing" },
+            { "type": "wip", "text": "Frosted logo variant being designed for splash and headers" },
+            { "type": "wip", "text": "New animations in development to enhance fluidity across screens" },
+            { "type": "wip", "text": "Progress bar style variations and potential new layout being explored" },
+
+            {
+                "type": "summarized",
+                "text": "Rounded headers, full time units, splash screen upgrades and deeper quote logic headline this update—plus more layout polish, component tuning, and a bunch of subtle bug fixes!"
+            }
+        ]
+    },
     {
         "version": "1.0.29",
         "date": "2025-07-18",
