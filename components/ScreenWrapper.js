@@ -1,3 +1,4 @@
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     View,
     StyleSheet,
@@ -7,21 +8,29 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Dimensions,
 } from 'react-native';
-import { useState } from 'react';
+import {
+    renderGrid,
+    renderPolkaDots,
+    renderDiagonalLines,
+    renderCrossHatch,
+    renderNoise,
+} from '../utils/functions';
+import { useTheme } from '../utils/ThemeContext';
 
-const ScreenWrapper = ({
+const ScreenWrapper = React.memo(({
     children,
     colors,
     onScroll,
     onContentSizeChange,
-    paddingX = 15
+    paddingX = 15,
+    trigger
 }) => {
-
     const [LAYOUT, setLAYOUT] = useState({ width: 0, height: 0 });
+    const { backgroundPattern } = useTheme();
 
-    const styles = StyleSheet.create({
+    // Memoize styles to prevent recreation on every render
+    const styles = useMemo(() => StyleSheet.create({
         safeArea: {
             flex: 1,
             backgroundColor: colors.background,
@@ -31,106 +40,53 @@ const ScreenWrapper = ({
             paddingHorizontal: paddingX,
             paddingBottom: 65,
             flex: 1,
-            position: 'relative', // Needed to anchor grid overlay
+            position: 'relative',
         },
         scrollContent: {
             flexGrow: 1,
         },
-        line: {
-            position: 'absolute',
-            backgroundColor: colors.highlight + '05',
-        },
         gridOverlay: {
             ...StyleSheet.absoluteFillObject,
-            zIndex: 0, // show behind children, but must not be -1
+            zIndex: 0,
         },
         childrenWrapper: {
             zIndex: 1,
         }
-    });
+    }), [colors.background, paddingX]);
 
-    const renderGrid = ({ width: W, height: H }) => {
-        if (!W || !H) return null;
+    // Memoize the background pattern to prevent unnecessary re-renders
+    const backgroundPatternLayer = useMemo(() => {
+        if (LAYOUT.width <= 0 || LAYOUT.height <= 0) return null;
 
-        const SPACING = 20;
-        const cols = Math.floor(W / SPACING);
-        const rows = Math.floor(H / SPACING);
-
-        const V = Array.from({ length: cols }, (_, i) => (
-            <View
-                key={`v-${i}`}
-                style={{
-                    position: 'absolute',
-                    left: i * SPACING,
-                    width: 1,
-                    height: H,
-                    backgroundColor: colors.highlight + '10',
-                }}
-            />
-        ));
-
-        const HLines = Array.from({ length: rows }, (_, i) => (
-            <View
-                key={`h-${i}`}
-                style={{
-                    position: 'absolute',
-                    top: i * SPACING,
-                    width: W,
-                    height: 1,
-                    backgroundColor: colors.highlight + '10',
-                }}
-            />
-        ));
-
-        return (
-            <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
-                {[...V, ...HLines]}
-            </View>
-        );
-    };
-
-    const renderPolkaDots = ({ width: W, height: H }) => {
-        if (!W || !H) return null;
-
-        const dotSpacing = 36;
-        const dotSize = 6;
-
-        const cols = Math.ceil(W / dotSpacing);
-        const rows = Math.ceil(H / dotSpacing);
-
-        const dots = [];
-
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                dots.push(
-                    <View
-                        key={`dot-${r}-${c}`}
-                        style={{
-                            position: 'absolute',
-                            top: r * dotSpacing,
-                            left: c * dotSpacing,
-                            width: dotSize,
-                            height: dotSize,
-                            borderRadius: dotSize / 2,
-                            backgroundColor: colors.highlight + '10',
-                        }}
-                    />
-                );
-            }
+        const C = colors.highlight + '10';
+        switch (backgroundPattern) {
+            case 'grid': return renderGrid(LAYOUT, C);
+            case 'polka': return renderPolkaDots(LAYOUT, C);
+            case 'diagonal': return renderDiagonalLines(LAYOUT, C);
+            case 'cross': return renderCrossHatch(LAYOUT, C);
+            case 'noise': return renderNoise(LAYOUT, colors.highlight + '50');
+            default: return null;
         }
+    }, [LAYOUT, backgroundPattern, colors.highlight]);
 
-        return (
-            <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
-                {dots}
-            </View>
-        );
-    };
+    // Memoize layout handler
+    const handleLayout = useCallback((e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setLAYOUT({ width, height });
+    }, []);
 
-
+    // Memoize keyboard dismiss handler
+    const handleDismissKeyboard = useCallback(() => {
+        Keyboard.dismiss();
+        trigger();
+    }, []);
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <TouchableWithoutFeedback
+                onPress={handleDismissKeyboard}
+                accessible={false}
+            >
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -145,25 +101,24 @@ const ScreenWrapper = ({
                         bounces
                         alwaysBounceVertical={false}
                     >
-
-
                         <View
-                            style={[styles.wrapper, { flex: 1 }]}
-                            onLayout={(e) => {
-                                const { width, height } = e.nativeEvent.layout;
-                                setLAYOUT({ width, height });
-                            }}
+                            style={styles.wrapper}
+                            onLayout={handleLayout}
                         >
-
-                            <View style={styles.childrenWrapper}>{children}</View>
+                            {backgroundPatternLayer && (
+                                <View style={styles.gridOverlay}>
+                                    {backgroundPatternLayer}
+                                </View>
+                            )}
+                            <View style={styles.childrenWrapper}>
+                                {children}
+                            </View>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
         </SafeAreaView>
     );
-};
+});
 
 export default ScreenWrapper;
-//{renderGrid(LAYOUT)}
-//{ renderPolkaDots(LAYOUT) }

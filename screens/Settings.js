@@ -11,12 +11,13 @@ import HeaderScreen from '../components/HeaderScreen';
 import { useTheme } from '../utils/ThemeContext';
 import PickerSheet from '../components/PickerSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger, unitOptions } from '../utils/functions';
+import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger, unitOptions, backgroundOptions } from '../utils/functions';
 import ConfirmSheet from '../components/ConfirmSheet';
 import Switch from '../components/Switch';
 import ChnageLogSheet from '../components/ChnageLogSheet';
 import { checkForUpdateAndReload } from '../utils/functions';
 import Toast from 'react-native-toast-message';
+import { useNavBar } from '../utils/NavContext';
 
 function Settings() {
     useRenderLogger('Settings')
@@ -24,7 +25,7 @@ function Settings() {
 
     const {
         accentMode,
-        setAccentModeState,
+        setAccentMode,
         colors,
         variables,
         themeMode,
@@ -43,7 +44,9 @@ function Settings() {
         defaultUnit,
         setDefaultUnit,
         fixedBorder,
-        setFixedBorder
+        setFixedBorder,
+        backgroundPattern,
+        setBackgroundPattern,
     } = useTheme();
 
     const {
@@ -64,6 +67,8 @@ function Settings() {
         setLockoutModeValue,
         shouldUseLockout
     } = useSecurity();
+
+    const { shouldHide, setShouldHide } = useNavBar();
 
     if (loading || isPasswordLockEnabled === undefined || isFingerprintEnabled === undefined || privacyMode === undefined || lockoutMode === undefined || navigationMode === undefined) {
         return null;
@@ -434,7 +439,7 @@ function Settings() {
                             <PickerSheet
                                 value={accentMode}
                                 options={accentOptions}
-                                onChange={setAccentModeState}
+                                onChange={setAccentMode}
                                 title={'Accent'}
                                 placeholder="Select accent"
                                 colors={colors}
@@ -465,7 +470,7 @@ function Settings() {
                         </TouchableOpacity>
 
                         {/* Border Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
                             <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Border</Text>
@@ -480,6 +485,25 @@ function Settings() {
                                 colors={colors}
                                 variables={variables}
                                 defaultValue="subtle"
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
+                            <Icons.Ion name='color-fill-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                            <View style={styles.settingTextBlock}>
+                                <Text style={styles.settingTitle}>Background</Text>
+                                <Text style={styles.settingDesc}>Select background pattern </Text>
+                            </View>
+                            <PickerSheet
+                                value={backgroundPattern}
+                                options={backgroundOptions}
+                                onChange={setBackgroundPattern}
+                                title={'Background'}
+                                placeholder="Select background pattern"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="none"
+                                note="Still under development, so use carefully."
                             />
                         </TouchableOpacity>
                     </View>
@@ -564,7 +588,7 @@ function Settings() {
                         )}
 
                         {/* Navigation Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: navigationMode === 'fixed' || headerMode === 'fixed' ? 1 : 0 }]} activeOpacity={1}>
+                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
                             <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
                             <View style={styles.settingTextBlock}>
                                 <Text style={styles.settingTitle}>Navigation</Text>
@@ -583,34 +607,66 @@ function Settings() {
                         </TouchableOpacity>
 
                         {navigationMode === 'fixed' || headerMode === 'fixed' ? (
-                            <TouchableOpacity
-                                style={[styles.settingBlock, { borderBottomWidth: 0 }]}
-                                onPress={() => {
-                                    addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
-                                    setFixedBorder(!fixedBorder);
-                                }}
-                            >
-                                <Icons.Ion name='' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                <View style={styles.settingTextBlock}>
-                                    <Text style={styles.settingTitle}>Border radius</Text>
-                                    <Text style={styles.settingDesc}>Rounded coners in fixed modes</Text>
-                                </View>
-                                <Switch
-                                    value={!!fixedBorder}
-                                    onValueChange={() => {
+                            <>
+                                <TouchableOpacity
+                                    style={styles.settingBlock}
+                                    onPress={() => {
                                         addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
                                         setFixedBorder(!fixedBorder);
                                     }}
-                                    trackColor={{
-                                        false: colors.switchTrack,
-                                        true: colors.switchTrackActive,
+                                >
+                                    <Icons.Ion name='crop-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                                    <View style={styles.settingTextBlock}>
+                                        <Text style={styles.settingTitle}>Border radius</Text>
+                                        <Text style={styles.settingDesc}>Rounded coners in fixed modes</Text>
+                                    </View>
+                                    <Switch
+                                        value={!!fixedBorder}
+                                        onValueChange={() => {
+                                            addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
+                                            setFixedBorder(!fixedBorder);
+                                        }}
+                                        trackColor={{
+                                            false: colors.switchTrack,
+                                            true: colors.switchTrackActive,
+                                        }}
+                                        thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
+                                        style={{ transform: [{ scaleY: 1 }] }}
+                                    />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.settingBlock}
+                                    onPress={() => {
+                                        addMessage(`Auto hide fixed modes ${shouldHide ? 'disabled' : 'enabled'}.`, 'info');
+                                        setShouldHide(!shouldHide);
                                     }}
-                                    thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scaleY: 1 }] }}
-                                />
-                            </TouchableOpacity>
+                                >
+                                    <Icons.Ion name='expand-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
+                                    <View style={styles.settingTextBlock}>
+                                        <Text style={styles.settingTitle}>Immerse</Text>
+                                        <Text style={styles.settingDesc}>Hide fixed modes after some time</Text>
+                                    </View>
+                                    <Switch
+                                        value={!!shouldHide}
+                                        onValueChange={() => {
+                                            addMessage(`Auto hide fixed modes ${shouldHide ? 'disabled' : 'enabled'}.`, 'info');
+                                            setShouldHide(!shouldHide);
+                                        }}
+                                        trackColor={{
+                                            false: colors.switchTrack,
+                                            true: colors.switchTrackActive,
+                                        }}
+                                        thumbColor={!shouldHide ? colors.switchThumbActive : colors.switchThumb}
+                                        style={{ transform: [{ scaleY: 1 }] }}
+                                    />
+                                </TouchableOpacity>
+                            </>
                         ) : null}
+
+
                     </View>
+
                 </Animated.View>
 
                 <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>

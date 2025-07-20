@@ -10,183 +10,16 @@ import {
     Text,
     Animated,
     ScrollView,
-    Platform,
-    Image,
 } from 'react-native';
-import { useData } from '../utils/DataContext';
-
-const { width: screenWidth } = Dimensions.get('window');
-
-const memoizedStyles = (navigationMode, insets, variables, colors, border, fixedBorder) => StyleSheet.create({
-    bgContainer: {
-        position: 'absolute',
-        bottom: navigationMode === 'floating' ? 20 + insets.bottom : navigationMode === 'fixed' ? 0 : undefined,
-        left: 0,
-        right: 0,
-        marginHorizontal: navigationMode === 'floating' ? 35 : 0,
-        height: navigationMode === 'floating' ? 50 : navigationMode === 'fixed' ? 60 : 0,
-        borderTopLeftRadius: variables.radius.xl,
-        borderTopRightRadius: variables.radius.xl,
-        borderBottomRightRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
-        borderBottomLeftRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
-        overflow: 'hidden',
-        zIndex: 10,
-    },
-    container: {
-        flexDirection: 'row',
-        backgroundColor: navigationMode === 'floating' ? colors.card : colors.cardLighter,
-        borderColor: colors.cardBorder,
-        borderTopWidth: border,
-        borderBottomWidth: navigationMode === 'floating' ? border : 0,
-        borderRightWidth: border,
-        borderLeftWidth: border,
-        borderTopLeftRadius: variables.radius.xl,
-        borderTopRightRadius: variables.radius.xl,
-        borderBottomRightRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
-        borderBottomLeftRadius: navigationMode === 'floating' ? variables.radius.xl : 0,
-        alignItems: 'center',
-        height: navigationMode === 'floating' ? 50 : navigationMode === 'fixed' ? 60 : 0,
-        paddingHorizontal: 10,
-        elevation: 10,
-    },
-    tab: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        marginHorizontal: 2,
-    },
-    tabContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: variables.radius.circle,
-        minHeight: 35,
-    },
-    activeTabContent: {
-        backgroundColor: colors.highlight,
-    },
-    tabText: {
-        color: colors.background,
-        fontSize: 12,
-        fontWeight: 'bold',
-        marginLeft: 6,
-    },
-    menuButton: {
-        position: 'absolute',
-        right: border !== 'collapsible' ? 40 : 80,
-        top: border === 'fixed' ? insets.top : insets.top + 25,
-        zIndex: 20,
-    },
-    sideNavContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: screenWidth * 0.7,
-        height: '100%',
-        backgroundColor: colors.card,
-        borderTopRightRadius: 18,
-        borderBottomRightRadius: 18,
-        paddingTop: insets.top + 12,
-        borderWidth: border,
-        borderColor: colors.cardBorder,
-        paddingHorizontal: 12,
-        zIndex: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 3, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 12,
-    },
-    sideNavHeader: {
-        paddingBottom: 8,
-        marginBottom: 8,
-    },
-    sideNavTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.text,
-        letterSpacing: -0.2,
-    },
-    sideNavItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        borderRadius: 10,
-        marginBottom: 3,
-        position: 'relative',
-        overflow: 'hidden',
-    },
-    sideNavItemActive: {
-        backgroundColor: colors.highlight,
-    },
-    sideNavItemInactive: {
-        backgroundColor: colors.card,
-    },
-    sideNavText: {
-        fontSize: 14,
-        color: colors.text,
-        fontWeight: '500',
-        flex: 1,
-    },
-    sideNavTextActive: {
-        color: colors.background,
-        fontWeight: '600',
-    },
-    sideNavBadge: {
-        backgroundColor: colors.highlight,
-        borderRadius: 10,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        minWidth: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    sideNavBadgeText: {
-        fontSize: 10,
-        color: colors.background,
-        fontWeight: '600',
-    },
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 20,
-    },
-    closeButton: {
-        position: 'absolute',
-        right: 12,
-        top: insets.top + 12,
-        zIndex: 40,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.background + '15',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    rippleEffect: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        borderRadius: 10,
-        opacity: 0.1,
-    },
-});
+import { useNavBar } from '../utils/NavContext';
 
 const NavBar = ({ state, navigation }) => {
     const insets = useSafeAreaInsets();
     const { variables, colors, navigationMode, headerMode, border, fixedBorder } = useTheme();
-    const { userData } = useData();
+    const { visible } = useNavBar();
     const { width } = Dimensions.get('window');
 
-    const screenWidth = width;  // already imported from Dimensions
+    const screenWidth = width;
     const tabCount = state.routes.length;
 
     const showText = screenWidth > 420 || tabCount < 4;
@@ -194,13 +27,14 @@ const NavBar = ({ state, navigation }) => {
 
     const [sideNavOpen, setSideNavOpen] = useState(false);
 
-    const [isProfileSheetVisible, setIsProfileSheetVisible] = useState(false);
-
     // Animation values
     const sideNavTranslateX = useRef(new Animated.Value(0)).current;
     const overlayOpacity = useRef(new Animated.Value(0)).current;
     const textOpacity = useRef(new Animated.Value(0)).current;
     const iconScale = useRef(new Animated.Value(1)).current;
+
+    const navTranslateY = useRef(new Animated.Value(visible ? 0 : 100)).current;
+
     const highlightAnimations = useRef(
         state.routes.map(() => new Animated.Value(0))
     ).current;
@@ -222,6 +56,17 @@ const NavBar = ({ state, navigation }) => {
 
         return () => backHandler.remove();
     }, [sideNavOpen, navigationMode]);
+
+    useEffect(() => {
+        if (navigationMode !== 'fixed') return;
+
+        Animated.spring(navTranslateY, {
+            toValue: visible ? 0 : 100,
+            useNativeDriver: true,
+            damping: 20,
+            stiffness: 100,
+        }).start();
+    }, [visible, navigationMode]);
 
     // Animation effects
     useEffect(() => {
@@ -339,8 +184,8 @@ const NavBar = ({ state, navigation }) => {
                 borderBottomWidth: floating ? border : 0,
                 borderRightWidth: border,
                 borderLeftWidth: border,
-                borderTopLeftRadius: fixedBorder ? variables.radius.xl : 0,
-                borderTopRightRadius: fixedBorder ? variables.radius.xl : 0,
+                borderTopLeftRadius: fixedBorder || floating ? variables.radius.xl : 0,
+                borderTopRightRadius: fixedBorder || floating ? variables.radius.xl : 0,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 alignItems: 'center',
@@ -396,7 +241,8 @@ const NavBar = ({ state, navigation }) => {
         }
 
         return (
-            <View style={styles.bgContainer}>
+            <Animated.View style={[styles.bgContainer, { transform: [{ translateY: navTranslateY }] }]}>
+
                 <View style={styles.container}>
                     {state.routes.map((route, index) => {
                         const isFocused = state.index === index;
@@ -485,7 +331,7 @@ const NavBar = ({ state, navigation }) => {
                         );
                     })}
                 </View>
-            </View>
+            </Animated.View>
         );
     });
 

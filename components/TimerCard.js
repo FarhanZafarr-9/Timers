@@ -8,6 +8,7 @@ import ExportSheet from './ExportSheet';
 import { useTheme } from '../utils/ThemeContext';
 import { useSecurity } from '../utils/SecurityContext';
 import Wave from './Wave';
+import ProgressWave from './ProgressWave'
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -561,25 +562,46 @@ const TimerCard = ({
                             />
                         </View>
                     ) : (
-                        <View
-                            style={{
-                                height: 20,
-                                width: (screenWidth * 0.38) * (progressPct / 100),
-                                maxWidth: screenWidth * 0.38,
-                                backgroundColor: colors.highlight + '20',
-                                borderRadius: 6,
-                                overflow: 'hidden',
-                                marginTop: 12,
-                            }}
-                        >
-                            <Wave
-                                amplitude={4}
-                                frequency={10}
-                                speed={3000}
-                                height={20}
-                                color={colors.highlight}
-                            />
-                        </View>
+                        progressMode === 'halfWave' ? (
+                            <View
+                                style={{
+                                    height: 20,
+                                    width: (screenWidth * 0.38) * (progressPct / 100),
+                                    maxWidth: screenWidth * 0.38,
+                                    backgroundColor: colors.highlight + '20',
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                    marginTop: 12,
+                                }}
+                            >
+                                <Wave
+                                    amplitude={4}
+                                    frequency={10}
+                                    speed={3000}
+                                    height={20}
+                                    color={colors.highlight}
+                                />
+                            </View>
+                        ) : (
+                            <View
+                                style={{
+                                    backgroundColor: colors.highlight + '20',
+                                    borderRadius: 6,
+                                    marginTop: 12,
+                                }}
+                            >
+                                <ProgressWave
+                                    progressPct={progressPct}
+                                    amplitude={4}
+                                    frequency={8}
+                                    speed={3000}
+                                    height={20}
+                                    width={screenWidth * 0.40}
+                                    colorCompleted={colors.highlight}
+                                    colorRemaining={colors.highlight + '20'}
+                                />
+                            </View>
+                        )
                     )}
                 </View>
             );
@@ -614,23 +636,45 @@ const TimerCard = ({
                                 />
                             </View>
                         ) : (
-                            <View
-                                style={{
-                                    height: 20,
-                                    width: (screenWidth * 0.74) * (progressPct / 100),
-                                    maxWidth: screenWidth * 0.74,
+                            progressMode === 'halfWave' ? (
+                                <View
+                                    style={{
+                                        height: 25,
+                                        width: (screenWidth * 0.74) * (progressPct / 100),
+                                        maxWidth: screenWidth * 0.74,
+                                        backgroundColor: colors.highlight + '20',
+                                        paddingVertical: 2,
+                                        borderRadius: 6,
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <Wave
+                                        amplitude={6}
+                                        frequency={10}
+                                        speed={3000}
+                                        height={20}
+                                        color={colors.highlight}
+                                    />
+                                </View>
+                            ) : (
+                                <View style={{
+                                    backgroundColor: colors.highlight + '20',
                                     borderRadius: 6,
                                     overflow: 'hidden',
-                                }}
-                            >
-                                <Wave
-                                    amplitude={6}
-                                    frequency={10}
-                                    speed={3500}
-                                    height={20}
-                                    color={colors.highlight}
-                                />
-                            </View>
+                                    paddingVertical: 4,
+                                }}>
+                                    <ProgressWave
+                                        progressPct={progressPct}
+                                        amplitude={6}
+                                        frequency={10}
+                                        speed={3000}
+                                        height={20}
+                                        width={screenWidth * 0.74}
+                                        colorCompleted={colors.highlight}
+                                        colorRemaining={colors.highlight + '20'}
+                                    />
+                                </View>
+                            )
                         )}
                     </>
 
@@ -638,7 +682,7 @@ const TimerCard = ({
                         style={{
                             color: colors.textDesc,
                             fontSize: 12,
-                            fontWeight: '500',
+                            fontWeight: '700',
                             opacity: 0.8,
                             width: '15%',
                             lineHeight: 20,
