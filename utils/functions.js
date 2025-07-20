@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 import { View, Text } from 'react-native';
 import { BaseToast, ErrorToast } from 'react-native-toast-message';
+import Svg, { Path } from 'react-native-svg';
 
 import { useRef, useEffect } from 'react';
 
@@ -210,14 +211,61 @@ export const progressOptions = [
         label: 'Linear',
         value: 'linear',
         icon: <Icons.Ion name="remove-outline" size={16} />,
-        description: 'Simple horizontal progress bar'
+        description: 'Classic solid progress bar'
     },
     {
-        label: 'Wave',
-        value: 'wave',
+        label: 'Half Wave',
+        value: 'halfWave',
         icon: <Icons.Ion name="pulse-outline" size={16} />,
-        description: 'Animated wave style progress'
+        description: 'Single-color wave showing only completed progress'
+    },
+    {
+        label: 'Full Wave',
+        value: 'fullWave',
+        icon: <Icons.Ion name="water-outline" size={16} />,
+        description: 'Dual-color wave with clear progress boundary'
     }
+];
+
+export const backgroundOptions = [
+    {
+        label: 'None',
+        value: 'none',
+        icon: <Icons.Ion name="close-outline" size={16} />,
+        description: 'No background effect'
+    },
+    {
+        label: 'Grid',
+        value: 'grid',
+        icon: <Icons.Ion name="grid-outline" size={16} />,
+        description: 'Classic grid pattern background'
+    },
+    {
+        label: 'Polka Dots',
+        value: 'polka',
+        icon: <Icons.Ion name="ellipsis-horizontal-circle-outline" size={16} />,
+        description: 'Scattered polka dot effect'
+    },
+    {
+        label: 'Cross Hatch',
+        value: 'cross',
+        icon: <Icons.Ion name="apps-outline" size={16} />,
+        description: 'Fine criss-cross background lines'
+    },
+    {
+        label: 'Blur Noise',
+        value: 'noise',
+        icon: <Icons.Ion name="cloudy-outline" size={16} />,
+        description: 'Soft blur static effect for minimal texture'
+    },
+    /*
+        {
+        label: 'Diagonal Lines',
+        value: 'diagonal',
+        icon: <Icons.Ion name="trending-up-outline" size={16} />,
+        description: 'Tilted stripe pattern across the screen'
+    },
+    */
 ];
 
 export const unitOptions = [
@@ -296,8 +344,6 @@ export const emojiText = (str) => {
     const emojiChar = emojiChars[Math.floor(Math.random() * emojiChars.length)];
     return str.split('').map(char => (char === ' ' ? ' ' : emojiChar)).join('');
 };
-
-
 
 export const maskText = (str) => {
     const maskChars = [
@@ -480,9 +526,34 @@ export const quotes = [
 ];
 
 export const appBuild = 'beta';
-export const appVersion = '1.0.30';
+export const appVersion = '1.0.31';
 
 export const changelog = [
+    {
+        "version": "1.0.31",
+        "date": "2025-07-20",
+        "title": "Immersive Mode & Pattern Backgrounds",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Immersive view introduced  auto-hides header/nav after 4s of inactivity for distraction-free experience" },
+            { "type": "new", "text": "Patterned background support added for enhanced visual depth and customization" },
+            { "type": "new", "text": "New UI polish across multiple screens, with refined paddings and spacing" },
+
+            { "type": "improved", "text": "ThemeContext reworked for blazing-fast switching and minimal overhead" },
+            { "type": "improved", "text": "Animated background performance optimized for smoother rendering" },
+            { "type": "improved", "text": "Several layout fixes and minor component alignment improvements" },
+
+            { "type": "wip", "text": "JS-based screen animations and transitions being tested for full rollout" },
+            { "type": "wip", "text": "New icons and entry animations being finalized for key screens" },
+            { "type": "wip", "text": "More animated backgrounds coming soon with improved GPU handling" },
+            { "type": "wip", "text": "Additional new features in development and UI experiments underway" },
+
+            {
+                "type": "summarized",
+                "text": "This update brings immersive viewing, patterned backgrounds, and a faster theme engine—plus fixes, layout improvements, and a sneak peek into new animations and transitions coming soon."
+            }
+        ]
+    },
     {
         "version": "1.0.30",
         "date": "2025-07-19",
@@ -1028,6 +1099,261 @@ export const toastConfig = (colors, variables, border) => ({
         </View>
     )
 });
+
+export const renderGrid = ({ width: W, height: H }, color) => {
+    if (!W || !H) return null;
+
+    const SPACING = 20;
+    const cols = Math.floor(W / SPACING);
+    const rows = Math.floor(H / SPACING);
+
+    const V = Array.from({ length: cols }, (_, i) => (
+        <View
+            key={`v-${i}`}
+            style={{
+                position: 'absolute',
+                left: i * SPACING,
+                width: 1,
+                height: H,
+                backgroundColor: color,
+            }}
+        />
+    ));
+
+    const HLines = Array.from({ length: rows }, (_, i) => (
+        <View
+            key={`h-${i}`}
+            style={{
+                position: 'absolute',
+                top: i * SPACING,
+                width: W,
+                height: 1,
+                backgroundColor: color,
+            }}
+        />
+    ));
+
+    return (
+        <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
+            {[...V, ...HLines]}
+        </View>
+    );
+};
+
+export const renderPolkaDots = ({ width: W, height: H }, color) => {
+    if (!W || !H) return null;
+
+    const dotSpacing = 36;
+    const dotSize = 6;
+
+    const cols = Math.ceil(W / dotSpacing);
+    const rows = Math.ceil(H / dotSpacing);
+
+    const dots = [];
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            dots.push(
+                <View
+                    key={`dot-${r}-${c}`}
+                    style={{
+                        position: 'absolute',
+                        top: r * dotSpacing,
+                        left: c * dotSpacing,
+                        width: dotSize,
+                        height: dotSize,
+                        borderRadius: dotSize / 2,
+                        backgroundColor: color,
+                    }}
+                />
+            );
+        }
+    }
+
+    return (
+        <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
+            {dots}
+        </View>
+    );
+};
+
+export const renderDiagonalLines = ({ width: W, height: H }, color) => {
+    if (!W || !H) return null;
+
+    const SPACING = 30;
+    const DIAG = Math.ceil((W + H) / SPACING) + 1;
+    const LENGTH = Math.sqrt(W * W + H * H);
+
+    const lines = Array.from({ length: DIAG }, (_, i) => {
+        const offset = i * SPACING;
+        return (
+            <View
+                key={`diag-${i}`}
+                style={{
+                    position: 'absolute',
+                    left: offset - H,
+                    top: 0,
+                    width: 2,
+                    height: LENGTH,
+                    backgroundColor: color,
+                    transform: [{ rotate: '45deg' }],
+                }}
+            />
+        );
+    });
+
+    return (
+        <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
+            {lines}
+        </View>
+    );
+};
+
+export const renderCrossHatch = ({ width: W, height: H }, color) => {
+    if (!W || !H) return null;
+
+    const SPACING = 25;
+    const cols = Math.ceil(W / SPACING);
+    const rows = Math.ceil(H / SPACING);
+    const diag = Math.ceil((W + H) / SPACING) + 1;
+    const LENGTH = Math.sqrt(W * W + H * H);
+
+    const verticals = Array.from({ length: cols }, (_, i) => (
+        <View key={`v-${i}`} style={{
+            position: 'absolute',
+            left: i * SPACING,
+            top: 0,
+            width: 1,
+            height: H,
+            backgroundColor: color,
+        }} />
+    ));
+
+    const horizontals = Array.from({ length: rows }, (_, i) => (
+        <View key={`h-${i}`} style={{
+            position: 'absolute',
+            top: i * SPACING,
+            left: 0,
+            height: 1,
+            width: W,
+            backgroundColor: color,
+        }} />
+    ));
+
+    const diag45 = Array.from({ length: diag }, (_, i) => (
+        <View key={`d1-${i}`} style={{
+            position: 'absolute',
+            left: -H + i * SPACING,
+            top: 0,
+            width: 2,
+            height: LENGTH,
+            backgroundColor: color,
+            transform: [{ rotate: '45deg' }],
+        }} />
+    ));
+
+    const diag135 = Array.from({ length: diag }, (_, i) => (
+        <View key={`d2-${i}`} style={{
+            position: 'absolute',
+            left: -H + i * SPACING,
+            top: 0,
+            width: 2,
+            height: LENGTH,
+            backgroundColor: color,
+            transform: [{ rotate: '-45deg' }],
+        }} />
+    ));
+
+    return (
+        <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
+            {verticals}
+            {horizontals}
+            {diag45}
+            {diag135}
+        </View>
+    );
+};
+
+export const renderNoise = ({ width: W, height: H }, color, density = 'high') => {
+    if (!W || !H) return null;
+
+    const densityMap = {
+        verylow: 100,
+        low: 200,
+        normal: 400,
+        high: 600,
+        veryhigh: 1000,
+    };
+
+    const DOTS = densityMap[density] ?? densityMap.normal;
+
+    const dots = Array.from({ length: DOTS }, (_, i) => {
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        const size = Math.random() * 1.8 + 0.7;
+
+        return (
+            <View
+                key={`n-${i}`}
+                style={{
+                    position: 'absolute',
+                    left: x,
+                    top: y,
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2,
+                    backgroundColor: color,
+                }}
+            />
+        );
+    });
+
+    return (
+        <View pointerEvents="none" style={{ position: 'absolute', width: W, height: H }}>
+            {dots}
+        </View>
+    );
+};
+
+export const renderHexagons = ({ width: W, height: H }, color) => {
+    if (!W || !H) return null;
+
+    const size = 12;
+    const h = size * Math.sqrt(3);
+    const rows = Math.ceil(H / h);
+    const cols = Math.ceil(W / (1.5 * size));
+
+    const points = (cx, cy) => {
+        let p = [];
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const x = cx + size * Math.cos(angle);
+            const y = cy + size * Math.sin(angle);
+            p.push(`${x},${y}`);
+        }
+        return p.join(' ');
+    };
+
+    return (
+        <Svg height={H} width={W} style={{ position: 'absolute' }}>
+            {Array.from({ length: rows }, (_, row) =>
+                Array.from({ length: cols }, (_, col) => {
+                    const cx = size + col * 1.5 * size;
+                    const cy = h / 2 + row * h + (col % 2 === 0 ? 0 : h / 2);
+                    return (
+                        <Path
+                            key={`hx-${row}-${col}`}
+                            d={`M${points(cx, cy)}Z`}
+                            stroke={color}
+                            strokeWidth={0.8}
+                            fill="none"
+                        />
+                    );
+                })
+            )}
+        </Svg>
+    );
+};
 
 
 /*

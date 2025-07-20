@@ -24,7 +24,7 @@ import ChnageLogSheet from './components/ChnageLogSheet';
 import { TimerProvider } from './utils/TimerContext';
 import { SecurityProvider, useSecurity } from './utils/SecurityContext';
 import { ThemeProvider, useTheme } from './utils/ThemeContext';
-import { DataProvider } from './utils/DataContext';
+import { NavBarProvider } from './utils/NavContext';
 
 // Hooks
 import { useCheckForUpdate } from './utils/useCheckForUpdate';
@@ -95,11 +95,11 @@ export default function App() {
   return (
     <SecurityProvider>
       <ThemeProvider>
-        <DataProvider>
+        <NavBarProvider>
           <TimerProvider>
             <AppContent />
           </TimerProvider>
-        </DataProvider>
+        </NavBarProvider>
       </ThemeProvider>
     </SecurityProvider>
   );
