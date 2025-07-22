@@ -51,7 +51,7 @@ export default function Home({ navigation }) {
         grid: {
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginBottom: 16,
+            marginBottom: 12,
         },
         leftColumn: {
             flex: 1,
@@ -108,7 +108,7 @@ export default function Home({ navigation }) {
         },
         labelContainer: {
             width: '100%',
-            marginBottom: 12,
+            marginBottom: 6,
             height: 40,
             backgroundColor: colors.settingBlock,
             borderRadius: variables.radius.md,

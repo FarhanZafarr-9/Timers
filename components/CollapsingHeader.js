@@ -36,7 +36,7 @@ export default function CollapsingHeader({
             case 'polka': return renderPolkaDots({ width, height }, C);
             case 'diagonal': return renderDiagonalLines({ width, height }, C);
             case 'cross': return renderCrossHatch({ width, height }, C);
-            case 'noise': return renderNoise({ width, height }, colors.highlight + '50','verylow');
+            case 'noise': return renderNoise({ width, height }, colors.highlight + '50', 'verylow');
             default: return null;
         }
     }, [backgroundPattern, colors.highlight, headerMode]);
@@ -236,24 +236,23 @@ export default function CollapsingHeader({
     }
 
     return (
-        <Animated.View
-            style={[
-                styles.header,
-                animatedHeaderStyle,
-                {
-                    position: 'absolute',
-                    borderWidth: animatedBorderWidth,
-                    backgroundColor: bgColor,
-                    paddingHorizontal: 25,
-                },
-            ]}
-        >
-            {backgroundPatternLayer && (
-                <View style={styles.backgroundPattern}>
-                    {backgroundPatternLayer}
-                </View>
-            )}
-            {renderHeaderContent()}
-        </Animated.View>
+        <View style={{ position: 'relative', zIndex: 10, alignItems: 'center' }}>
+            <Animated.View
+                style={[
+                    styles.header,
+                    animatedHeaderStyle,
+                    {
+                        position: 'absolute',
+                        borderWidth: animatedBorderWidth,
+                        backgroundColor: bgColor,
+                        paddingHorizontal: 25,
+                    },
+                ]}
+            >
+
+                {renderHeaderContent()}
+            </Animated.View>
+        </View>
     );
+
 }

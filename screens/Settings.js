@@ -1,28 +1,207 @@
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native';
+// Settings.js
+import React, {
+    memo,
+    useCallback,
+    useMemo,
+    useState,
+    useRef,
+    useEffect,
+} from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
-import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
+import { useTheme } from '../utils/ThemeContext';
+import { useNavBar } from '../utils/NavContext';
+import HeaderScreen from '../components/HeaderScreen';
+import PickerSheet from '../components/PickerSheet';
+import Switch from '../components/Switch';
+import ConfirmSheet from '../components/ConfirmSheet';
 import PasswordPrompt from '../components/PasswordPrompt';
+import ChnageLogSheet from '../components/ChnageLogSheet';
+import { checkForUpdateAndReload, useRenderLogger } from '../utils/functions';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import Timer from '../classes/Timer';
-import HeaderScreen from '../components/HeaderScreen';
-import { useTheme } from '../utils/ThemeContext';
-import PickerSheet from '../components/PickerSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { themeOptions, accentOptions, layoutOptions, navOptions, headerOptions, privacyOptions, lockoutOptions, borderOptions, progressOptions, useRenderLogger, unitOptions, backgroundOptions } from '../utils/functions';
-import ConfirmSheet from '../components/ConfirmSheet';
-import Switch from '../components/Switch';
-import ChnageLogSheet from '../components/ChnageLogSheet';
-import { checkForUpdateAndReload } from '../utils/functions';
 import Toast from 'react-native-toast-message';
-import { useNavBar } from '../utils/NavContext';
+import {
+    themeOptions,
+    accentOptions,
+    layoutOptions,
+    navOptions,
+    headerOptions,
+    privacyOptions,
+    lockoutOptions,
+    borderOptions,
+    progressOptions,
+    unitOptions,
+    backgroundOptions,
+} from '../utils/functions';
+import Timer from '../classes/Timer';
+import { Linking } from 'react-native';
 
-function Settings() {
-    useRenderLogger('Settings')
-    const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
+const DIRECTORY_KEY = 'download_directory_uri';
 
+/* ------------------------------------------------------------------ */
+/*  Generic helpers                                                   */
+/* ------------------------------------------------------------------ */
+const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+const showToast = (type, text1, text2 = '') =>
+    Toast.show({ type, text1, text2 });
+
+/* ------------------------------------------------------------------ */
+/*  Format & PathDisplay                                               */
+/* ------------------------------------------------------------------ */
+const useFormatDirectoryPath = () =>
+    useCallback((uri) => {
+        if (!uri) return '';
+        try {
+            let path = decodeURIComponent(uri)
+                .replace(/^.*?(primary:|tree\/primary:)/i, '')
+                .replace(/%20/g, ' ');
+            let parts = path.split('/').filter(Boolean);
+            if (parts.length > 3) parts = ['...', ...parts.slice(-3)];
+            return parts.join(' > ');
+        } catch {
+            return uri;
+        }
+    }, []);
+
+const PathDisplay = memo(({ path, style }) => {
+    const format = useFormatDirectoryPath();
+    if (!path) return null;
+    return <Text style={style}>{format(path)}</Text>;
+});
+
+/* ------------------------------------------------------------------ */
+/*  Section header                                                    */
+/* ------------------------------------------------------------------ */
+const SectionHeader = memo(({ children, onPress }) => {
+    const { colors } = useTheme();
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                sectionHeader: { paddingVertical: 10, paddingHorizontal: 15 },
+                sectionHeaderText: {
+                    fontSize: 13,
+                    fontWeight: 'bold',
+                    color: colors.highlight,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                },
+            }),
+        [colors]
+    );
+    return (
+        <TouchableOpacity style={styles.sectionHeader} onPress={onPress} activeOpacity={1}>
+            <Text style={styles.sectionHeaderText}>{children}</Text>
+        </TouchableOpacity>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Animated card wrapper                                             */
+/* ------------------------------------------------------------------ */
+const AnimatedCard = memo(({ animatedStyle, children }) => (
+    <Animated.View style={animatedStyle}>
+        <CardShell>{children}</CardShell>
+    </Animated.View>
+));
+
+const CardShell = memo(({ children }) => {
+    const { colors, variables, border } = useTheme();
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                card: {
+                    backgroundColor: 'transparent',
+                    marginBottom: 15,
+                    borderRadius: variables.radius.lg,
+                    overflow: 'hidden',
+                    borderWidth: border,
+                    borderColor: colors.cardBorder,
+                },
+            }),
+        [colors, variables, border]
+    );
+    return <View style={styles.card}>{children}</View>;
+});
+
+/* ------------------------------------------------------------------ */
+/*  Re-usable setting row                                             */
+/* ------------------------------------------------------------------ */
+const SettingRow = memo(
+    ({
+        icon,
+        title,
+        desc,
+        onPress,
+        children,
+        noBorder,
+        disabled,
+        extraStyle,
+    }) => {
+        const { colors, border } = useTheme();
+        const styles = useMemo(
+            () =>
+                StyleSheet.create({
+                    settingBlock: {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingTop: 18,
+                        paddingBottom: 14,
+                        paddingHorizontal: 20,
+                        backgroundColor: colors.settingBlock + 'f5',
+                        borderBottomWidth: border,
+                        borderBottomColor: colors.border,
+                    },
+                    settingTextBlock: { flex: 1 },
+                    settingTitle: {
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: colors.text,
+                        marginBottom: 2,
+                        height: 22,
+                    },
+                    settingDesc: {
+                        fontSize: 13,
+                        color: colors.textDesc,
+                        opacity: 0.85,
+                        height: 18,
+                    },
+                }),
+            [colors, border]
+        );
+        return (
+            <TouchableOpacity
+                style={[styles.settingBlock, noBorder && { borderBottomWidth: 0 }, extraStyle]}
+                onPress={onPress}
+                activeOpacity={disabled ? 1 : 0.7}
+                disabled={disabled}
+            >
+                {icon && (
+                    <Icons.Ion
+                        name={icon}
+                        size={14}
+                        color={colors.highlight}
+                        style={{ marginRight: 15 }}
+                    />
+                )}
+                <View style={styles.settingTextBlock}>
+                    <Text style={styles.settingTitle}>{title}</Text>
+                    <Text style={styles.settingDesc}>{desc}</Text>
+                </View>
+                {children}
+            </TouchableOpacity>
+        );
+    }
+);
+
+/* ------------------------------------------------------------------ */
+/*  Card 1 – Appearance                                               */
+/* ------------------------------------------------------------------ */
+const AppearanceCard = memo(({ animatedStyle }) => {
     const {
         accentMode,
         setAccentMode,
@@ -30,25 +209,301 @@ function Settings() {
         variables,
         themeMode,
         setThemeMode,
-        navigationMode,
-        setNavigationMode,
-        headerMode,
-        setHeaderMode,
         borderMode,
         setBorderMode,
-        border,
-        layoutMode,
-        setLayoutMode,
         progressMode,
         setProgressMode,
-        defaultUnit,
-        setDefaultUnit,
-        fixedBorder,
-        setFixedBorder,
         backgroundPattern,
         setBackgroundPattern,
     } = useTheme();
 
+    const [showExtra, setShowExtra] = useState(false);
+    const addMessage = useCallback(
+        (text, type = 'info') => showToast(type, capitalize(type), text),
+        []
+    );
+
+    return (
+        <AnimatedCard animatedStyle={animatedStyle}>
+            <SettingRow
+                icon="color-palette-outline"
+                title="Theme"
+                desc="Choose app theme"
+            >
+                <PickerSheet
+                    value={themeMode}
+                    options={themeOptions}
+                    onChange={setThemeMode}
+                    title="Theme"
+                    placeholder="Select theme"
+                    colors={colors}
+                    variables={variables}
+                />
+            </SettingRow>
+
+            <SettingRow
+                icon="brush-outline"
+                title="Accent"
+                desc="Choose app accent"
+            >
+                <PickerSheet
+                    value={accentMode}
+                    options={accentOptions}
+                    onChange={setAccentMode}
+                    title="Accent"
+                    placeholder="Select accent"
+                    colors={colors}
+                    variables={variables}
+                    defaultValue="default"
+                    pillsPerRow={3}
+                />
+            </SettingRow>
+
+            <SettingRow
+                icon="rocket-outline"
+                title="Experimental UI"
+                desc="Experimental UI options"
+                noBorder={!showExtra}
+            >
+                <Switch
+                    value={showExtra}
+                    onValueChange={(v) => {
+                        setShowExtra(v);
+                        addMessage(`Extra appearance options ${v ? 'enabled' : 'disabled'}.`);
+                        if (!v) {
+                            setBorderMode('subtle');
+                            setProgressMode('linear');
+                            setBackgroundPattern('none');
+                        }
+                    }}
+                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                    thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
+                    style={{ transform: [{ scaleY: 1 }] }}
+                />
+            </SettingRow>
+
+            {showExtra && (
+                <>
+                    <SettingRow
+                        icon="analytics-outline"
+                        title="Progress"
+                        desc="Choose progress mode"
+                    >
+                        <PickerSheet
+                            value={progressMode}
+                            options={progressOptions}
+                            onChange={setProgressMode}
+                            title="Progress"
+                            placeholder="Select progress"
+                            colors={colors}
+                            variables={variables}
+                            defaultValue="linear"
+                            note="Wavy motion completely stabled and working fluidly, enjoy ✨"
+                        />
+                    </SettingRow>
+
+                    <SettingRow
+                        icon="color-palette-outline"
+                        title="Border"
+                        desc="Choose border mode"
+                    >
+                        <PickerSheet
+                            value={borderMode}
+                            options={borderOptions}
+                            onChange={setBorderMode}
+                            title="Border"
+                            placeholder="Select Border mode"
+                            colors={colors}
+                            variables={variables}
+                            defaultValue="subtle"
+                        />
+                    </SettingRow>
+
+                    <SettingRow icon="color-fill-outline" title="Background" desc="Select background pattern" noBorder>
+                        <PickerSheet
+                            value={backgroundPattern}
+                            options={backgroundOptions}
+                            onChange={setBackgroundPattern}
+                            title="Background"
+                            placeholder="Select background pattern"
+                            colors={colors}
+                            variables={variables}
+                            defaultValue="none"
+                            note="Still under development, so use carefully."
+                        />
+                    </SettingRow>
+                </>
+            )}
+        </AnimatedCard>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Card 2 – Layout                                                   */
+/* ------------------------------------------------------------------ */
+const LayoutCard = memo(({ animatedStyle }) => {
+    const {
+        colors,
+        variables,
+        headerMode,
+        setHeaderMode,
+        navigationMode,
+        setNavigationMode,
+        layoutMode,
+        setLayoutMode,
+        defaultUnit,
+        setDefaultUnit,
+        fixedBorder,
+        setFixedBorder,
+    } = useTheme();
+    const { shouldHide, setShouldHide } = useNavBar();
+
+    const [showExtra, setShowExtra] = useState(false);
+    const addMessage = useCallback(
+        (text, type = 'info') => showToast(type, capitalize(type), text),
+        []
+    );
+
+    return (
+        <AnimatedCard animatedStyle={animatedStyle}>
+            <SettingRow
+                icon="ellipsis-horizontal"
+                title="Header"
+                desc="Choose header mode"
+            >
+                <PickerSheet
+                    value={headerMode}
+                    options={headerOptions}
+                    onChange={setHeaderMode}
+                    title="Header"
+                    placeholder="Select header mode"
+                    colors={colors}
+                    variables={variables}
+                    defaultValue="minimized"
+                />
+            </SettingRow>
+
+            <SettingRow
+                icon="navigate-outline"
+                title="Navigation"
+                desc="Select navigation mode"
+            >
+                <PickerSheet
+                    value={navigationMode}
+                    options={navOptions}
+                    onChange={setNavigationMode}
+                    title="Navigation"
+                    placeholder="Select navigation mode"
+                    colors={colors}
+                    variables={variables}
+                    defaultValue="floating"
+                />
+            </SettingRow>
+
+            <SettingRow
+                icon="construct-outline"
+                title="Experimental"
+                desc="Layout Test Features"
+                noBorder={!showExtra}
+            > 
+                <Switch
+                    value={showExtra}
+                    onValueChange={(v) => {
+                        setShowExtra(v);
+                        addMessage(`Extra Layout options ${v ? 'enabled' : 'disabled'}.`);
+                        if (!v) {
+                            setDefaultUnit('auto');
+                            setFixedBorder(false);
+                            setShouldHide(false);
+                            setLayoutMode('list');
+                        }
+                    }}
+                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                    thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
+                    style={{ transform: [{ scaleY: 1 }] }}
+                />
+            </SettingRow>
+
+            {showExtra && (
+                <>
+                    <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode" noBorder={(headerMode === 'fixed' || navigationMode === 'fixed') ? false : true}>
+                        <PickerSheet
+                            value={layoutMode}
+                            options={layoutOptions}
+                            onChange={setLayoutMode}
+                            title="Layout"
+                            placeholder="Layout"
+                            colors={colors}
+                            variables={variables}
+                            defaultValue="list"
+                            note="Grid layout minimizes privacy text for easier view"
+                        />
+                    </SettingRow>
+
+                    {layoutMode === 'grid' && (
+                        <SettingRow icon="speedometer-outline" title="Default Unit" desc="Card unit setting">
+                            <PickerSheet
+                                value={defaultUnit}
+                                options={unitOptions}
+                                onChange={setDefaultUnit}
+                                title="Unit"
+                                placeholder="Unit"
+                                colors={colors}
+                                variables={variables}
+                                defaultValue="auto"
+                                note="This default unit is only considered in grid mode"
+                            />
+                        </SettingRow>
+                    )}
+
+                    {(navigationMode === 'fixed' || headerMode === 'fixed') && (
+                        <>
+                            <SettingRow
+                                icon="crop-outline"
+                                title="Border radius"
+                                desc="Fixed mode corners"
+                            >
+                                <Switch
+                                    value={!!fixedBorder}
+                                    onValueChange={(v) => {
+                                        setFixedBorder(v);
+                                        addMessage(`Fixed Rounded borders ${v ? 'enabled' : 'disabled'}.`);
+                                    }}
+                                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                                    thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
+                                    style={{ transform: [{ scaleY: 1 }] }}
+                                />
+                            </SettingRow>
+
+                            <SettingRow
+                                icon="expand-outline"
+                                title="Immerse"
+                                desc="Auto-hide fixed modes"
+                                noBorder
+                            >
+                                <Switch
+                                    value={!!shouldHide}
+                                    onValueChange={(v) => {
+                                        setShouldHide(v);
+                                        addMessage(`Auto hide fixed modes ${v ? 'enabled' : 'disabled'}.`);
+                                    }}
+                                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                                    thumbColor={!shouldHide ? colors.switchThumbActive : colors.switchThumb}
+                                    style={{ transform: [{ scaleY: 1 }] }}
+                                />
+                            </SettingRow>
+                        </>
+                    )}
+                </>
+            )}
+        </AnimatedCard>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Card 3 – Security                                                 */
+/* ------------------------------------------------------------------ */
+const SecurityCard = memo(({ animatedStyle }) => {
     const {
         isFingerprintEnabled,
         toggleFingerprint,
@@ -58,61 +513,371 @@ function Settings() {
         savePassword,
         clearPassword,
         password,
-        loading,
-        PasswordPromptVisible,
-        setPasswordPromptVisible,
         privacyMode,
         setPrivacyModeValue,
         lockoutMode,
         setLockoutModeValue,
-        shouldUseLockout
+        shouldUseLockout,
+        loading,
+        PasswordPromptVisible,
+        setPasswordPromptVisible,
     } = useSecurity();
+    const { colors, variables } = useTheme();
 
-    const { shouldHide, setShouldHide } = useNavBar();
+    const [mode, setMode] = useState('set');
+    const addMessage = useCallback(
+        (text, type = 'info') => showToast(type, capitalize(type), text),
+        []
+    );
 
-    if (loading || isPasswordLockEnabled === undefined || isFingerprintEnabled === undefined || privacyMode === undefined || lockoutMode === undefined || navigationMode === undefined) {
-        return null;
-    }
+    return (
+        <AnimatedCard animatedStyle={animatedStyle}>
+            <SettingRow icon="eye-off-outline" title="Privacy Mode" desc="Masks timer names and titles">
+                <PickerSheet
+                    value={privacyMode}
+                    options={privacyOptions}
+                    onChange={setPrivacyModeValue}
+                    title="Privacy"
+                    placeholder="Select mode"
+                    colors={colors}
+                    variables={variables}
+                    note="Emoji mode has been re enabled, enjoy ✨"
+                />
+            </SettingRow>
 
-    const [populateDisabled, setPopulateDisabled] = useState(false);
-    const [PasswordPromptMode, setPasswordPromptMode] = useState('set');
-    const [confirmVisible, setConfirmVisible] = useState(false);
-    const [confirmAction, setConfirmAction] = useState(() => () => { });
-    const [confirmText, setConfirmText] = useState('');
-    const [showExtra, setShowExtra] = useState(0);
-    const DIRECTORY_KEY = 'download_directory_uri';
-    const [mounted, setMounted] = useState(false);
+            {isSensorAvailable && (
+                <SettingRow
+                    icon="finger-print-outline"
+                    title="Fingerprint Unlock"
+                    desc="Enable fingerprint authentication"
+                >
+                    <Switch
+                        value={!!isFingerprintEnabled}
+                        onValueChange={() => {
+                            toggleFingerprint();
+                            addMessage(`Fingerprint unlock ${!isFingerprintEnabled ? 'enabled' : 'disabled'}.`);
+                        }}
+                        trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                        thumbColor={!isFingerprintEnabled ? colors.switchThumbActive : colors.switchThumb}
+                        style={{ transform: [{ scaleY: 1 }] }}
+                    />
+                </SettingRow>
+            )}
+
+            <SettingRow
+                icon={isPasswordLockEnabled ? 'lock-closed-outline' : 'lock-open-outline'}
+                title="Password Lock"
+                desc="Enable password authentication"
+                noBorder={!isPasswordLockEnabled}
+            >
+                <Switch
+                    value={!!isPasswordLockEnabled}
+                    onValueChange={(v) => {
+                        if (loading) return;
+                        if (v) {
+                            setMode('set');
+                            setPasswordPromptVisible(true);
+                        } else {
+                            clearPassword();
+                            addMessage('Password lock disabled.');
+                        }
+                    }}
+                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                    thumbColor={!isPasswordLockEnabled ? colors.switchThumbActive : colors.switchThumb}
+                    style={{ transform: [{ scale: 1 }] }}
+                />
+            </SettingRow>
+
+            {isPasswordLockEnabled && (
+                <>
+                    <SettingRow
+                        icon="key-outline"
+                        title={isPasswordLockEnabled ? 'Change Password' : 'Set Password'}
+                        desc={
+                            isPasswordLockEnabled
+                                ? 'Change your current password'
+                                : 'Set a password for extra security'
+                        }
+                        noBorder={!shouldUseLockout()}
+                        onPress={() => {
+                            setMode(isPasswordLockEnabled ? 'change' : 'set');
+                            setPasswordPromptVisible(true);
+                        }}
+                    />
+                    {shouldUseLockout() && (
+                        <SettingRow icon="timer-outline" title="Lockout" desc="Set duration for reauthentication" noBorder>
+                            <PickerSheet
+                                value={lockoutMode}
+                                options={lockoutOptions}
+                                onChange={setLockoutModeValue}
+                                title="Lockout"
+                                placeholder="Select lockout"
+                                colors={colors}
+                                variables={variables}
+                                pillsPerRow={3}
+                            />
+                        </SettingRow>
+                    )}
+                </>
+            )}
+            <PasswordPrompt
+                visible={PasswordPromptVisible}
+                onClose={() => setPasswordPromptVisible(false)}
+                onSave={(newPassword) => {
+                    savePassword(newPassword);
+                    setPasswordPromptVisible(false);
+                    addMessage('Password updated.', 'success');
+                }}
+                currentPassword={password}
+                mode={mode}
+                colors={colors}
+                variables={variables}
+            />
+        </AnimatedCard>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Card 4 – Timer Management                                         */
+/* ------------------------------------------------------------------ */
+const TimerManagementCard = memo(({ animatedStyle }) => {
+    const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
     const [directoryUri, setDirectoryUri] = useState(null);
-    const [showChangelog, setShowChangelog] = useState(false);
+    const [populateDisabled, setPopulateDisabled] = useState(false);
+    const [showExtra, setShowExtra] = useState(0);
+    const addMessage = useCallback(
+        (text, type = 'info') => showToast(type, capitalize(type), text),
+        []
+    );
 
-    const showToast = (type, text1, text2 = '') => {
-        Toast.show({
-            type,
-            text1,
-            text2,
-        });
-    };
+    const format = useFormatDirectoryPath();
 
-    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
-
-    const addMessage = useCallback((text, type = 'info') => {
-        showToast(type, capitalize(type), text);
+    /* Directory load & export helpers */
+    useEffect(() => {
+        (async () => {
+            const uri = await AsyncStorage.getItem(DIRECTORY_KEY);
+            setDirectoryUri(uri);
+        })();
     }, []);
 
+    const exportToJson = useCallback(async () => {
+        try {
+            let uri = directoryUri;
+            if (!uri) {
+                const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permission.granted) {
+                    addMessage('Export cancelled - no folder selected', 'error');
+                    return;
+                }
+                uri = permission.directoryUri;
+                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
+                setDirectoryUri(uri);
+                addMessage(`Export folder set to: ${format(uri)}`);
+            }
+            const json = JSON.stringify(timers, null, 2);
+            const fileName = `timers-export-${new Date().toISOString().split('T')[0]}.json`;
+            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                uri,
+                fileName,
+                'application/json'
+            );
+            await FileSystem.writeAsStringAsync(fileUri, json, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
+            addMessage(`Exported to: ${format(uri)}`, 'success');
+        } catch (e) {
+            addMessage('Export failed: ' + (e.message || ''), 'error');
+        }
+    }, [directoryUri, timers, format, addMessage]);
+
+    const loadFromJson = useCallback(async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true,
+                multiple: false,
+            });
+            if (!result.canceled && result.assets?.length) {
+                const file = result.assets[0];
+                const content = await FileSystem.readAsStringAsync(file.uri, {
+                    encoding: FileSystem.EncodingType.UTF8,
+                });
+                const loaded = JSON.parse(content);
+                if (Array.isArray(loaded)) {
+                    setTimersAndSave(loaded.map((o) => new Timer(o)));
+                    addMessage('Timers loaded from JSON.', 'success');
+                } else {
+                    addMessage('Invalid JSON format.', 'error');
+                }
+            } else {
+                addMessage('No file selected.');
+            }
+        } catch (e) {
+            addMessage('Failed to load timers.', 'error');
+        }
+    }, [setTimersAndSave, addMessage]);
+
+    const populateTimers = useCallback(async () => {
+        if (populateDisabled) return;
+        setPopulateDisabled(true);
+        await initializeTimers();
+        addMessage('Sample timers have been added.', 'success');
+        setTimeout(() => setPopulateDisabled(false), 2000);
+    }, [populateDisabled, initializeTimers, addMessage]);
+
+    const changeDir = useCallback(async () => {
+        try {
+            const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            if (permission.granted) {
+                const uri = permission.directoryUri;
+                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
+                setDirectoryUri(uri);
+                addMessage(`Export folder set to: ${format(uri)}`);
+            }
+        } catch {
+            addMessage('Failed to change directory', 'error');
+        }
+    }, [format, addMessage]);
+
+    const { colors } = useTheme();
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                pathDisplay: { fontSize: 12, marginLeft: 12, color: colors.textDesc },
+            }),
+        [colors]
+    );
+
+    return (
+        <AnimatedCard animatedStyle={animatedStyle}>
+            {showExtra === 3 && (
+                <SettingRow
+                    icon="refresh"
+                    title="Populate Timers"
+                    desc="Add sample timers for quick testing"
+                    disabled={populateDisabled}
+                    onPress={populateTimers}
+                />
+            )}
+
+            <SettingRow icon="trash" title="Clear All Timers" desc="Remove all timers from your device" />
+
+            <SettingRow
+                icon="download"
+                title="Export Timers"
+                desc={
+                    directoryUri
+                        ? `Save to: ${format(directoryUri)}`
+                        : 'Save all timers as a JSON file'
+                }
+                onPress={exportToJson}
+            />
+
+            <SettingRow
+                icon="folder-open-outline"
+                title="Change Export Folder"
+                desc={directoryUri ? `Current: ${format(directoryUri)}` : 'No folder selected'}
+                onPress={changeDir}
+            />
+
+            <SettingRow
+                icon="cloud-upload-outline"
+                title="Import Timers"
+                desc="Load timers from a JSON file"
+                noBorder
+                onPress={loadFromJson}
+            />
+        </AnimatedCard>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Card 5 – App Updates                                              */
+/* ------------------------------------------------------------------ */
+const AppUpdatesCard = memo(({ animatedStyle }) => {
+    const [showChangelog, setShowChangelog] = useState(false);
+    const { colors } = useTheme();
+    const addMessage = useCallback(
+        (text, type = 'info') => showToast(type, capitalize(type), text),
+        []
+    );
+
     const handleReportBug = useCallback(() => {
-        const email = 'farhanzafarr.9@gmail.com';
-        const subject = 'Bug Report - ChronoX App';
-        const body = 'Please describe the bug you encountered:';
-        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        Linking.openURL(
+            'mailto:farhanzafarr.9@gmail.com?subject=Bug Report - ChronoX App&body=Please describe the bug you encountered:'
+        );
     }, []);
 
     const handleSuggestion = useCallback(() => {
-        const email = 'farhanzafarr.9@gmail.com';
-        const subject = 'Suggestion - ChronoX App';
-        const body = 'Please describe the suggestion you came upon:';
-        Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        Linking.openURL(
+            'mailto:farhanzafarr.9@gmail.com?subject=Suggestion - ChronoX App&body=Please describe the suggestion you came upon:'
+        );
     }, []);
 
+    const checkUpdates = useCallback(async () => {
+        const status = await checkForUpdateAndReload();
+        if (status === 'up-to-date') addMessage('Already on latest version', 'success');
+        else if (status === 'error') addMessage('Update check failed.', 'error');
+        else if (status === 'dev-mode') addMessage('Skipped update check in dev mode.', 'info');
+    }, [addMessage]);
+
+    return (
+        <AnimatedCard animatedStyle={animatedStyle}>
+            <SettingRow
+                icon="cloud-download-outline"
+                title="Check for Updates"
+                desc="Fetch latest app updates"
+                onPress={checkUpdates}
+            />
+            <SettingRow
+                icon="document-text-outline"
+                title="Show Changelog"
+                desc="View recent changes"
+                onPress={() => setShowChangelog(true)}
+            />
+            <SettingRow icon="bug-outline" title="Report Bug" desc="Found a problem? Let us know" onPress={handleReportBug} />
+            <SettingRow
+                icon="sparkles-outline"
+                title="Send Suggestion"
+                desc="Share your ideas or improvements"
+                noBorder
+                onPress={handleSuggestion}
+            />
+            <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
+        </AnimatedCard>
+    );
+});
+
+/* ------------------------------------------------------------------ */
+/*  Main Settings Screen                                              */
+/* ------------------------------------------------------------------ */
+export default memo(function Settings() {
+    useRenderLogger('Settings');
+    const { loading: themeLoading } = useTheme();
+    const {
+        loading: securityLoading,
+        isPasswordLockEnabled,
+        isFingerprintEnabled,
+        privacyMode,
+        lockoutMode,
+    } = useSecurity();
+    const { navigationMode } = useTheme();
+
+    /* quick early return */
+    if (
+        themeLoading ||
+        securityLoading ||
+        isPasswordLockEnabled === undefined ||
+        isFingerprintEnabled === undefined ||
+        privacyMode === undefined ||
+        lockoutMode === undefined ||
+        navigationMode === undefined
+    )
+        return null;
+
+    /* --------------------------------------------------------------- */
+    /*  Animation refs                                                 */
+    /* --------------------------------------------------------------- */
     const card1Translate = useRef(new Animated.Value(-50)).current;
     const card2Translate = useRef(new Animated.Value(-50)).current;
     const card3Translate = useRef(new Animated.Value(-50)).current;
@@ -125,268 +890,39 @@ function Settings() {
     const card4Opacity = useRef(new Animated.Value(0)).current;
     const card5Opacity = useRef(new Animated.Value(0)).current;
 
-    // Update the useEffect animation code:
-    useEffect(() => {
-        const value = setTimeout(() => {
-            setMounted(true);
+    const [mounted, setMounted] = useState(false);
 
+    /* one-shot stagger animation */
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setMounted(true);
             Animated.stagger(120, [
-                // Card 1 Animation (Appearance)
                 Animated.parallel([
-                    Animated.spring(card1Translate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(card1Opacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(card1Translate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(card1Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
-                // Card 2 Animation (Layout Management)
                 Animated.parallel([
-                    Animated.spring(card2Translate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(card2Opacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(card2Translate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(card2Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
-                // Card 3 Animation (Security)
                 Animated.parallel([
-                    Animated.spring(card3Translate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(card3Opacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(card3Translate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(card3Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
-                // Card 4 Animation (Timer Management)
                 Animated.parallel([
-                    Animated.spring(card4Translate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(card4Opacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(card4Translate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(card4Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
-                // Card 5 Animation (App Updates)
                 Animated.parallel([
-                    Animated.spring(card5Translate, {
-                        toValue: 0,
-                        tension: 80,
-                        friction: 8,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(card5Opacity, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
+                    Animated.spring(card5Translate, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                    Animated.timing(card5Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
                 ]),
             ]).start();
         }, 50);
-
-        return () => clearTimeout(value);
+        return () => clearTimeout(t);
     }, []);
 
-    useEffect(() => {
-        const loadDirectory = async () => {
-            const uri = await AsyncStorage.getItem(DIRECTORY_KEY);
-            setDirectoryUri(uri);
-        };
-        loadDirectory();
-    }, []);
-
-    const styles = useMemo(() => StyleSheet.create({
-        card: {
-            backgroundColor: 'transparent',
-            marginBottom: 15,
-            borderRadius: variables.radius.lg,
-            overflow: 'hidden',
-            borderWidth: border,
-            borderColor: colors.cardBorder,
-        },
-        settingBlock: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: 18,
-            paddingBottom: 14,
-            paddingHorizontal: 20,
-            backgroundColor: colors.settingBlock + 'f5',
-            borderBottomWidth: border,
-            borderBottomColor: colors.border
-        },
-        settingTextBlock: {
-            flex: 1,
-        },
-        settingTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: colors.text,
-            marginBottom: 2,
-            height: 22,
-        },
-        settingDesc: {
-            fontSize: 13,
-            color: colors.textDesc,
-            opacity: 0.85,
-            height: 18,
-        },
-        sectionHeader: {
-            paddingVertical: 10,
-            paddingHorizontal: 15,
-        },
-        sectionHeaderText: {
-            fontSize: 13,
-            fontWeight: 'bold',
-            color: colors.highlight,
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-        },
-        pathDisplay: {
-            fontSize: 12,
-            marginLeft: 12,
-        },
-    }), [colors, variables, border]);
-
-    const showConfirm = useCallback((text, action) => {
-        setConfirmText(text);
-        setConfirmAction(() => action);
-        setConfirmVisible(true);
-    }, []);
-
-    const clearTimers = useCallback(async () => {
-        showConfirm('Are you sure you want to clear all timers?', async () => {
-            await clearAllTimers();
-            addMessage('All timers have been cleared.', 'success');
-        });
-    }, [showConfirm, clearAllTimers, addMessage]);
-
-    const populateTimers = useCallback(async () => {
-        if (populateDisabled) return;
-        setPopulateDisabled(true);
-        await initializeTimers();
-        addMessage('Sample timers have been added.', 'success');
-        setTimeout(() => setPopulateDisabled(false), 2000);
-    }, [populateDisabled, initializeTimers, addMessage]);
-
-    const exportToJson = async () => {
-        try {
-            if (!directoryUri) {
-                // If no directory is selected, prompt to choose one first
-                addMessage('Please select an export folder first');
-                const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (!permission.granted) {
-                    addMessage('Export cancelled - no folder selected', 'error');
-                    return;
-                }
-                const uri = permission.directoryUri;
-                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
-                setDirectoryUri(uri);
-                addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`);
-            }
-
-            const json = JSON.stringify(timers, null, 2);
-            const now = new Date();
-            const fileName = `timers-export-${now.toISOString().split('T')[0]}.json`;
-
-            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
-                directoryUri,
-                fileName,
-                'application/json'
-            );
-
-            await FileSystem.writeAsStringAsync(fileUri, json, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
-
-            addMessage(`Exported to: ${formatDirectoryPath(directoryUri)}`, 'success');
-        } catch (err) {
-            console.log('[EXPORT ERROR]', err);
-            addMessage('Export failed: ' + (err.message || ''), 'error');
-        }
-    };
-
-    const loadFromJson = async () => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/json',
-                copyToCacheDirectory: true,
-                multiple: false,
-            });
-
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const file = result.assets[0];
-                const content = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.UTF8 });
-                const loadedTimers = JSON.parse(content);
-
-                if (Array.isArray(loadedTimers)) {
-                    const timers = loadedTimers.map(obj => new Timer(obj));
-                    setTimersAndSave(timers);
-                    addMessage('Timers loaded from JSON.', 'success');
-                } else {
-                    addMessage('Invalid JSON format.', 'error');
-                }
-            } else {
-                addMessage('No file selected.');
-            }
-        } catch (e) {
-            addMessage('Failed to load timers.', 'error');
-        }
-    };
-
-    const formatDirectoryPath = useCallback((uri) => {
-        if (!uri) return '';
-
-        try {
-            let path = decodeURIComponent(uri);
-
-            // Remove common prefixes like 'primary:' or 'tree/primary:'
-            path = path.replace(/^.*?(primary:|tree\/primary:)/i, '');
-
-            // Replace any remaining URL-encoded spaces
-            path = path.replace(/%20/g, ' ');
-
-            // Split into parts by /
-            let parts = path.split('/').filter(Boolean);
-
-            // If too long, show last 2-3 with '...'
-            if (parts.length > 3) {
-                parts = ['...', ...parts.slice(-3)];
-            }
-
-            // Join with ' > '
-            return parts.join(' > ');
-        } catch (e) {
-            console.warn('Error formatting path:', e);
-            return uri;
-        }
-    }, []);
-
-    const PathDisplay = useCallback(({ path, style }) => {
-        if (!path) return null;
-        const formatted = formatDirectoryPath(path);
-        return <Text style={style}>{formatted}</Text>;
-    }, [formatDirectoryPath]);
+    const { colors, variables } = useTheme();
 
     return (
         <HeaderScreen
@@ -399,618 +935,51 @@ function Settings() {
             useFlatList={false}
             paddingX={15}
         >
-            {mounted && <>
-
-                {/* APPEARANCE SETTINGS */}
-                <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>Appearance</Text>
-                </TouchableOpacity>
-
-                <Animated.View style={{
-                    transform: [{ translateX: card1Translate }],
-                    opacity: card1Opacity
-                }}>
-                    <View style={styles.card} >
-                        {/* Theme Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Theme</Text>
-                                <Text style={styles.settingDesc}>Choose app theme</Text>
-                            </View>
-                            <PickerSheet
-                                value={themeMode}
-                                options={themeOptions}
-                                onChange={setThemeMode}
-                                title={'Theme'}
-                                placeholder="Select theme"
-                                colors={colors}
-                                variables={variables}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Accent Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='brush-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Accent</Text>
-                                <Text style={styles.settingDesc}>Choose app accent</Text>
-                            </View>
-                            <PickerSheet
-                                value={accentMode}
-                                options={accentOptions}
-                                onChange={setAccentMode}
-                                title={'Accent'}
-                                placeholder="Select accent"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue={'default'}
-                                pillsPerRow={3}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Theme Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='analytics-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Progress</Text>
-                                <Text style={styles.settingDesc}>Choose progress mode</Text>
-                            </View>
-                            <PickerSheet
-                                value={progressMode}
-                                options={progressOptions}
-                                onChange={setProgressMode}
-                                title={'Progress'}
-                                placeholder="Select progress"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue={'linear'}
-                                note={'Wavy motion completely stabled and working fluidly, enjoy ✨'}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Border Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='color-palette-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Border</Text>
-                                <Text style={styles.settingDesc}>Choose border mode</Text>
-                            </View>
-                            <PickerSheet
-                                value={borderMode}
-                                options={borderOptions}
-                                onChange={setBorderMode}
-                                title={'Border'}
-                                placeholder="Select Border mode"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="subtle"
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
-                            <Icons.Ion name='color-fill-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Background</Text>
-                                <Text style={styles.settingDesc}>Select background pattern </Text>
-                            </View>
-                            <PickerSheet
-                                value={backgroundPattern}
-                                options={backgroundOptions}
-                                onChange={setBackgroundPattern}
-                                title={'Background'}
-                                placeholder="Select background pattern"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="none"
-                                note="Still under development, so use carefully."
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-
-                {/* LAYOUT MANAGEMENT SETTINGS */}
-                <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>Layout Management</Text>
-                </TouchableOpacity>
-
-                <Animated.View style={{
-                    transform: [{ translateX: card2Translate }],
-                    opacity: card2Opacity
-                }}>
-                    <View style={styles.card}>
-
-                        {/* Header Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='ellipsis-horizontal' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Header</Text>
-                                <Text style={styles.settingDesc}>Choose header mode</Text>
-                            </View>
-                            <PickerSheet
-                                value={headerMode}
-                                options={headerOptions}
-                                onChange={setHeaderMode}
-                                title={'Header'}
-                                placeholder="Select header mode"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="minimized"
-                            />
-                        </TouchableOpacity>
-
-                        {/* Layout Mode Picker (Grid/List) */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='grid-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Layout</Text>
-                                <Text style={styles.settingDesc}>Select layout mode</Text>
-                            </View>
-                            <PickerSheet
-                                value={layoutMode}
-                                options={layoutOptions}
-                                onChange={setLayoutMode}
-                                title={'Layout'}
-                                placeholder="Layout"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="list"
-                                note={"Grid layout minimizes privacy text for easier view"}
-                            />
-                        </TouchableOpacity>
-
-                        {layoutMode === 'grid' && (
-                            <TouchableOpacity
-                                style={styles.settingBlock}
-                                onPress={() => {
-                                    const newUnit = defaultUnit !== 'seconds' ? 'seconds' : 'auto';
-                                    addMessage(`Default unit set to ${newUnit}.`, 'info');
-                                    setDefaultUnit(newUnit);
-                                }}
-                            >
-                                <Icons.Ion name='speedometer-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                <View style={styles.settingTextBlock}>
-                                    <Text style={styles.settingTitle}>Default Unit</Text>
-                                    <Text style={styles.settingDesc}>Set the default unit as seconds</Text>
-                                </View>
-                                <PickerSheet
-                                    value={defaultUnit}
-                                    options={unitOptions}
-                                    onChange={setDefaultUnit}
-                                    title={'Unit'}
-                                    placeholder="Unit"
-                                    colors={colors}
-                                    variables={variables}
-                                    defaultValue="auto"
-                                    note={"This default unit is only considered in grid mode"}
-                                />
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Navigation Mode Picker */}
-                        <TouchableOpacity style={styles.settingBlock} activeOpacity={1}>
-                            <Icons.Ion name='navigate-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Navigation</Text>
-                                <Text style={styles.settingDesc}>Select navigation mode</Text>
-                            </View>
-                            <PickerSheet
-                                value={navigationMode}
-                                options={navOptions}
-                                onChange={setNavigationMode}
-                                title={'Navigation'}
-                                placeholder="Select navigation mode"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="floating"
-                            />
-                        </TouchableOpacity>
-
-                        {navigationMode === 'fixed' || headerMode === 'fixed' ? (
-                            <>
-                                <TouchableOpacity
-                                    style={styles.settingBlock}
-                                    onPress={() => {
-                                        addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
-                                        setFixedBorder(!fixedBorder);
-                                    }}
-                                >
-                                    <Icons.Ion name='crop-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                    <View style={styles.settingTextBlock}>
-                                        <Text style={styles.settingTitle}>Border radius</Text>
-                                        <Text style={styles.settingDesc}>Rounded coners in fixed modes</Text>
-                                    </View>
-                                    <Switch
-                                        value={!!fixedBorder}
-                                        onValueChange={() => {
-                                            addMessage(`Fixed Rounded borders ${fixedBorder ? 'disabled' : 'enabled'}.`, 'info');
-                                            setFixedBorder(!fixedBorder);
-                                        }}
-                                        trackColor={{
-                                            false: colors.switchTrack,
-                                            true: colors.switchTrackActive,
-                                        }}
-                                        thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
-                                        style={{ transform: [{ scaleY: 1 }] }}
-                                    />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.settingBlock}
-                                    onPress={() => {
-                                        addMessage(`Auto hide fixed modes ${shouldHide ? 'disabled' : 'enabled'}.`, 'info');
-                                        setShouldHide(!shouldHide);
-                                    }}
-                                >
-                                    <Icons.Ion name='expand-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                    <View style={styles.settingTextBlock}>
-                                        <Text style={styles.settingTitle}>Immerse</Text>
-                                        <Text style={styles.settingDesc}>Hide fixed modes after some time</Text>
-                                    </View>
-                                    <Switch
-                                        value={!!shouldHide}
-                                        onValueChange={() => {
-                                            addMessage(`Auto hide fixed modes ${shouldHide ? 'disabled' : 'enabled'}.`, 'info');
-                                            setShouldHide(!shouldHide);
-                                        }}
-                                        trackColor={{
-                                            false: colors.switchTrack,
-                                            true: colors.switchTrackActive,
-                                        }}
-                                        thumbColor={!shouldHide ? colors.switchThumbActive : colors.switchThumb}
-                                        style={{ transform: [{ scaleY: 1 }] }}
-                                    />
-                                </TouchableOpacity>
-                            </>
-                        ) : null}
-
-
-                    </View>
-
-                </Animated.View>
-
-                <TouchableOpacity style={styles.sectionHeader} onPress={() => { }} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>Security & Privacy</Text>
-                </TouchableOpacity>
-
-                {/* SECURITY SETTINGS */}
-                <Animated.View style={{
-                    transform: [{ translateX: card3Translate }],
-                    opacity: card3Opacity
-                }}>
-                    <View style={styles.card}>
-                        {/* Privacy Mode Picker */}
-                        <TouchableOpacity style={[styles.settingBlock]} activeOpacity={1} >
-                            <Icons.Ion name="eye-off-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Privacy Mode</Text>
-                                <Text style={styles.settingDesc}>Masks timer names and titles</Text>
-                            </View>
-                            <PickerSheet
-                                value={privacyMode}
-                                options={privacyOptions}
-                                onChange={setPrivacyModeValue}
-                                title={'Privacy'}
-                                placeholder="Select mode"
-                                colors={colors}
-                                variables={variables}
-                                note={'Emoji mode has been re enabled, enjoy ✨'}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Fingerprint Unlock */}
-                        {isSensorAvailable ? (
-                            <TouchableOpacity
-                                style={styles.settingBlock}
-                                onPress={() => {
-                                    addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`, 'info');
-                                    toggleFingerprint();
-                                }}
-                            >
-                                <Icons.Ion name='finger-print-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                <View style={styles.settingTextBlock}>
-                                    <Text style={styles.settingTitle}>Fingerprint Unlock</Text>
-                                    <Text style={styles.settingDesc}>Enable fingerprint authentication</Text>
-                                </View>
-                                <Switch
-                                    value={!!isFingerprintEnabled}
-                                    onValueChange={() => {
-                                        addMessage(`Fingerprint unlock ${isFingerprintEnabled ? 'disabled' : 'enabled'}.`, 'info');
-                                        toggleFingerprint();
-                                    }}
-                                    trackColor={{
-                                        false: colors.switchTrack,
-                                        true: colors.switchTrackActive,
-                                    }}
-                                    thumbColor={!isFingerprintEnabled ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scaleY: 1 }] }}
-                                />
-                            </TouchableOpacity>
-                        ) : null}
-
-                        {/* Password Lock */}
-                        <TouchableOpacity
-                            style={[
-                                styles.settingBlock,
-                                isPasswordLockEnabled ? {} : { borderBottomWidth: 0 }
-                            ]}
-
-                            onPress={() => {
-                                if (loading) return;
-                                if (!isPasswordLockEnabled) {
-                                    setPasswordPromptMode('set');
-                                    setPasswordPromptVisible(true);
-                                } else {
-                                    togglePasswordLock();
-                                }
-                            }}
-                        >
-                            <Icons.Ion name={isPasswordLockEnabled ? 'lock-closed-outline' : 'lock-open-outline'} size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Password Lock</Text>
-                                <Text style={styles.settingDesc}>Enable password authentication</Text>
-                                <TouchableOpacity onPress={() => {
-                                    setPasswordPromptMode(isPasswordLockEnabled ? 'change' : 'set');
-                                    setPasswordPromptVisible(true);
-                                }}>
-
-                                </TouchableOpacity>
-                            </View>
-                            <Switch
-                                value={!!isPasswordLockEnabled}
-                                onValueChange={(val) => {
-                                    if (loading) return;
-                                    if (val) {
-                                        setPasswordPromptMode('set');
-                                        setPasswordPromptVisible(true);
-                                    } else {
-                                        clearPassword();
-                                        addMessage('Password lock disabled.', 'info');
-                                    }
-                                }}
-                                trackColor={{
-                                    false: colors.switchTrack,
-                                    true: colors.switchTrackActive,
-                                }}
-                                thumbColor={!isPasswordLockEnabled ? colors.switchThumbActive : colors.switchThumb}
-                                style={{ transform: [{ scale: 1 }] }}
-                            />
-                        </TouchableOpacity>
-                        {isPasswordLockEnabled && <TouchableOpacity
-                            style={styles.settingBlock}
-                            onPress={() => {
-                                setPasswordPromptMode(isPasswordLockEnabled ? 'change' : 'set');
-                                setPasswordPromptVisible(true);
-                            }}
-                        >
-                            <Icons.Ion name="key-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>
-                                    {isPasswordLockEnabled ? 'Change Password' : 'Set Password'}
-                                </Text>
-                                <Text style={styles.settingDesc}>
-                                    {isPasswordLockEnabled
-                                        ? 'Change your current password'
-                                        : 'Set a password for extra security'}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>}
-
-                        {/* Lockout Option Picker */}
-                        {shouldUseLockout() && <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} activeOpacity={1}>
-                            <Icons.Ion name="timer-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Lockout</Text>
-                                <Text style={styles.settingDesc}>Set duration for reauthentication</Text>
-                            </View>
-                            <PickerSheet
-                                value={lockoutMode}
-                                options={lockoutOptions}
-                                onChange={setLockoutModeValue}
-                                title={'Lockout'}
-                                placeholder="Select lockout"
-                                colors={colors}
-                                variables={variables}
-                                pillsPerRow={3}
-                            />
-                        </TouchableOpacity>}
-                    </View>
-                </Animated.View>
-
-                <TouchableOpacity style={styles.sectionHeader} onPress={() => setShowExtra(showExtra === 3 ? 0 : showExtra + 1)} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>Timer Management</Text>
-                </TouchableOpacity>
-
-                {/* TIMER MANAGEMENT */}
-                <Animated.View style={{
-                    transform: [{ translateX: card4Translate }],
-                    opacity: card4Opacity
-                }}>
-                    <View style={styles.card}>
-
-                        {/* Populate Timers */}
-                        {showExtra === 3 &&
-                            <TouchableOpacity
-                                style={styles.settingBlock}
-                                onPress={populateTimers}
-                                disabled={populateDisabled}
-                                activeOpacity={populateDisabled ? 1 : 0.7}
-                            >
-                                <Icons.Ion name='refresh' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                                <View style={styles.settingTextBlock}>
-                                    <Text style={styles.settingTitle}>Populate Timers</Text>
-                                    <Text style={styles.settingDesc}>Add sample timers for quick testing</Text>
-                                </View>
-                            </TouchableOpacity>}
-
-                        {/* Clear All Timers */}
-                        <TouchableOpacity style={styles.settingBlock} onPress={clearTimers}>
-                            <Icons.Ion name='trash' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Clear All Timers</Text>
-                                <Text style={styles.settingDesc}>Remove all timers from your device</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Export to JSON */}
-                        <TouchableOpacity style={styles.settingBlock} onPress={exportToJson}>
-                            <Icons.Ion name='download' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Export Timers</Text>
-                                <Text style={styles.settingDesc}>
-                                    {directoryUri ? 'Save to :  ' : 'Save all timers as a JSON file'}
-                                    {directoryUri && (
-                                        <PathDisplay
-                                            path={formatDirectoryPath(directoryUri)}
-                                            style={[styles.settingDesc, { color: colors.textDesc, marginLeft: 12 }]}
-                                            maxLength={20}
-                                        />
-                                    )}
-                                </Text>
-
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Change Export Directory */}
-                        <TouchableOpacity
-                            style={styles.settingBlock}
-                            onPress={async () => {
-                                try {
-                                    const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                                    if (permission.granted) {
-                                        const uri = permission.directoryUri;
-                                        await AsyncStorage.setItem(DIRECTORY_KEY, uri);
-                                        setDirectoryUri(uri);
-                                        addMessage(`Export folder set to: ${formatDirectoryPath(uri)}`, 'info');
-                                    }
-                                } catch (err) {
-                                    addMessage('Failed to change directory', 'error');
-                                }
-                            }}
-                        >
-                            <Icons.Ion name='folder-open-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Change Export Folder</Text>
-                                <Text style={styles.settingDesc}>
-                                    {directoryUri ? 'Current folder :  ' : 'No folder selected'}
-                                    {directoryUri && (
-                                        <PathDisplay
-                                            path={formatDirectoryPath(directoryUri)}
-                                            style={[styles.settingDesc, { color: colors.textDesc }]}
-                                            maxLength={25}
-                                        />
-                                    )}
-                                </Text>
-
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Load from JSON */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} onPress={loadFromJson}>
-                            <Icons.Ion name='cloud-upload-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Import Timers</Text>
-                                <Text style={styles.settingDesc}>Load timers from a JSON file</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-
-
-                <TouchableOpacity style={styles.sectionHeader} activeOpacity={1}>
-                    <Text style={styles.sectionHeaderText}>App management</Text>
-                </TouchableOpacity>
-
-                <Animated.View style={{
-                    transform: [{ translateX: card5Translate }],
-                    opacity: card5Opacity
-                }}>
-
-                    <View style={styles.card}>
-                        {/* CHECK FOR UPDATES */}
-                        <TouchableOpacity
-                            style={styles.settingBlock}
-                            onPress={async () => {
-                                const status = await checkForUpdateAndReload();
-                                if (status === 'up-to-date') {
-                                    addMessage('Already on latest version', 'success');
-                                }
-                            }}
-                        >
-                            <Icons.Ion name='cloud-download-outline' size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Check for Updates</Text>
-                                <Text style={styles.settingDesc}>Fetch latest app updates</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* SHOW CHANGELOG */}
-                        <TouchableOpacity
-                            style={styles.settingBlock}
-                            onPress={() => setShowChangelog(true)}
-                        >
-                            <Icons.Ion name="document-text-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Show Changelog</Text>
-                                <Text style={styles.settingDesc}>View recent changes</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* REPORT BUG */}
-                        <TouchableOpacity style={styles.settingBlock} onPress={handleReportBug}>
-                            <Icons.Ion name="bug-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Report Bug</Text>
-                                <Text style={styles.settingDesc}>Found a problem? Let us know</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* SEND SUGGESTION */}
-                        <TouchableOpacity style={[styles.settingBlock, { borderBottomWidth: 0 }]} onPress={handleSuggestion}>
-                            <Icons.Ion name="sparkles-outline" size={14} color={colors.highlight} style={{ marginRight: 15 }} />
-                            <View style={styles.settingTextBlock}>
-                                <Text style={styles.settingTitle}>Send Suggestion</Text>
-                                <Text style={styles.settingDesc}>Share your ideas or improvements</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                    </View>
-                </Animated.View>
-                <ConfirmSheet
-                    visible={confirmVisible}
-                    onClose={() => setConfirmVisible(false)}
-                    onConfirm={confirmAction}
-                    title="Delete Timers"
-                    message="Are you sure you want to delete all timers? This action cannot be undone."
-                    confirmText="Delete"
-                    cancelText="Cancel"
-                    confirmColor="#ef4444"
-                    icon="trash-outline"
-                    colors={colors}
-                    variables={variables}
-                />
-
-                {PasswordPromptVisible && (
-                    <PasswordPrompt
-                        visible={PasswordPromptVisible}
-                        onClose={() => setPasswordPromptVisible(false)}
-                        onSave={(newPassword) => {
-                            savePassword(newPassword);
-                            setPasswordPromptVisible(false);
-                            addMessage('Password updated.', 'success');
+            {mounted && (
+                <>
+                    <SectionHeader>Appearance</SectionHeader>
+                    <AppearanceCard
+                        animatedStyle={{
+                            transform: [{ translateX: card1Translate }],
+                            opacity: card1Opacity,
                         }}
-                        currentPassword={password}
-                        mode={PasswordPromptMode}
-                        colors={colors}
-                        variables={variables}
                     />
-                )}
 
-                <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
-            </>
-            }
-        </HeaderScreen >
+                    <SectionHeader>Layout Management</SectionHeader>
+                    <LayoutCard
+                        animatedStyle={{
+                            transform: [{ translateX: card2Translate }],
+                            opacity: card2Opacity,
+                        }}
+                    />
+
+                    <SectionHeader>Security & Privacy</SectionHeader>
+                    <SecurityCard
+                        animatedStyle={{
+                            transform: [{ translateX: card3Translate }],
+                            opacity: card3Opacity,
+                        }}
+                    />
+
+                    <SectionHeader>Timer Management</SectionHeader>
+                    <TimerManagementCard
+                        animatedStyle={{
+                            transform: [{ translateX: card4Translate }],
+                            opacity: card4Opacity,
+                        }}
+                    />
+
+                    <SectionHeader>App management</SectionHeader>
+                    <AppUpdatesCard
+                        animatedStyle={{
+                            transform: [{ translateX: card5Translate }],
+                            opacity: card5Opacity,
+                        }}
+                    />
+
+
+                </>
+            )}
+        </HeaderScreen>
     );
-}
-
-export default memo(Settings);
+});

@@ -6,7 +6,7 @@ import { Icons } from '../assets/icons';
 import Toast from 'react-native-toast-message';
 import { AppState } from 'react-native';
 import PasswordPrompt from '../components/PasswordPrompt';
-import logo from '../assets/logo.png'
+import logo from '../assets/text.png'
 import { quotes } from './functions';
 
 const { width, height } = Dimensions.get('window');
@@ -230,8 +230,8 @@ const AuthContext = ({ children }) => {
             borderTopWidth: 0,
         },
         appIcon: {
-            width: 175, height: 175, borderRadius: variables.radius.circle, marginRight: 16, resizeMode: 'cover',
-            borderWidth: border, borderColor: colors.cardBorder, marginBottom: '15%', alignSelf: 'center', marginLeft: '5%'
+            width: 175, height: 175,
+            alignSelf: 'center',
         },
         topTextContainer: {
             flex: 1,
@@ -394,8 +394,7 @@ const AuthContext = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            borderWidth: border,
-            borderColor: colors.border,
+
             position: 'relative',
         },
         gridLine: {
@@ -653,7 +652,9 @@ const AuthContext = ({ children }) => {
                                 }]} />
                             ))}
 
-                            <Image source={logo} style={styles.appIcon} />
+                            <View style={{ backgroundColor: colors.background, borderRadius: variables.radius.xl, }}>
+                                <Image source={logo} style={styles.appIcon} />
+                            </View>
 
                             <View style={styles.cardOverlay} />
                             <View style={styles.textContainer}>
