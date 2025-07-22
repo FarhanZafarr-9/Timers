@@ -68,7 +68,7 @@ export default function About() {
         row: { flexDirection: 'row', alignItems: 'center' },
         appIcon: {
             width: 72, height: 72, borderRadius: variables.radius.md, marginRight: 16, resizeMode: 'cover',
-            borderWidth: border, borderColor: colors.cardBorder,
+            borderWidth: border, borderColor: colors.cardBorder, transform: [{scale:1.15}]
         },
         appName: { fontSize: 22, color: colors.textTitle, fontWeight: 'bold' },
         versionText: {
@@ -135,7 +135,7 @@ export default function About() {
             )}
             <View style={styles.content}>
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
-                    <Image source={require('../assets/logo.png')} style={styles.appIcon} />
+                    <Image source={require('../assets/icon.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.appName}>ChronoX</Text>
                         <TouchableOpacity onPress={showToast} >

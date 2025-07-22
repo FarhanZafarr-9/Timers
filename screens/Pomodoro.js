@@ -371,7 +371,7 @@ export default function Pomodoro() {
         },
         controlBtn: {
             flex: 1,
-            paddingVertical: 10,
+            paddingVertical: 12,
             paddingHorizontal: 16,
             borderRadius: variables.radius.md,
             alignItems: 'center',
@@ -624,7 +624,7 @@ export default function Pomodoro() {
                                     />
                                 </View>
 
-                                {/* Notification Toggle */}
+                                {/*
                                 <View style={styles.settingsRow}>
                                     <View style={styles.settingsLabel}>
                                         <Text style={styles.settingsText}>Notify when the timer ends</Text>
@@ -639,6 +639,7 @@ export default function Pomodoro() {
                                         }}
                                     />
                                 </View>
+                                */}
 
                                 {/* Action Buttons */}
                                 <View style={styles.controlRow}>

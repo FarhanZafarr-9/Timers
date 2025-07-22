@@ -115,7 +115,7 @@ const Splash = ({ variables, colors, visible = true, onHide }) => {
                 { transform: [{ translateY: logoSlide }] }
             ]}>
                 <Image
-                    source={require('../assets/logo.png')}
+                    source={require('../assets/icon.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />

@@ -21,7 +21,7 @@ export function useRenderLogger(name = 'Component') {
 export async function checkForUpdateAndReload() {
     if (__DEV__) {
         console.log("🚀 Skipping OTA check in Expo Go (__DEV__ mode).");
-        return;
+        return 'dev-mode';
     }
 
     try {
@@ -29,14 +29,18 @@ export async function checkForUpdateAndReload() {
         if (update.isAvailable) {
             console.log("✅ New update found, downloading...");
             await Updates.fetchUpdateAsync();
-            await Updates.reloadAsync(); // app restarts here
+            await Updates.reloadAsync();
+            return 'updated';
         } else {
             console.log("👍 App is up to date.");
+            return 'up-to-date';
         }
     } catch (err) {
         console.log("⚠️ Expo update check failed:", err);
+        return 'error';
     }
 }
+
 
 export const HEADER_MARGIN_TOP = 50;
 export const MAX_HEADER_HEIGHT = 66;
@@ -525,10 +529,33 @@ export const quotes = [
     "Time is the silent shareholder in all endeavors."
 ];
 
-export const appBuild = 'beta';
-export const appVersion = '1.0.31';
+export const appBuild = 'stable';
+export const appVersion = '1.1.0';
 
 export const changelog = [
+    {
+        "version": "1.1.0",
+        "date": "2025-07-21",
+        "title": "Final update",
+        "major": true,
+        "changes": [
+            { "type": "new", "text": "New app icon introduced for a refreshed identity" },
+            { "type": "new", "text": "UI styled further in select areas for cleaner visuals" },
+            { "type": "new", "text": "Advanced features now wrapped with curtains to reduce overwhelm" },
+
+            { "type": "improved", "text": "Optimized initial loading and background performance" },
+            { "type": "improved", "text": "Several under-the-hood tweaks for smoother app behavior" },
+
+            { "type": "fixed", "text": "Minor bug fixes and interface consistency adjustments" },
+
+            { "type": "wip", "text": "Project opened to patches but paused for production until feedback or notice" },
+
+            {
+                "type": "summarized",
+                "text": "Final update includes a new icon, light styling upgrades, better loading, and wraps complex options behind cleaner UI. Development is paused but open to patches as needed."
+            }
+        ]
+    },
     {
         "version": "1.0.31",
         "date": "2025-07-20",
@@ -1274,7 +1301,7 @@ export const renderCrossHatch = ({ width: W, height: H }, color) => {
     );
 };
 
-export const renderNoise = ({ width: W, height: H }, color, density = 'high') => {
+export const renderNoise = ({ width: W, height: H }, color, density = 'veryhigh') => {
     if (!W || !H) return null;
 
     const densityMap = {
