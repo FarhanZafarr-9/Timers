@@ -217,7 +217,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const [showExtra, setShowExtra] = useState(false);
+    const [showExtra, setShowExtra] = useState(progressMode!== 'linear' || backgroundPattern !== 'none' || borderMode !== 'subtle' ? true : false);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -358,7 +358,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
     } = useTheme();
     const { shouldHide, setShouldHide } = useNavBar();
 
-    const [showExtra, setShowExtra] = useState(false);
+    const [showExtra, setShowExtra] = useState(layoutMode === 'grid' || defaultUnit !== 'auto' || fixedBorder || shouldHide ? true : false);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -405,7 +405,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
                 title="Experimental"
                 desc="Layout Test Features"
                 noBorder={!showExtra}
-            > 
+            >
                 <Switch
                     value={showExtra}
                     onValueChange={(v) => {
