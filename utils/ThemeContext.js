@@ -168,6 +168,7 @@ export const ThemeProvider = ({ children }) => {
         theme,
         themeMode,
         setThemeMode: (mode) => setThemeModeState(normalizeValue(mode, VALID_VALUES.THEMES, 'system')),
+        isDarkMode: theme === 'dark' || (theme==='system' && Appearance.getColorScheme() === 'dark'),
         accentMode,
         setAccentMode: (accent) => setAccentModeState(normalizeValue(accent, VALID_VALUES.ACCENTS, 'blue')),
         navigationMode,
