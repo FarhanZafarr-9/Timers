@@ -12,7 +12,7 @@ import { quotes } from './functions';
 const { width, height } = Dimensions.get('window');
 
 const AuthContext = ({ children }) => {
-    const { variables, colors, border, themeMode } = useTheme();
+    const { variables, colors, border, isDarkMode } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const {
@@ -652,7 +652,7 @@ const AuthContext = ({ children }) => {
                                 }]} />
                             ))}
 
-                            <View style={{ backgroundColor: themeMode === 'dark' ? colors.background : colors.highlight, borderRadius: variables.radius.xl, }}>
+                            <View style={{ backgroundColor: isDarkMode ? colors.background : colors.highlight, borderRadius: variables.radius.xl, }}>
                                 <Image source={logo} style={styles.appIcon} />
                             </View>
 
