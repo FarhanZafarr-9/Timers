@@ -88,7 +88,7 @@ const ChnageLogSheet = ({ visible, onClose, forced = false }) => {
             case "wip": return "#FF9800";        // Orange
             case "removed": return "#9C27B0";    // Purple
             case "security": return "#009688";   // Teal
-            case "summarized": return "#795548"; // Brown
+            case "summarized": return "#FF6B35"; // Orange
             default: return colors.text;
         }
     };

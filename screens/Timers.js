@@ -18,20 +18,19 @@ export default function Timers({ route }) {
     const { mode } = route.params;
     const isCountdown = mode === 'countdown';
     const { privacyMode } = useSecurity();
-    const { variables, colors, isBorder, border, layoutMode, defaultUnit } = useTheme();
+    const { variables, colors, border, layoutMode, defaultUnit } = useTheme();
     const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isModalVisible, setModalVisible] = useState(false);
-    const [editingTimer, setEditingTimer] = useState(null);
-    const [isDuplicate, setIsDuplicate] = useState(false);
-    const [isSelectable, setIsSelectable] = useState(false);
-    const [selectedIds, setSelectedIds] = useState(new Set());
     const [sortMethod, setSortMethod] = useState('priority');
-    const [messages, setMessages] = useState([]);
-    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isDuplicate, setIsDuplicate] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [editingTimer, setEditingTimer] = useState(null);
+    const [isSelectable, setIsSelectable] = useState(false);
+    const [isModalVisible, setModalVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState(() => () => { });
     const [timerToDelete, setTimerToDelete] = useState(null);
+    const [confirmVisible, setConfirmVisible] = useState(false);
 
     const showToast = (type, text1, text2 = '') => {
         Toast.show({

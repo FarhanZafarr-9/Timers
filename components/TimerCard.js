@@ -540,16 +540,21 @@ const TimerCard = ({
 
         if (layoutMode === 'grid') {
             return (
-                <View>
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 12,
+                    gap: 8
+                }}>
                     {progressMode === 'linear' ? (
                         <View
                             style={{
                                 height: 6,
-                                width: '100%',
+                                flex: 1,
                                 backgroundColor: colors.highlight + '20',
                                 borderRadius: 6,
-                                overflow: 'hidden',
-                                marginTop: 12
+                                overflow: 'hidden'
                             }}
                         >
                             <View
@@ -566,12 +571,11 @@ const TimerCard = ({
                             <View
                                 style={{
                                     height: 20,
-                                    width: (screenWidth * 0.38) * (progressPct / 100),
-                                    maxWidth: screenWidth * 0.38,
+                                    width: (screenWidth * 0.29) * (progressPct / 100),
+                                    maxWidth: screenWidth * 0.29,
                                     backgroundColor: colors.highlight + '20',
                                     borderRadius: 6,
-                                    overflow: 'hidden',
-                                    marginTop: 12,
+                                    overflow: 'hidden'
                                 }}
                             >
                                 <Wave
@@ -587,7 +591,7 @@ const TimerCard = ({
                                 style={{
                                     backgroundColor: colors.highlight + '20',
                                     borderRadius: 6,
-                                    marginTop: 12,
+                                    overflow: 'hidden'
                                 }}
                             >
                                 <ProgressWave
@@ -596,13 +600,26 @@ const TimerCard = ({
                                     frequency={8}
                                     speed={3000}
                                     height={20}
-                                    width={screenWidth * 0.40}
+                                    width={screenWidth * 0.29}
                                     colorCompleted={colors.highlight}
                                     colorRemaining={colors.highlight + '20'}
                                 />
                             </View>
                         )
                     )}
+
+                    <Text
+                        style={{
+                            color: colors.textDesc,
+                            fontSize: 12,
+                            fontWeight: '700',
+                            opacity: 0.8,
+                            minWidth: 40,
+                            textAlign: 'right',
+                        }}
+                    >
+                        {progressPct.toFixed(1)}%
+                    </Text>
                 </View>
             );
         } else {
@@ -615,68 +632,66 @@ const TimerCard = ({
                     width: '100%',
                     justifyContent: 'space-between'
                 }}>
-                    <>
-                        {progressMode === 'linear' ? (
+                    {progressMode === 'linear' ? (
+                        <View
+                            style={{
+                                height: 6,
+                                width: '85%',
+                                backgroundColor: colors.highlight + '20',
+                                borderRadius: 6,
+                                overflow: 'hidden'
+                            }}
+                        >
                             <View
                                 style={{
-                                    height: 6,
-                                    width: '85%',
+                                    width: `${progressPct}%`,
+                                    height: '100%',
+                                    backgroundColor: colors.highlight + 'b0',
+                                    borderRadius: 8
+                                }}
+                            />
+                        </View>
+                    ) : (
+                        progressMode === 'halfWave' ? (
+                            <View
+                                style={{
+                                    height: 25,
+                                    width: (screenWidth * 0.74) * (progressPct / 100),
+                                    maxWidth: screenWidth * 0.74,
                                     backgroundColor: colors.highlight + '20',
+                                    paddingVertical: 2,
                                     borderRadius: 6,
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
                                 }}
                             >
-                                <View
-                                    style={{
-                                        width: `${progressPct}%`,
-                                        height: '100%',
-                                        backgroundColor: colors.highlight + 'b0',
-                                        borderRadius: 8
-                                    }}
+                                <Wave
+                                    amplitude={6}
+                                    frequency={10}
+                                    speed={3000}
+                                    height={20}
+                                    color={colors.highlight}
                                 />
                             </View>
                         ) : (
-                            progressMode === 'halfWave' ? (
-                                <View
-                                    style={{
-                                        height: 25,
-                                        width: (screenWidth * 0.74) * (progressPct / 100),
-                                        maxWidth: screenWidth * 0.74,
-                                        backgroundColor: colors.highlight + '20',
-                                        paddingVertical: 2,
-                                        borderRadius: 6,
-                                        overflow: 'hidden',
-                                    }}
-                                >
-                                    <Wave
-                                        amplitude={6}
-                                        frequency={10}
-                                        speed={3000}
-                                        height={20}
-                                        color={colors.highlight}
-                                    />
-                                </View>
-                            ) : (
-                                <View style={{
-                                    backgroundColor: colors.highlight + '20',
-                                    borderRadius: 6,
-                                    overflow: 'hidden',
-                                    paddingVertical: 4,
-                                }}>
-                                    <ProgressWave
-                                        progressPct={progressPct}
-                                        amplitude={6}
-                                        frequency={10}
-                                        speed={3000}
-                                        height={20}
-                                        width={screenWidth * 0.74}
-                                        colorCompleted={colors.highlight}
-                                        colorRemaining={colors.highlight + '20'}
-                                    />
-                                </View>
-                            )
-                        )}
-                    </>
+                            <View style={{
+                                backgroundColor: colors.highlight + '20',
+                                borderRadius: 6,
+                                overflow: 'hidden',
+                                paddingVertical: 4,
+                            }}>
+                                <ProgressWave
+                                    progressPct={progressPct}
+                                    amplitude={6}
+                                    frequency={10}
+                                    speed={3000}
+                                    height={20}
+                                    width={screenWidth * 0.74}
+                                    colorCompleted={colors.highlight}
+                                    colorRemaining={colors.highlight + '20'}
+                                />
+                            </View>
+                        )
+                    )}
 
                     <Text
                         style={{
@@ -690,7 +705,7 @@ const TimerCard = ({
                             alignSelf: 'center'
                         }}
                     >
-                        {progressPct.toFixed(2)} %
+                        {progressPct.toFixed(1)}%
                     </Text>
                 </View>
             );
@@ -1082,13 +1097,15 @@ const TimerCard = ({
                     {layoutMode === 'grid' ? (
                         <View style={cardStyle}>
                             <View style={staticStyles.header}>
-                                <Text style={[
-                                    styles.timerTitle,
-                                    staticStyles.paddingLeft0,
-                                    privacyMode === 'invisible' && { color: colors.settingBlock }
-                                ]}>
-                                    {privacyTitleText}
-                                </Text>
+                                <View>
+                                    <Text style={[
+                                        styles.timerTitle,
+                                        staticStyles.paddingLeft0,
+                                        privacyMode === 'invisible' && { color: colors.settingBlock }
+                                    ]}>
+                                        {privacyTitleText}
+                                    </Text>
+                                </View>
                                 {timer.personName && (
                                     <Text style={[
                                         styles.namePill,
