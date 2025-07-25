@@ -135,7 +135,8 @@ export default function Home({ navigation }) {
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
-            marginBottom: 12
+            marginBottom: 12,
+            maxHeight: 60,
         },
         quickActionButtonSecondary: {
             backgroundColor: colors.highlight + '10',

@@ -36,9 +36,12 @@ import {
     progressOptions,
     unitOptions,
     backgroundOptions,
+    linkOptions,
+    encryptData, decryptData
 } from '../utils/functions';
 import Timer from '../classes/Timer';
 import { Linking } from 'react-native';
+import QRShareSheet from '../components/ShareSheet';
 
 const DIRECTORY_KEY = 'download_directory_uri';
 
@@ -119,7 +122,7 @@ const CardShell = memo(({ children }) => {
                     borderRadius: variables.radius.lg,
                     overflow: 'hidden',
                     borderWidth: border,
-                    borderColor: colors.cardBorder,
+                    borderColor: colors.border,
                 },
             }),
         [colors, variables, border]
@@ -217,7 +220,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const [showExtra, setShowExtra] = useState(progressMode!== 'linear' || backgroundPattern !== 'none' || borderMode !== 'subtle' ? true : false);
+    const [showExtra, setShowExtra] = useState(progressMode !== 'linear' || backgroundPattern !== 'none' || borderMode !== 'subtle' ? true : false);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -532,7 +535,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
 
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
-            <SettingRow icon="eye-off-outline" title="Privacy Mode" desc="Masks timer names and titles">
+            <SettingRow icon="eye-off-outline" title="Privacy Mode" desc="Masks sensitive details">
                 <PickerSheet
                     value={privacyMode}
                     options={privacyOptions}
@@ -645,10 +648,41 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
     const [directoryUri, setDirectoryUri] = useState(null);
     const [populateDisabled, setPopulateDisabled] = useState(false);
     const [showExtra, setShowExtra] = useState(0);
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [confirmText, setConfirmText] = useState('');
+    const [useEncryption, setUseEncryption] = useState(true);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
     );
+    const {
+        accentMode,
+        themeMode,
+        borderMode,
+        progressMode,
+        backgroundPattern,
+        headerMode,
+        navigationMode,
+        layoutMode,
+        defaultUnit,
+        fixedBorder,
+        privacyMode,
+        setAccentMode,
+        setThemeMode,
+        setBorderMode,
+        setProgressMode,
+        setBackgroundPattern,
+        setHeaderMode,
+        setNavigationMode,
+        setLayoutMode,
+        setDefaultUnit,
+        setFixedBorder,
+        setPrivacyModeValue,
+        variables
+    } = useTheme();
+    const { shouldHide, setShouldHide } = useNavBar();
+
 
     const format = useFormatDirectoryPath();
 
@@ -659,63 +693,6 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
             setDirectoryUri(uri);
         })();
     }, []);
-
-    const exportToJson = useCallback(async () => {
-        try {
-            let uri = directoryUri;
-            if (!uri) {
-                const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (!permission.granted) {
-                    addMessage('Export cancelled - no folder selected', 'error');
-                    return;
-                }
-                uri = permission.directoryUri;
-                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
-                setDirectoryUri(uri);
-                addMessage(`Export folder set to: ${format(uri)}`);
-            }
-            const json = JSON.stringify(timers, null, 2);
-            const fileName = `timers-export-${new Date().toISOString().split('T')[0]}.json`;
-            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
-                uri,
-                fileName,
-                'application/json'
-            );
-            await FileSystem.writeAsStringAsync(fileUri, json, {
-                encoding: FileSystem.EncodingType.UTF8,
-            });
-            addMessage(`Exported to: ${format(uri)}`, 'success');
-        } catch (e) {
-            addMessage('Export failed: ' + (e.message || ''), 'error');
-        }
-    }, [directoryUri, timers, format, addMessage]);
-
-    const loadFromJson = useCallback(async () => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/json',
-                copyToCacheDirectory: true,
-                multiple: false,
-            });
-            if (!result.canceled && result.assets?.length) {
-                const file = result.assets[0];
-                const content = await FileSystem.readAsStringAsync(file.uri, {
-                    encoding: FileSystem.EncodingType.UTF8,
-                });
-                const loaded = JSON.parse(content);
-                if (Array.isArray(loaded)) {
-                    setTimersAndSave(loaded.map((o) => new Timer(o)));
-                    addMessage('Timers loaded from JSON.', 'success');
-                } else {
-                    addMessage('Invalid JSON format.', 'error');
-                }
-            } else {
-                addMessage('No file selected.');
-            }
-        } catch (e) {
-            addMessage('Failed to load timers.', 'error');
-        }
-    }, [setTimersAndSave, addMessage]);
 
     const populateTimers = useCallback(async () => {
         if (populateDisabled) return;
@@ -748,6 +725,180 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
         [colors]
     );
 
+
+    /* ---------- EXPORT ---------- */
+    const handleExport = useCallback(async () => {
+        try {
+            let uri = directoryUri;
+            if (!uri) {
+                const perm = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!perm.granted) return addMessage('Export cancelled ‑ no folder', 'error');
+                uri = perm.directoryUri;
+                await AsyncStorage.setItem(DIRECTORY_KEY, uri);
+                setDirectoryUri(uri);
+                addMessage(`Export folder: ${format(uri)}`);
+            }
+
+            const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // dd-mm-yy
+
+            // timers
+            const timersPayload = { version: '1.0', exportDate: new Date().toISOString(), timers };
+            const timersExt = useEncryption ? 'enc' : 'json';
+            const timersMime = useEncryption ? 'application/octet-stream' : 'application/json';
+            const timersName = `t-${today}.${timersExt}`;
+            const timersContent = useEncryption
+                ? await encryptData(timersPayload)
+                : JSON.stringify(timersPayload, null, 2);
+            const timersUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                uri,
+                timersName,
+                timersMime
+            );
+            await FileSystem.writeAsStringAsync(timersUri, timersContent, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
+
+            // preferences
+            const prefsPayload = {
+                version: '1.0',
+                type: 'preferences',
+                exportDate: new Date().toISOString(),
+                preferences: {
+                    theme: { accentMode, themeMode, borderMode, progressMode, backgroundPattern, privacyMode },
+                    layout: { headerMode, navigationMode, layoutMode, defaultUnit, fixedBorder, shouldHide },
+                },
+            };
+            const prefsName = `p-${today}.json`;
+            const prefsUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                uri,
+                prefsName,
+                'application/json'
+            );
+            await FileSystem.writeAsStringAsync(
+                prefsUri,
+                JSON.stringify(prefsPayload, null, 2),
+                { encoding: FileSystem.EncodingType.UTF8 }
+            );
+
+            addMessage(`Exported t-${today}.${timersExt} & p-${today}.json`, 'success');
+        } catch (e) {
+            console.error(e);
+            addMessage(`Export failed: ${e.message || 'Unknown'}`, 'error');
+        }
+    }, [
+        directoryUri, timers, useEncryption, format,
+        accentMode, themeMode, borderMode, progressMode, backgroundPattern, privacyMode,
+        headerMode, navigationMode, layoutMode, defaultUnit, fixedBorder, shouldHide,
+    ]);
+
+    /* ---------- IMPORT ---------- */
+    const handleImport = useCallback(async () => {
+        try {
+            const res = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true,
+                multiple: true,
+            });
+            if (res.canceled || !res.assets?.length) return addMessage('No files picked', 'info');
+
+            let okTimers = false;
+            let okPrefs = false;
+
+            for (const file of res.assets) {
+                try {
+                    const raw = await FileSystem.readAsStringAsync(file.uri, {
+                        encoding: FileSystem.EncodingType.UTF8,
+                    });
+
+                    let parsed;
+                    let isEncrypted = false;
+
+                    try {
+                        const maybeEncrypted = JSON.parse(raw);
+
+                        // Check if this matches your encrypted structure
+                        if (maybeEncrypted?.iv && maybeEncrypted?.data) {
+                            parsed = await decryptData(raw);
+                            isEncrypted = true;
+                        } else {
+                            parsed = maybeEncrypted;
+                        }
+                    } catch {
+                        addMessage(`Invalid JSON or encrypted format in ${file.name}`, 'error');
+                        continue;
+                    }
+
+                    // Handle preferences
+                    if (parsed?.type === 'preferences' && parsed.preferences) {
+                        const { theme, layout } = parsed.preferences;
+                        theme && Object.entries(theme).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
+                        layout && Object.entries(layout).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
+                        addMessage(`Prefs loaded from ${file.name}`, 'success');
+                        okPrefs = true;
+                        continue;
+                    }
+
+                    // Handle timers
+                    const list = Array.isArray(parsed.timers)
+                        ? parsed.timers
+                        : Array.isArray(parsed)
+                            ? parsed
+                            : null;
+
+                    if (list) {
+                        setTimersAndSave(list.map((o) => new Timer(o)));
+                        addMessage(`Timers loaded from ${file.name}${isEncrypted ? ' (decrypted)' : ''}`, 'success');
+                        okTimers = true;
+                        continue;
+                    }
+
+                    addMessage(`Unknown or invalid structure in ${file.name}`, 'error');
+                } catch (err) {
+                    addMessage(`Error reading ${file.name}: ${err.message}`, 'error');
+                }
+            }
+
+            if (!okTimers && !okPrefs) addMessage('Nothing imported', 'error');
+        } catch (e) {
+            addMessage(`Import failed: ${e.message || 'Unknown'}`, 'error');
+        }
+    }, [
+        setAccentMode, setThemeMode, setBorderMode, setProgressMode,
+        setBackgroundPattern, setPrivacyModeValue,
+        setHeaderMode, setNavigationMode, setLayoutMode,
+        setDefaultUnit, setFixedBorder, setShouldHide, setTimersAndSave, addMessage,
+    ]);
+
+
+    /* helper map for dynamic setting in import */
+    const setters = {
+        accentMode: setAccentMode,
+        themeMode: setThemeMode,
+        borderMode: setBorderMode,
+        progressMode: setProgressMode,
+        backgroundPattern: setBackgroundPattern,
+        privacyMode: setPrivacyModeValue,
+        headerMode: setHeaderMode,
+        navigationMode: setNavigationMode,
+        layoutMode: setLayoutMode,
+        defaultUnit: setDefaultUnit,
+        fixedBorder: setFixedBorder,
+        shouldHide: setShouldHide,
+    };
+
+    const showConfirm = useCallback((text, action) => {
+        setConfirmText(text);
+        setConfirmAction(() => action);
+        setConfirmVisible(true);
+    }, []);
+
+    const clearTimers = useCallback(async () => {
+        showConfirm('Are you sure you want to clear all timers?', async () => {
+            await clearAllTimers();
+            addMessage('All timers have been cleared.', 'success');
+        });
+    }, [showConfirm, clearAllTimers, addMessage]);
+
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
             {showExtra === 3 && (
@@ -760,32 +911,63 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                 />
             )}
 
-            <SettingRow icon="trash" title="Clear All Timers" desc="Remove all timers from your device" />
+            <SettingRow icon="trash" title="Clear All Timers" desc="Remove all timers from your device" onPress={clearTimers} />
 
             <SettingRow
-                icon="download"
-                title="Export Timers"
-                desc={
-                    directoryUri
-                        ? `Save to: ${format(directoryUri)}`
-                        : 'Save all timers as a JSON file'
-                }
-                onPress={exportToJson}
+                icon={useEncryption ? 'shield-checkmark-outline' : 'shield-outline'}
+                title="Backup Encryption"
+                desc="Encrypt backup files for security"
+            >
+                <Switch
+                    value={!!useEncryption}
+                    onValueChange={(v) => {
+                        setUseEncryption(v);
+                        if (v) {
+                            addMessage('Backup encryption enabled - backups will be encrypted', 'success');
+                        } else {
+                            addMessage('Backup encryption disabled - backups will be plain text', 'info');
+                        }
+                    }}
+                    trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
+                    thumbColor={!useEncryption ? colors.switchThumbActive : colors.switchThumb}
+                    style={{ transform: [{ scale: 1 }] }}
+                />
+            </SettingRow>
+
+            <SettingRow
+                icon="swap-horizontal-outline"
+                title="Export Data"
+                desc="Export timers and preferences"
+                onPress={handleExport}
             />
 
             <SettingRow
-                icon="folder-open-outline"
+                icon="swap-vertical-outline"
+                title="Import Data"
+                desc="Import timers and preferences"
+                onPress={handleImport}
+            />
+
+            <SettingRow
+                icon="file-tray-outline"
                 title="Change Export Folder"
                 desc={directoryUri ? `Current: ${format(directoryUri)}` : 'No folder selected'}
+                noBorder
                 onPress={changeDir}
             />
 
-            <SettingRow
-                icon="cloud-upload-outline"
-                title="Import Timers"
-                desc="Load timers from a JSON file"
-                noBorder
-                onPress={loadFromJson}
+            <ConfirmSheet
+                visible={confirmVisible}
+                onClose={() => setConfirmVisible(false)}
+                onConfirm={confirmAction}
+                title="Delete Timers"
+                message="Are you sure you want to delete all timers? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="#ef4444"
+                icon="trash-outline"
+                colors={colors}
+                variables={variables}
             />
         </AnimatedCard>
     );
@@ -796,7 +978,9 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
 /* ------------------------------------------------------------------ */
 const AppUpdatesCard = memo(({ animatedStyle }) => {
     const [showChangelog, setShowChangelog] = useState(false);
-    const { colors } = useTheme();
+    const [showQR, setShowQR] = useState(false);
+    const { colors, variables } = useTheme();
+    const [linkIndex, setLinkIndex] = useState(0);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -840,10 +1024,41 @@ const AppUpdatesCard = memo(({ animatedStyle }) => {
                 icon="sparkles-outline"
                 title="Send Suggestion"
                 desc="Share your ideas or improvements"
-                noBorder
                 onPress={handleSuggestion}
             />
+            <SettingRow
+                icon="share-social-outline"
+                title="Share App Links"
+                desc="Share QR codes for repository, etc."
+                noBorder
+                onPress={() => setShowQR(true)}
+            >
+                <PickerSheet
+                    value={linkOptions[linkIndex].value}
+                    options={linkOptions}
+                    onChange={(value) => {
+                        const newIndex = linkOptions.findIndex((opt) => opt.value === value);
+                        if (newIndex !== -1) {
+                            setLinkIndex(newIndex);
+                        }
+                    }}
+                    title="Links"
+                    placeholder="Select Link to share"
+                    colors={colors}
+                    variables={variables}
+                />
+            </SettingRow>
+
+            <QRShareSheet
+                visible={showQR}
+                onClose={() => setShowQR(false)}
+                link={linkOptions[linkIndex].url}
+                label={linkOptions[linkIndex].label}
+                addMessage={addMessage}
+            />
+
             <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
+                
         </AnimatedCard>
     );
 });
@@ -933,7 +1148,7 @@ export default memo(function Settings() {
             colors={colors}
             contentContainerStyle={{ paddingBottom: 95, overflow: 'visible' }}
             useFlatList={false}
-            paddingX={15}
+            paddingX={20}
         >
             {mounted && (
                 <>
@@ -961,7 +1176,7 @@ export default memo(function Settings() {
                         }}
                     />
 
-                    <SectionHeader>Timer Management</SectionHeader>
+                    <SectionHeader>Data & Preferences</SectionHeader>
                     <TimerManagementCard
                         animatedStyle={{
                             transform: [{ translateX: card4Translate }],

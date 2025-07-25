@@ -5,6 +5,10 @@ import * as Updates from 'expo-updates';
 import { View, Text } from 'react-native';
 import { BaseToast, ErrorToast } from 'react-native-toast-message';
 import Svg, { Path } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CryptoJS from 'crypto-js';
+import * as Crypto from 'expo-crypto';
+
 
 import { useRef, useEffect } from 'react';
 
@@ -41,10 +45,11 @@ export async function checkForUpdateAndReload() {
     }
 }
 
-
 export const HEADER_MARGIN_TOP = 50;
 export const MAX_HEADER_HEIGHT = 66;
 export const MIN_HEADER_HEIGHT = 60;
+
+const ENCRYPTION_KEY_STORAGE = 'ENCRYPTION_KEY';
 
 export function shouldForceCollapsed(pageLength) {
     const screenHeight = Dimensions.get('window').height;
@@ -317,6 +322,31 @@ export const unitOptions = [
     },
 ];
 
+export const linkOptions = [
+
+    {
+        label: 'Releases',
+        value: 'release',
+        icon: <Icons.Ion name="albums-outline" size={16} />,
+        description: 'Check the latest versions and updates',
+        url: 'https://github.com/FarhanZafarr-9/Timers/releases'
+    },
+    {
+        label: 'Repository',
+        value: 'repo',
+        icon: <Icons.Ion name="code-slash-outline" size={16} />,
+        description: 'View the complete source code on GitHub',
+        url: 'https://github.com/FarhanZafarr-9/Timers'
+    },
+    {
+        label: 'My Profile',
+        value: 'profile',
+        icon: <Icons.Ion name="person-circle-outline" size={16} />,
+        description: 'Visit my developer profile on GitHub',
+        url: 'https://github.com/FarhanZafarr-9'
+    }
+];
+
 export const jumbleText = (str) => {
     // Replace each character with a random letter (except spaces)
     return str.split('').map(char =>
@@ -351,19 +381,30 @@ export const emojiText = (str) => {
 
 export const maskText = (str) => {
     const maskChars = [
-        '•', '●', '○', '★', '☆', '◆', '◇', '■', '□', '▪', '▫', '▲', '△', '▼', '▽',
-        '?', '/', '\\', '|', '-', '_', '+', '*', '~', '='
+        // bullet-style
+        '•', '·', '◦', '‣', '⁃', '∙',
+        // small geometric blocks
+        '▪', '▫', '◾', '◽', '■', '□', '◆', '◇', '▰', '▱',
+        // tiny arrows / carets
+        '▸', '◂', '▴', '▾',
+        // narrow bars
+        '❘', '❙', '❚', '│', '┃', '┆', '┊',
+        // underscore variants
+        '_', '‗', '‾',
+        // equals variants
+        '=', '≡', '═'
     ];
 
     const maskChar = maskChars[new Date().getMinutes() % maskChars.length];
-    return str.split('').map(C => (C === ' ' ? ' ' : maskChar)).join('');
+    return [...String(str)].map(ch => (ch === ' ' ? ' ' : maskChar)).join('');
 };
 
 export const maxCharsLimit = 10;
 
 export const getPrivacyText = (maxCharsLimit, privacyMode, inputText) => {
-    const isLong = inputText.length > maxCharsLimit;
-    const truncated = isLong ? inputText.slice(0, maxCharsLimit) : inputText;
+    const text = String(inputText ?? '');
+    const isLong = text.length > maxCharsLimit;
+    const truncated = isLong ? text.slice(0, maxCharsLimit) : text;
 
     let result;
 
@@ -386,7 +427,6 @@ export const getPrivacyText = (maxCharsLimit, privacyMode, inputText) => {
         default:
             result = truncated;
     }
-
 
     return isLong && privacyMode !== 'ghost' && result !== null ? result + '...' : result;
 };
@@ -530,9 +570,32 @@ export const quotes = [
 ];
 
 export const appBuild = 'stable';
-export const appVersion = '1.1.0';
+export const appVersion = '1.1.1';
 
 export const changelog = [
+    {
+        "version": "1.1.1",
+        "date": "2025-07-25",
+        "title": "Refined Utility & Sharing Update",
+        "major": true,
+        "changes": [
+            { "type": "new", "text": "Introduced a redesigned app icon for a more modern appearance" },
+            { "type": "new", "text": "Added encrypted import/export functionality for better data security" },
+            { "type": "new", "text": "Included QR code sharing feature for releasing and promoting Pro versions or app links" },
+            { "type": "new", "text": "Preferences can now be exported and potentially shared between setups" },
+
+            { "type": "improved", "text": "UI consistency improved across multiple areas with minor visual fixes" },
+            { "type": "improved", "text": "Privacy mode now behaves more reliably and integrates with all views" },
+            { "type": "improved", "text": "Faster performance on load and lighter resource usage in background tasks" },
+
+            { "type": "fixed", "text": "Various minor bugs resolved and interface inconsistencies patched" },
+
+            {
+                "type": "summarized",
+                "text": "This update brings encrypted import/export, a fresh app icon, preference export, QR sharing, UI and privacy improvements, and general performance tuning."
+            }
+        ]
+    },
     {
         "version": "1.1.0",
         "date": "2025-07-21",
@@ -1382,21 +1445,61 @@ export const renderHexagons = ({ width: W, height: H }, color) => {
     );
 };
 
+const generateSecureKey = async () => {
+    const bytes = await Crypto.getRandomBytesAsync(32); // 256-bit key
+    const wordArray = CryptoJS.lib.WordArray.create(bytes);
+    return wordArray.toString(CryptoJS.enc.Hex); // hex string
+};
 
-/*
-function check        { npm run check }
-function doctor       { npm run doctor }
-function checkall     { npm run checkall }
+const generateSecureIV = async () => {
+    const bytes = await Crypto.getRandomBytesAsync(16); // 128-bit IV
+    return CryptoJS.lib.WordArray.create(bytes);
+};
 
-function startapp     { npm run start }              # Starts Expo server
-function startweb     { npm run web }                # Starts in browser
+export const getOrCreateEncryptionKey = async () => {
+    let key = await AsyncStorage.getItem(ENCRYPTION_KEY_STORAGE);
+    if (!key) {
+        key = await generateSecureKey();
+        await AsyncStorage.setItem(ENCRYPTION_KEY_STORAGE, key);
+    }
+    return key;
+};
 
-function runandroid   { npx expo run:android }       # Bare workflow build & run
-function runios       { npx expo run:ios }
+export const encryptData = async (data) => {
+    try {
+        const keyHex = await getOrCreateEncryptionKey();
+        const keyWA = CryptoJS.enc.Hex.parse(keyHex);
+        const iv = await generateSecureIV();
 
-function clean        { npx expo start -c }          # Start with cache cleared
+        const json = JSON.stringify(data);
+        const encrypted = CryptoJS.AES.encrypt(json, keyWA, { iv });
 
-function buildapk     { eas build --profile production --platform android }
-function buildios     { eas build --profile production --platform ios }
+        return JSON.stringify({
+            iv: iv.toString(CryptoJS.enc.Hex),
+            data: encrypted.toString(),
+        });
+    } catch (error) {
+        console.error('Encryption error:', error);
+        throw new Error('Encryption failed: ' + error.message);
+    }
+};
 
-*/
+export const decryptData = async (encryptedStr) => {
+    try {
+        const keyHex = await getOrCreateEncryptionKey();
+        const keyWA = CryptoJS.enc.Hex.parse(keyHex);
+
+        const { iv, data } = JSON.parse(encryptedStr);
+        const decrypted = CryptoJS.AES.decrypt(data, keyWA, {
+            iv: CryptoJS.enc.Hex.parse(iv),
+        });
+
+        const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
+        if (!jsonString) throw new Error('Invalid key or corrupted data');
+
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error('Decryption error:', error);
+        throw new Error('Decryption failed: ' + error.message);
+    }
+};

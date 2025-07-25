@@ -121,6 +121,8 @@ const WheelPicker = ({
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             padding: 20,
+            borderColor: colors.border,
+            borderWidth: border,
         },
 
         handle: {

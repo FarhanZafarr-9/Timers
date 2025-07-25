@@ -6,7 +6,7 @@ import { Icons } from '../assets/icons';
 import Toast from 'react-native-toast-message';
 import { AppState } from 'react-native';
 import PasswordPrompt from '../components/PasswordPrompt';
-import logo from '../assets/text.png'
+import logo from '../assets/icon.png'
 import { quotes } from './functions';
 
 const { width, height } = Dimensions.get('window');
@@ -652,9 +652,9 @@ const AuthContext = ({ children }) => {
                                 }]} />
                             ))}
 
-                            <View style={{ backgroundColor: isDarkMode ? colors.background : colors.highlight, borderRadius: variables.radius.xl, }}>
+                            
                                 <Image source={logo} style={styles.appIcon} />
-                            </View>
+                           
 
                             <View style={styles.cardOverlay} />
                             <View style={styles.textContainer}>
