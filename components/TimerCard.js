@@ -52,6 +52,11 @@ const TimerCard = ({
     const { privacyMode } = useSecurity();
     const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
     const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
+    const privacyInterval = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 5 : 100, privacyMode, timer.isRecurring ? timer.recurrenceInterval : ''), [timer.recurrenceInterval, privacyMode]);
+    const privacyDate = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 7 : 100, privacyMode, timer.date), [timer.date, privacyMode]);
+    const privacyPriority = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 2 : 100, privacyMode, timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)), [timer.priority, privacyMode]);
+    const privacyRecurringText = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 4 : 100, privacyMode, timer.isRecurring ? 'Recurring' : 'NonRecurring'), [timer.isRecurring, privacyMode]);
+
 
     const [staticTimerData, setStaticTimerData] = useState({
         formattedDate: '',
@@ -814,7 +819,9 @@ const TimerCard = ({
                 fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 14 : 16,
                 fontWeight: 'bold',
                 paddingLeft: 6,
-                height: 25
+                height: 30,
+                textAlign: 'center',
+                alignSelf: 'center',
             },
             priorityIndicator: {
                 flexDirection: 'row',
@@ -831,7 +838,7 @@ const TimerCard = ({
                 fontSize: 14,
                 fontWeight: 'bold',
                 letterSpacing: 1,
-                backgroundColor: colors.highlight + '10',
+                backgroundColor: colors.highlight + '08',
                 borderWidth: border,
                 borderColor: colors.border,
                 justifyContent: 'center',
@@ -843,7 +850,7 @@ const TimerCard = ({
                 borderRadius: variables.radius.sm,
             },
             namePill: {
-                backgroundColor: colors.highlight + '10',
+                backgroundColor: colors.highlight + '08',
                 paddingVertical: 6,
                 paddingHorizontal: 12,
                 marginHorizontal: 8,
@@ -851,7 +858,7 @@ const TimerCard = ({
                 alignSelf: 'flex-start',
                 borderWidth: border,
                 borderColor: colors.border,
-                color: colors.text,
+                color: colors.textDesc,
                 fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : (isLongName && isLongTitle) ? 10 : 12,
                 fontWeight: 'bold',
             },
@@ -888,17 +895,24 @@ const TimerCard = ({
             },
             overlayTitle: {
                 color: colors.text,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 16 : 20,
-                fontWeight: 'bold',
-                marginBottom: 8,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 12 : 14,
+                fontWeight: '500',
                 height: 28,
+                alignSelf: 'center',
+                textAlign: 'center',
+                marginBottom: 6
             },
             overlayPersonName: {
                 color: colors.textDesc,
                 fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12 : (isLongName && isLongTitle) ? 12 : 14,
                 fontWeight: '500',
-                marginBottom: 16,
-                height: 20
+                height: 26,
+                backgroundColor: colors.settingBlock,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: variables.radius.sm,
+                borderWidth: border,
+                borderColor: colors.border,
             },
             timeSection: {
                 backgroundColor: colors.settingBlock,
@@ -921,7 +935,7 @@ const TimerCard = ({
                 fontSize: 16,
                 height: 55,
                 fontWeight: '600',
-                paddingVertical: 5
+                paddingVertical: 4
             },
             detailsSection: {
                 backgroundColor: colors.highlight + '10',
@@ -943,7 +957,7 @@ const TimerCard = ({
                 color: colors.text,
                 fontSize: 12,
                 fontWeight: '500',
-                height: 30,
+                height: 28,
                 backgroundColor: colors.settingBlock,
                 paddingHorizontal: 8,
                 paddingVertical: 4,
@@ -1002,31 +1016,34 @@ const TimerCard = ({
                 borderColor: colors.border,
             },
             statusText: {
-                color: colors.text,
+                color: colors.textDesc,
                 fontSize: 12,
                 fontWeight: '500',
-                height: 15,
+                height: 16,
             },
             chipContainer: {
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                gap: 4,
+                gap: 6,
                 marginVertical: 8,
                 paddingBottom: 8,
             },
             chip: {
                 backgroundColor: colors.highlight + '10',
-                paddingVertical: 5,
-                paddingHorizontal: 16,
+                paddingVertical: 4,
+                paddingHorizontal: 12,
                 borderRadius: variables.radius.sm,
                 borderWidth: border,
                 borderColor: colors.border,
+                justifyContent: 'center',
+                alignItems: 'center',
             },
             chipText: {
                 color: colors.text,
                 fontSize: 16,
                 fontWeight: '600',
-                height: 20
+                height: 22,
+                textAlign: 'center',
             },
         });
     }
@@ -1101,7 +1118,15 @@ const TimerCard = ({
                                     <Text style={[
                                         styles.timerTitle,
                                         staticStyles.paddingLeft0,
-                                        privacyMode === 'invisible' && { color: colors.settingBlock }
+                                        (privacyMode === 'invisible' || privacyMode === 'ghost') && {
+                                            color: colors.settingBlock + '00',
+                                            backgroundColor: colors.highlight + '08',
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 4,
+                                            borderRadius: variables.radius.sm,
+                                            borderWidth: border,
+                                            borderColor: colors.border,
+                                        }
                                     ]}>
                                         {privacyTitleText}
                                     </Text>
@@ -1144,7 +1169,15 @@ const TimerCard = ({
                                 ) : (
                                     <Text style={[
                                         styles.timerTitle,
-                                        privacyMode === 'invisible' && { color: colors.settingBlock }
+                                        (privacyMode === 'invisible' || privacyMode === 'ghost') && {
+                                            color: colors.settingBlock + '00',
+                                            backgroundColor: colors.highlight + '08',
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 4,
+                                            borderRadius: variables.radius.sm,
+                                            borderWidth: border,
+                                            borderColor: colors.border,
+                                        }
                                     ]}>
                                         {privacyTitleText}
                                     </Text>
@@ -1207,13 +1240,21 @@ const TimerCard = ({
                                         {/* Title and Person */}
                                         <Text style={[
                                             styles.overlayTitle,
-                                            privacyMode === 'invisible' && { color: colors.modalBg }
+                                            (privacyMode === 'invisible' || privacyMode === 'ghost') && {
+                                                color: colors.modalBg + '00',
+                                                backgroundColor: colors.settingBlock,
+                                                paddingHorizontal: 12,
+                                                paddingVertical: 0,
+                                                borderRadius: variables.radius.sm,
+                                                borderWidth: border,
+                                                borderColor: colors.border,
+                                            }
                                         ]}>
                                             {privacyTitleText}
                                         </Text>
 
-                                        <Text style={styles.detailValue}>
-                                            {staticTimerData.formattedDate}
+                                        <Text style={[styles.detailValue, { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, marginBottom: 4 }]}>
+                                            {privacyMode === 'off' ? staticTimerData.formattedDate : privacyDate}
                                         </Text>
                                     </View>
 
@@ -1221,27 +1262,27 @@ const TimerCard = ({
                                         {timer.personName && (
                                             <Text style={[
                                                 styles.overlayPersonName,
-                                                privacyMode === 'invisible' && { color: colors.modalBg }
+                                                privacyMode === 'invisible' && { color: colors.modalBg + '00' }
                                             ]}>
                                                 For: {privacyNameText}
                                             </Text>
                                         )}
 
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
 
                                             {timer.isRecurring && timer.recurrenceInterval && (
                                                 <View style={styles.statusIndicator}>
-                                                    <Text style={styles.statusText}>{timer.recurrenceInterval}</Text>
+                                                    <Text style={[styles.statusText, { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>{privacyInterval}</Text>
                                                 </View>
                                             )}
                                             {timer.isRecurring && (
                                                 <View style={styles.statusIndicator}>
-                                                    <Icons.Material
+                                                    {privacyMode === 'off' && <Icons.Material
                                                         name="autorenew"
                                                         size={12}
                                                         color={colors.highlight}
-                                                    />
-                                                    <Text style={styles.statusText}>Recurring</Text>
+                                                    />}
+                                                    <Text style={[styles.statusText, , { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>{privacyRecurringText}</Text>
                                                 </View>
                                             )}
 
@@ -1251,7 +1292,7 @@ const TimerCard = ({
                                                 </View>
                                             )}
                                             <View style={styles.statusIndicator}>
-                                                {timer.priority && (
+                                                {timer.priority && privacyMode === 'off' && (
                                                     <View
                                                         style={[
                                                             styles.priorityDot,
@@ -1272,8 +1313,8 @@ const TimerCard = ({
                                                         ]}
                                                     />
                                                 )}
-                                                <Text style={styles.statusText}>
-                                                    {timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)}
+                                                <Text style={[styles.statusText, , { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>
+                                                    {privacyPriority}
                                                 </Text>
                                             </View>
                                         </View>

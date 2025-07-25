@@ -47,7 +47,7 @@ export default function About() {
         Toast.show({
             type: 'info',
             text1: 'ChronoX',
-            text2: 'This is a beta version and might have bugs.',
+            text2: 'This is a stable version, fully optimized and mostly debugged.',
         });
     }
 
@@ -68,7 +68,7 @@ export default function About() {
         row: { flexDirection: 'row', alignItems: 'center' },
         appIcon: {
             width: 72, height: 72, borderRadius: variables.radius.md, marginRight: 16, resizeMode: 'cover',
-            borderWidth: border, borderColor: colors.cardBorder, transform: [{scale:1.15}]
+            borderWidth: border, borderColor: colors.cardBorder, transform: [{ scale: 1.15 }]
         },
         appName: { fontSize: 22, color: colors.textTitle, fontWeight: 'bold' },
         versionText: {
@@ -155,32 +155,20 @@ export default function About() {
                     </Text>
                 </Animated.View>
 
-                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical:12 }]}>
+                <Animated.View style={{ transform: [{ translateY: buttonsAnim }], opacity: buttonsOpacityAnim }}>
+
+                    <TouchableOpacity style={[styles.actionButton, { flexBasis: '100%' }]} onPress={() => setShowAboutMe(true)}>
+                        <Icons.Ion name="person-circle-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
+                        <Text style={styles.buttonText}>About Me</Text>
+                    </TouchableOpacity>
+
+                </Animated.View>
+
+                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical: 12 }]}>
                     <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
 
-                <Animated.View style={{ transform: [{ translateY: buttonsAnim }], opacity: buttonsOpacityAnim }}>
 
-                    <View style={styles.buttonsContainer}>
-
-                        <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9/Timers')}>
-                            <Icons.Ion name="logo-github" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Repository</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenLink('https://github.com/FarhanZafarr-9')}>
-                            <Icons.Ion name="person" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Creator</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.actionButton, { flexBasis: '100%' }]} onPress={() => setShowAboutMe(true)}>
-                            <Icons.Ion name="person-circle-outline" size={18} color={colors.text} style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>About Me</Text>
-                        </TouchableOpacity>
-
-                    </View>
-
-                </Animated.View>
 
             </View>
         </HeaderScreen>
