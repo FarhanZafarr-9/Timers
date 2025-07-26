@@ -11,6 +11,9 @@ import Toast from 'react-native-toast-message';
 import { scheduleNotification, cancelScheduledNotification } from '../utils/Notify';
 import Switch from '../components/Switch';
 import FadeQuote from '../components/FadeQuote';
+import dayjs from 'dayjs';
+import durationPlugin from 'dayjs/plugin/duration';
+dayjs.extend(durationPlugin);
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,7 +42,6 @@ const statusDisplayStyles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderWidth: 1,
     },
     statusText: {
         fontSize: 12,
@@ -71,7 +73,8 @@ const StatusDisplay = React.memo(({ isRunning, isPaused, colors, border }) => {
             statusDisplayStyles.statusContainer,
             {
                 backgroundColor: colors.settingBlock,
-                borderColor: colors.border
+                borderColor: colors.border,
+                borderWidth: border
             }
         ]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -118,7 +121,6 @@ const progressDisplayStyles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         marginBottom: 20,
-        borderWidth: 1,
         width: '100%',
         alignItems: 'center',
     },
@@ -145,15 +147,16 @@ const progressDisplayStyles = StyleSheet.create({
 const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
     const progressData = useMemo(() => ({
         percentage: (progress * 100).toFixed(2),
-        elapsed: new Date((progress * duration)).toISOString().substring(11, 19)
+        elapsed: dayjs.duration(progress * duration).format('HH:mm:ss')
     }), [progress, duration]);
 
     return (
         <View style={[
             progressDisplayStyles.waveContainer,
             {
-                backgroundColor: colors.settingBlock,
-                borderColor: colors.border
+                backgroundColor: colors.settingBlock + '60',
+                borderColor: colors.border,
+                borderWidth: border
             }
         ]}>
             <View style={[
@@ -209,7 +212,7 @@ const TimerUpdater = React.memo(({ isRunning, isPaused, duration, colors, border
         if (!isRunning && !isPaused) {
             setRemainingMs(duration);
             setProgress(0);
-            setFormattedTime(new Date(duration).toISOString().substring(11, 19));
+            setFormattedTime(dayjs.duration(duration).format('HH:mm:ss'));
             elapsedRef.current = 0;
         }
     }, [duration, isRunning, isPaused]);
@@ -232,7 +235,8 @@ const TimerUpdater = React.memo(({ isRunning, isPaused, duration, colors, border
 
         setRemainingMs(newRemaining);
         setProgress(newProgress);
-        setFormattedTime(new Date(newRemaining).toISOString().substring(11, 19));
+        const formatted = dayjs.duration(newRemaining).format('HH:mm:ss');
+        setFormattedTime(formatted);
 
         if (newRemaining > 0) {
             animationFrameRef.current = requestAnimationFrame(timerLoop);
@@ -257,7 +261,7 @@ const TimerUpdater = React.memo(({ isRunning, isPaused, duration, colors, border
             elapsedRef.current = 0;
             setRemainingMs(duration);
             setProgress(0);
-            setFormattedTime(new Date(duration).toISOString().substring(11, 19));
+            setFormattedTime(dayjs.duration(duration).format('HH:mm:ss'));
         }
 
         return () => {
@@ -288,7 +292,7 @@ export default function Pomodoro() {
     // Get animation values
     const animations = getStaticAnimations();
 
-    const [duration, setDuration] = useState(1500000);
+    const [duration, setDuration] = useState(300000);
     const [isRunning, setIsRunning] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [notify, setNotify] = useState(false);
@@ -296,21 +300,22 @@ export default function Pomodoro() {
 
     // Memoized values
     const sessionInfo = useMemo(() => {
-        const minutes = Math.floor(duration / 60000);
-        const seconds = Math.floor((duration % 60000) / 1000);
 
-        if (duration === 15000) return 'Flash Focus';
-        if (duration === 30000) return 'Quick Breather';
-        if (duration === 60000) return 'Minute Sprint';
-        if (minutes === 5) return 'Micro Break';
-        if (minutes === 10) return 'Light Focus';
-        if (minutes === 15) return 'Mini Sprint';
-        if (minutes === 25) return 'Classic Pomodoro';
-        if (minutes === 30) return 'Deep Dive';
-        if (minutes === 60) return 'Hour of Power';
-        if (minutes === 120) return 'Marathon Session';
-        if (seconds > 0) return `Custom: ${minutes}m ${seconds}s`;
-        return `Custom: ${minutes}m`;
+        const presetLabels = {
+            15000: 'Flash Focus',
+            30000: 'Quick Breather',
+            60000: 'Minute Sprint',
+            300000: 'Micro Break',
+            600000: 'Light Focus',
+            900000: 'Mini Sprint',
+            1500000: 'Classic Pomodoro',
+            1800000: 'Deep Dive',
+            3600000: 'Hour of Power',
+            7200000: 'Marathon Session',
+        };
+
+        const label = presetLabels[duration] || `Custom: ${dayjs.duration(duration).format('m[m] s[s]')}`;
+        return label;
     }, [duration]);
 
     // Styles that depend on theme
@@ -336,6 +341,7 @@ export default function Pomodoro() {
             fontWeight: '600',
             color: colors.text,
             marginBottom: 14,
+            height: 26
         },
         quoteCard: {
             backgroundColor: colors.settingBlock + '40',

@@ -8,6 +8,14 @@ import {
     cancelScheduledNotification,
     clearAllScheduledNotifications
 } from './Notify';
+import dayjs from 'dayjs'
+import duration from 'dayjs/plugin/duration'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(duration)
+dayjs.extend(relativeTime)
+
+import { getReminderOffset } from '../utils/functions';
 
 const TimerContext = createContext();
 const manager = new TimerManager();
@@ -24,18 +32,6 @@ export const TimerProvider = ({ children }) => {
         setTimers(currentTimers);
     }, []);
 
-    const getReminderOffset = (secondsUntilEnd) => {
-        if (secondsUntilEnd > 60 * 60 * 24 * 14) return 60 * 60 * 24 * 2;
-        else if (secondsUntilEnd > 60 * 60 * 24 * 7) return 60 * 60 * 24;
-        else if (secondsUntilEnd > 60 * 60 * 24) return 60 * 60 * 6;
-        else if (secondsUntilEnd > 60 * 60 * 6) return 60 * 60 * 2;
-        else if (secondsUntilEnd > 60 * 60) return 60 * 30;
-        else if (secondsUntilEnd > 60 * 10) return 60 * 5;
-        else if (secondsUntilEnd > 60) return 30;
-        return 0;
-    };
-
-    // Optimized notification scheduling - accepts pre-calculated delay
     const scheduleNotificationsOptimized = async (timerData, delayInSec) => {
         console.log('📅 Scheduling notifications with pre-calculated delay:', delayInSec, 'seconds');
         const timer = toTimer(timerData);
@@ -77,6 +73,19 @@ export const TimerProvider = ({ children }) => {
         return { notificationId, reminderNotificationId };
     };
 
+    const scheduleNextRecurringNotification = (tmr) => {
+        if (!tmr.isRecurring) return;
+
+        const timer = toTimer(tmr); // Convert plain object if needed
+        const nextDate = timer.getEffectiveDate();
+        const now = dayjs();
+        const delayInSec = dayjs(nextDate).diff(now, 'second');
+
+        if (delayInSec <= 0) return; // Don't schedule if date is already past
+
+        scheduleNotification(timer, delayInSec); // Your existing function
+    };
+
     // Legacy method for backward compatibility
     const scheduleNotifications = async (timerData) => {
         console.log('📅 Legacy scheduleNotifications called for timer:', timerData.id);
@@ -90,14 +99,15 @@ export const TimerProvider = ({ children }) => {
 
     // Pre-calculate timing to avoid delays
     const calculateTimingForTimer = (timerData) => {
-        const timer = toTimer({ ...timerData, date: new Date(timerData.date) });
-        const now = Date.now();
-        const targetTime = timer.getEffectiveDate().getTime();
-        const delayInSec = Math.floor((targetTime - now) / 1000);
+        const timer = toTimer({ ...timerData, date: dayjs(timerData.date).toDate() });
+        const now = dayjs();
+        const targetTime = dayjs(timer.getEffectiveDate());
+
+        const delayInSec = targetTime.diff(now, 'second');
 
         console.log('⏱️ Timing calculated:', {
-            now: new Date(now).toISOString(),
-            target: new Date(targetTime).toISOString(),
+            now: now.format(),
+            target: targetTime.format(),
             delay: delayInSec
         });
 

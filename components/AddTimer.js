@@ -724,11 +724,19 @@ const AddTimer = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) =
         <View style={styles.inputRow}>
             <View style={{ width: '32%' }}>
                 <WheelPickerInput
-                    label="Year"
-                    value={dateInputs.year}
-                    onValueChange={val => handleDateTimePartChange('year', val)}
-                    minValue={mode === 'countdown' ? new Date().getFullYear() : 1970}
-                    maxValue={mode === 'countdown' ? new Date().getFullYear() + 30 : new Date().getFullYear()}
+                    label="Day"
+                    value={dateInputs.day}
+                    onValueChange={val => handleDateTimePartChange('day', val)}
+                    minValue={
+                        mode === 'countdown' &&
+                            Number(dateInputs.year) === new Date().getFullYear() &&
+                            Number(dateInputs.month) === new Date().getMonth() + 1
+                            ? new Date().getDate() + 1
+                            : 1
+                    }
+                    maxValue={
+                        getMaxDay(Number(dateInputs.year), Number(dateInputs.month))
+                    }
                     colors={colors}
                     formatValue={val => val.toString()}
                     pickerType="wheel"
@@ -752,19 +760,11 @@ const AddTimer = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) =
             </View>
             <View style={{ width: '32%' }}>
                 <WheelPickerInput
-                    label="Day"
-                    value={dateInputs.day}
-                    onValueChange={val => handleDateTimePartChange('day', val)}
-                    minValue={
-                        mode === 'countdown' &&
-                            Number(dateInputs.year) === new Date().getFullYear() &&
-                            Number(dateInputs.month) === new Date().getMonth() + 1
-                            ? new Date().getDate() + 1
-                            : 1
-                    }
-                    maxValue={
-                        getMaxDay(Number(dateInputs.year), Number(dateInputs.month))
-                    }
+                    label="Year"
+                    value={dateInputs.year}
+                    onValueChange={val => handleDateTimePartChange('year', val)}
+                    minValue={mode === 'countdown' ? new Date().getFullYear() : 1970}
+                    maxValue={mode === 'countdown' ? new Date().getFullYear() + 30 : new Date().getFullYear()}
                     colors={colors}
                     formatValue={val => val.toString()}
                     pickerType="wheel"

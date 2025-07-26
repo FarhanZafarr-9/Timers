@@ -77,7 +77,7 @@ const PickerSheet = ({
             borderRadius: variables.radius.sm,
             paddingVertical: 6,
             paddingHorizontal: 8,
-            backgroundColor: colors.highlight + '2a',
+            backgroundColor: colors.highlight + '12',
             borderWidth: border,
             borderColor: colors.border,
             minWidth: 60,

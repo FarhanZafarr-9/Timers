@@ -27,7 +27,7 @@ export class TimerManager {
     // Schedule notifications for all timers
     scheduleNotificationsForAllTimers() {
         this.timers.forEach(timer => {
-            if (timer.scheduleNotification) {
+            if (timer.shouldRescheduleNotification?.()) {
                 timer.scheduleNotification();
             }
         });

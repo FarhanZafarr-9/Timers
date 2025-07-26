@@ -47,7 +47,7 @@ export default function About() {
         Toast.show({
             type: 'info',
             text1: 'ChronoX',
-            text2: 'This is a stable version, fully optimized and mostly debugged.',
+            text2: 'This stable version is optimized and mostly debugged.',
         });
     }
 
