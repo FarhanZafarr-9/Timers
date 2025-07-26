@@ -1,14 +1,50 @@
-import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
-import { Icons } from '../assets/icons';
-import HighlightText from './HighlightText';
-import { getPrivacyText } from '../utils/functions';
+// 🌐 React & React Native
+import React, {
+    useEffect,
+    useRef,
+    useState,
+    useCallback,
+    useMemo,
+    memo
+} from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Animated,
+    Modal,
+    Dimensions,
+    TouchableWithoutFeedback
+} from 'react-native';
+
 import ViewShot from 'react-native-view-shot';
-import ExportSheet from './ExportSheet';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+
 import { useTheme } from '../utils/ThemeContext';
 import { useSecurity } from '../utils/SecurityContext';
+
+import HighlightText from './HighlightText';
+import ExportSheet from './ExportSheet';
 import Wave from './Wave';
-import ProgressWave from './ProgressWave'
+import ProgressWave from './ProgressWave';
+
+import {
+    getPrivacyText,
+    getDetailedTimeDisplay,
+    getFormattedDate,
+    calculateProgress,
+    getTimeParts,
+    getChippedTime,
+    calculateNextOccurrence
+} from '../utils/functions';
+
+import { Icons } from '../assets/icons';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -32,36 +68,57 @@ const TimerCard = ({
     const [activeChip, setActiveChip] = useState(null);
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const showOverlayRef = useRef(false);
+    const showOverlayRef = useRef(false); const { privacyMode } = useSecurity();
 
     useEffect(() => {
         showOverlayRef.current = showOverlay;
     }, [showOverlay]);
 
-    const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
-    const isLongTitle = timer.title && timer.title.length > 12;
-    const titleText = isLongTitle
-        ? timer.title.slice(0, 12) + '…'
-        : timer.title;
-
-    const isLongName = timer.personName && timer.personName.length > 12;
-    const nameText = isLongName
-        ? timer.personName.slice(0, 12) + '…'
-        : timer.personName;
-
-    const { privacyMode } = useSecurity();
-    const privacyTitleText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.title), [timer.title, privacyMode]);
-    const privacyNameText = useMemo(() => getPrivacyText(layoutMode === 'grid' ? 7 : 12, privacyMode, timer.personName), [timer.personName, privacyMode]);
-    const privacyInterval = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 5 : 100, privacyMode, timer.isRecurring ? timer.recurrenceInterval : ''), [timer.recurrenceInterval, privacyMode]);
-    const privacyDate = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 7 : 100, privacyMode, timer.date), [timer.date, privacyMode]);
-    const privacyPriority = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 2 : 100, privacyMode, timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)), [timer.priority, privacyMode]);
-    const privacyRecurringText = useMemo(() => getPrivacyText(privacyMode === 'emoji' || privacyMode === 'mask' ? 4 : 100, privacyMode, timer.isRecurring ? 'Recurring' : 'NonRecurring'), [timer.isRecurring, privacyMode]);
-
-
     const [staticTimerData, setStaticTimerData] = useState({
         formattedDate: '',
         recurrenceCount: 0
     });
+
+    const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
+    
+    const isLongTitle = timer.title && timer.title.length > 12;
+    const isLongName = timer.personName && timer.personName.length > 12;
+
+    const getPrivText = (LIM, VAL) => getPrivacyText(LIM, privacyMode, VAL);
+    const shortStr = (TXT, LIM = 12) => TXT && TXT.length > LIM ? TXT.slice(0, LIM) + '…' : TXT;
+
+    const titleText = shortStr(timer.title);
+    const nameText = shortStr(timer.personName);
+
+    const privacyTitleText = useMemo(
+        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.title),
+        [timer.title, privacyMode]
+    );
+
+    const privacyNameText = useMemo(
+        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.personName),
+        [timer.personName, privacyMode]
+    );
+
+    const privacyInterval = useMemo(
+        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 5 : 100, timer.isRecurring ? timer.recurrenceInterval : ''),
+        [timer.recurrenceInterval, privacyMode]
+    );
+
+    const privacyDate = useMemo(
+        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 7 : 100, getFormattedDate(timer, dayjs())),
+        [timer.date, staticTimerData.formattedDate, privacyMode]
+    );
+
+    const privacyPriority = useMemo(
+        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 2 : 100, timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)),
+        [timer.priority, privacyMode]
+    );
+
+    const privacyRecurringText = useMemo(
+        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 4 : 100, timer.isRecurring ? 'Recurring' : 'NonRecurring'),
+        [timer.isRecurring, privacyMode]
+    );
 
     const cardRef = useRef();
     const sheetRef = useRef();
@@ -107,27 +164,6 @@ const TimerCard = ({
         }
     }), []);
 
-    const getChippedTime = (unit, timeParts) => {
-        const [years, months, days, hours, minutes, seconds] = timeParts;
-        const totalMs =
-            years * 365 * 24 * 60 * 60 * 1000 +
-            months * 30.44 * 24 * 60 * 60 * 1000 +
-            days * 24 * 60 * 60 * 1000 +
-            hours * 60 * 60 * 1000 +
-            minutes * 60 * 1000 +
-            seconds * 1000;
-
-        switch (unit) {
-            case 'years': return (totalMs / (365 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'months': return (totalMs / (30.44 * 24 * 60 * 60 * 1000)).toFixed(2);
-            case 'days': return (totalMs / (24 * 60 * 60 * 1000)).toFixed(2);
-            case 'hours': return (totalMs / (60 * 60 * 1000)).toFixed(2);
-            case 'minutes': return (totalMs / (60 * 1000)).toFixed(2);
-            case 'seconds': return (totalMs / 1000).toFixed(0);
-            default: return '';
-        }
-    };
-
     const calculateStaticTimerData = useCallback(() => {
         const timer = timerRef.current;
         const now = Date.now();
@@ -135,10 +171,8 @@ const TimerCard = ({
         let nextDate = timer.nextDate;
         let recurrenceCount = 0;
 
-        // Handle recurring timers
         if (timer.isRecurring) {
             if (timer.date < now) {
-                // Calculate next occurrence if we've passed the original date
                 const result = calculateNextOccurrence(timer, now);
                 targetDate = result.nextDate;
                 nextDate = result.nextDate;
@@ -147,7 +181,7 @@ const TimerCard = ({
         }
 
         return {
-            formattedDate: getFormattedDate({ ...timer, date: targetDate, nextDate }, now),
+            formattedDate: getFormattedDate({ ...timer, date: targetDate, nextDate }, dayjs(now)),
             recurrenceCount
         };
     }, []);
@@ -269,47 +303,6 @@ const TimerCard = ({
             </TouchableOpacity>
         );
     }), [defaultUnit, colors, styles, getChippedTime]);
-
-    function calculateNextOccurrence(timer, now) {
-        if (!timer.isRecurring || !timer.recurrenceInterval) {
-            return {
-                nextDate: timer.date,
-                recurrenceCount: 0
-            };
-        }
-
-        const [countStr, unitRaw] = timer.recurrenceInterval.split(' ');
-        const count = parseInt(countStr, 10) || 1;
-        const unit = unitRaw.toLowerCase().endsWith('s')
-            ? unitRaw.toLowerCase().slice(0, -1)
-            : unitRaw.toLowerCase();
-
-        const addMap = {
-            second: (date, n) => date.setSeconds(date.getSeconds() + n),
-            minute: (date, n) => date.setMinutes(date.getMinutes() + n),
-            hour: (date, n) => date.setHours(date.getHours() + n),
-            day: (date, n) => date.setDate(date.getDate() + n),
-            week: (date, n) => date.setDate(date.getDate() + n * 7),
-            month: (date, n) => date.setMonth(date.getMonth() + n),
-            year: (date, n) => date.setFullYear(date.getFullYear() + n),
-        };
-
-        let nextDate = new Date(timer.date);
-        let recurrenceCount = 0;
-
-        while (nextDate.getTime() < now) {
-            addMap[unit]?.(nextDate, count);
-            recurrenceCount++;
-
-            // Safety check to prevent infinite loops
-            if (recurrenceCount > 10000) break;
-        }
-
-        return {
-            nextDate: nextDate.getTime(),
-            recurrenceCount: recurrenceCount - 1
-        };
-    }
 
     useEffect(() => {
         setStaticTimerData(calculateStaticTimerData());
@@ -520,6 +513,13 @@ const TimerCard = ({
                 const result = calculateNextOccurrence(timer, now);
                 targetDate = result.nextDate;
                 nextDate = result.nextDate;
+
+                if (
+                    !timer.notificationScheduledFor ||
+                    dayjs(timer.notificationScheduledFor).isBefore(result.nextDate)
+                ) {
+                    timer.scheduleNotification();
+                }
             }
 
             const newProgressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
@@ -904,7 +904,7 @@ const TimerCard = ({
             },
             overlayPersonName: {
                 color: colors.textDesc,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12 : (isLongName && isLongTitle) ? 12 : 14,
+                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12 : (isLongName && isLongTitle) ? 10 : 12,
                 fontWeight: '500',
                 height: 26,
                 backgroundColor: colors.settingBlock,
@@ -1161,9 +1161,9 @@ const TimerCard = ({
                                         />
                                         {timer.isFavourite && <Icons.Material
                                             name={"favorite"}
-                                            size={10}
+                                            size={14}
                                             color={colors.highlight}
-                                            style={staticStyles.marginBottom2}
+                                            style={{marginBottom: 8}}
                                         />}
                                     </View>
                                 ) : (
@@ -1280,7 +1280,7 @@ const TimerCard = ({
                                                     {privacyMode === 'off' && <Icons.Material
                                                         name="autorenew"
                                                         size={12}
-                                                        color={colors.highlight}
+                                                        color={colors.textDesc}
                                                     />}
                                                     <Text style={[styles.statusText, , { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>{privacyRecurringText}</Text>
                                                 </View>
@@ -1402,112 +1402,6 @@ const TimerCard = ({
         </>
     );
 };
-
-function calculateProgress(timer, now) {
-    if (!timer.isCountdown) return 0;
-
-    const nowDate = new Date(now);
-    const targetDate = new Date(timer.date < now ? timer.nextDate : timer.date);
-
-    if (!timer.isRecurring) {
-        const totalDuration = targetDate.getTime() - timer.date;
-        const elapsed = nowDate.getTime() - timer.date;
-        return Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
-    }
-
-    const prevDate = new Date(targetDate);
-    const [count, unit] = timer.recurrenceInterval.split(' ');
-    const normalizedUnit = unit.toLowerCase().endsWith('s')
-        ? unit.toLowerCase().slice(0, -1)
-        : unit.toLowerCase();
-
-    const subtractMap = {
-        second: (date, n) => date.setSeconds(date.getSeconds() - n),
-        minute: (date, n) => date.setMinutes(date.getMinutes() - n),
-        hour: (date, n) => date.setHours(date.getHours() - n),
-        day: (date, n) => date.setDate(date.getDate() - n),
-        week: (date, n) => date.setDate(date.getDate() - n * 7),
-        month: (date, n) => date.setMonth(date.getMonth() - n),
-        year: (date, n) => date.setFullYear(date.getFullYear() - n),
-    };
-
-    if (subtractMap[normalizedUnit]) {
-        subtractMap[normalizedUnit](prevDate, parseInt(count, 10));
-    }
-
-    const totalDuration = targetDate.getTime() - prevDate.getTime();
-    const elapsed = nowDate.getTime() - prevDate.getTime();
-
-    return Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
-}
-
-function getTimeParts(timer, now) {
-    let targetDate = timer.isCountdown
-        ? (timer.isRecurring && timer.date < now ? timer.nextDate : timer.date)
-        : timer.date;
-    let diff = timer.isCountdown
-        ? Math.max(0, targetDate - now)
-        : Math.max(0, now - targetDate);
-
-    const y = Math.floor(diff / (365 * 24 * 60 * 60 * 1000));
-    diff -= y * 365 * 24 * 60 * 60 * 1000;
-    const mo = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
-    diff -= mo * 30.44 * 24 * 60 * 60 * 1000;
-    const d = Math.floor(diff / (24 * 60 * 60 * 1000));
-    diff -= d * 24 * 60 * 60 * 1000;
-    const h = Math.floor(diff / (60 * 60 * 1000));
-    diff -= h * 60 * 60 * 1000;
-    const m = Math.floor(diff / (60 * 1000));
-    diff -= m * 60 * 1000;
-    const s = Math.floor(diff / 1000);
-
-    return [y, mo, d, h, m, s];
-}
-
-function getDetailedTimeDisplay(timer, now) {
-    const [years, months, days, hours, minutes, seconds] = getTimeParts(timer, now);
-
-    const timePartsArray = [
-        { value: years, label: 'year', plural: 'years' },
-        { value: months, label: 'month', plural: 'months' },
-        { value: days, label: 'day', plural: 'days' },
-        { value: hours, label: 'hour', plural: 'hours' },
-        { value: minutes, label: 'minute', plural: 'minutes' },
-        { value: seconds, label: 'second', plural: 'seconds' },
-    ];
-
-    const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-    if (timer.isCountdown && !timer.isRecurring && (timer.date - now) <= 0) {
-        return 'Timer Completed';
-    }
-
-    if (nonZeroParts.length === 0) {
-        return '0 seconds';
-    }
-
-    return nonZeroParts.map((part, idx) => {
-        const label = part.value === 1 ? part.label : part.plural;
-        const separator = idx === nonZeroParts.length - 1 ? '' :
-            idx === nonZeroParts.length - 2 ? ' and ' : ', ';
-        return `${part.value} ${label}${separator}`;
-    }).join('');
-}
-
-function getFormattedDate(timer, now) {
-    return new Date(
-        timer.isRecurring && timer.date < now
-            ? timer.nextDate
-            : timer.date
-    ).toLocaleString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
 
 export default memo(TimerCard, (prevProps, nextProps) => {
     // Basic prop comparison

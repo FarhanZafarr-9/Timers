@@ -1,4 +1,8 @@
-import uuid from 'react-native-uuid';;
+import uuid from 'react-native-uuid';
+import { scheduleNotification } from '../utils/Notify'; // adjust the path as needed
+import dayjs from 'dayjs';
+import * as Notifications from 'expo-notifications';
+
 
 export default class Timer {
     constructor({
@@ -13,7 +17,9 @@ export default class Timer {
         isCountdown = true,
         nextDate = null,
         notificationId = null,
-        reminderNotificationId = null
+        reminderNotificationId = null,
+        notificationScheduledFor = null,
+
     }) {
         this.id = id || uuid.v4();
         this.title = title;
@@ -26,6 +32,7 @@ export default class Timer {
         this.isCountdown = isCountdown;
         this.notificationId = notificationId;
         this.reminderNotificationId = reminderNotificationId;
+        this.notificationScheduledFor = notificationScheduledFor ? new Date(notificationScheduledFor) : null;
 
         // Set nextDate if provided, otherwise calculate it
         this.nextDate = nextDate ? (nextDate instanceof Date ? nextDate : new Date(nextDate)) : null;
@@ -227,13 +234,14 @@ export default class Timer {
             personName: this.personName,
             priority: this.priority,
             date: this.date.toISOString(),
-            isFavourite:this.isFavourite,
+            isFavourite: this.isFavourite,
             isRecurring: this.isRecurring,
             recurrenceInterval: this.recurrenceInterval,
             isCountdown: this.isCountdown,
             nextDate: this.nextDate ? this.nextDate.toISOString() : null,
             notificationId: this.notificationId,
-            reminderNotificationId: this.reminderNotificationId
+            reminderNotificationId: this.reminderNotificationId,
+            notificationScheduledFor: this.notificationScheduledFor ? this.notificationScheduledFor.toISOString() : null,
         };
     }
 
@@ -244,6 +252,76 @@ export default class Timer {
     toggleFavourite() {
         this.isFavourite = !this.isFavourite;
         return this.isFavourite;
+    }
+
+    scheduleNotification() {
+        const date = this.getEffectiveDate();
+        const now = dayjs();
+        const seconds = dayjs(date).diff(now, 'second');
+
+        if (seconds <= 0) {
+            console.warn(`⚠️ Skipping notification for ${this.id}: time already passed`);
+            return;
+        }
+
+        const message = `⏰ "${this.title}" just finished`;
+        const subMessage = this.personName ? `For ${this.personName}` : '';
+
+
+
+        const schedule = () => {
+            scheduleNotification(seconds, this.title, `${message}${subMessage ? ' - ' + subMessage : ''}`, { id: this.id })
+                .then((notifId) => {
+                    this.notificationId = notifId;
+                    this.notificationScheduledFor = new Date(date);
+                });
+        };
+
+        if (this.notificationId) {
+            Notifications.cancelScheduledNotificationAsync(this.notificationId)
+                .then(() => {
+                    console.log(`🔁 Replacing old notification for ${this.id}`);
+                    schedule();
+                })
+                .catch((err) => {
+                    console.error(`❌ Failed to cancel old notification for ${this.id}`, err);
+                    schedule(); // still try scheduling the new one
+                });
+        } else {
+            schedule();
+        }
+    }
+
+
+    cancelNotification() {
+        if (!this.notificationId) {
+            console.warn(`⚠️ No notification ID to cancel for ${this.id}`);
+            return;
+        }
+
+        Notifications.cancelScheduledNotificationAsync(this.notificationId)
+            .then(() => {
+                console.log(`❌ Cancelled notification for ${this.id}`);
+            })
+            .catch((err) => {
+                console.error(`❌ Failed to cancel notification for ${this.id}`, err);
+            })
+            .finally(() => {
+                this.notificationId = null;
+                this.notificationScheduledFor = null;
+            });
+    }
+
+    shouldRescheduleNotification() {
+        const effectiveDate = this.getEffectiveDate();
+
+        if (!this.notificationId || !this.notificationScheduledFor) return true;
+
+        // If the scheduled date doesn't match the current effective date, reschedule
+        const scheduledTs = dayjs(this.notificationScheduledFor).unix();
+        const effectiveTs = dayjs(effectiveDate).unix();
+
+        return scheduledTs !== effectiveTs;
     }
 
 }

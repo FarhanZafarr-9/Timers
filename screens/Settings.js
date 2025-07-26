@@ -226,6 +226,16 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         []
     );
 
+    const handleToggleExtra = (v) => {
+        setShowExtra(v);
+        addMessage(`Extra appearance options ${v ? 'enabled' : 'disabled'}.`);
+        if (!v) {
+            setBorderMode('subtle');
+            setProgressMode('linear');
+            setBackgroundPattern('none');
+        }
+    };
+
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
             <SettingRow
@@ -267,18 +277,11 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                 title="Experimental UI"
                 desc="Experimental UI options"
                 noBorder={!showExtra}
+                onPress={() => handleToggleExtra(!showExtra)}
             >
                 <Switch
                     value={showExtra}
-                    onValueChange={(v) => {
-                        setShowExtra(v);
-                        addMessage(`Extra appearance options ${v ? 'enabled' : 'disabled'}.`);
-                        if (!v) {
-                            setBorderMode('subtle');
-                            setProgressMode('linear');
-                            setBackgroundPattern('none');
-                        }
-                    }}
+                    onValueChange={handleToggleExtra}
                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                     thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
                     style={{ transform: [{ scaleY: 1 }] }}
@@ -367,6 +370,28 @@ const LayoutCard = memo(({ animatedStyle }) => {
         []
     );
 
+
+    const handleToggleExtra = (v) => {
+        setShowExtra(v);
+        addMessage(`Extra Layout options ${v ? 'enabled' : 'disabled'}.`);
+        if (!v) {
+            setDefaultUnit('auto');
+            setFixedBorder(false);
+            setShouldHide(false);
+            setLayoutMode('list');
+        }
+    };
+
+    const handleToggleFixedBorder = (v) => {
+        setFixedBorder(v);
+        addMessage(`Fixed borders ${v ? 'enabled' : 'disabled'}.`);
+    };
+
+    const handleToggleImmerse = (v) => {
+        setShouldHide(v);
+        addMessage(`Immersive mode ${v ? 'enabled' : 'disabled'}.`);
+    };
+
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
             <SettingRow
@@ -408,19 +433,11 @@ const LayoutCard = memo(({ animatedStyle }) => {
                 title="Experimental"
                 desc="Layout Test Features"
                 noBorder={!showExtra}
+                onPress={() => handleToggleExtra(!showExtra)}
             >
                 <Switch
                     value={showExtra}
-                    onValueChange={(v) => {
-                        setShowExtra(v);
-                        addMessage(`Extra Layout options ${v ? 'enabled' : 'disabled'}.`);
-                        if (!v) {
-                            setDefaultUnit('auto');
-                            setFixedBorder(false);
-                            setShouldHide(false);
-                            setLayoutMode('list');
-                        }
-                    }}
+                    onValueChange={handleToggleExtra}
                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                     thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
                     style={{ transform: [{ scaleY: 1 }] }}
@@ -429,7 +446,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
 
             {showExtra && (
                 <>
-                    <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode" noBorder={(headerMode === 'fixed' || navigationMode === 'fixed') ? false : true}>
+                    <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode" noBorder={(headerMode === 'fixed' || navigationMode === 'fixed') || layoutMode === 'grid' ? false : true}>
                         <PickerSheet
                             value={layoutMode}
                             options={layoutOptions}
@@ -465,13 +482,11 @@ const LayoutCard = memo(({ animatedStyle }) => {
                                 icon="crop-outline"
                                 title="Border radius"
                                 desc="Fixed mode corners"
+                                onPress={() => handleToggleFixedBorder(!fixedBorder)}
                             >
                                 <Switch
                                     value={!!fixedBorder}
-                                    onValueChange={(v) => {
-                                        setFixedBorder(v);
-                                        addMessage(`Fixed Rounded borders ${v ? 'enabled' : 'disabled'}.`);
-                                    }}
+                                    onValueChange={handleToggleFixedBorder}
                                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                                     thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
                                     style={{ transform: [{ scaleY: 1 }] }}
@@ -483,13 +498,11 @@ const LayoutCard = memo(({ animatedStyle }) => {
                                 title="Immerse"
                                 desc="Auto-hide fixed modes"
                                 noBorder
+                                onPress={() => handleToggleImmerse(!shouldHide)}
                             >
                                 <Switch
                                     value={!!shouldHide}
-                                    onValueChange={(v) => {
-                                        setShouldHide(v);
-                                        addMessage(`Auto hide fixed modes ${v ? 'enabled' : 'disabled'}.`);
-                                    }}
+                                    onValueChange={handleToggleImmerse}
                                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                                     thumbColor={!shouldHide ? colors.switchThumbActive : colors.switchThumb}
                                     style={{ transform: [{ scaleY: 1 }] }}
@@ -553,6 +566,10 @@ const SecurityCard = memo(({ animatedStyle }) => {
                     icon="finger-print-outline"
                     title="Fingerprint Unlock"
                     desc="Enable fingerprint authentication"
+                    onPress={() => {
+                        toggleFingerprint();
+                        addMessage(`Fingerprint unlock ${!isFingerprintEnabled ? 'enabled' : 'disabled'}.`);
+                    }}
                 >
                     <Switch
                         value={!!isFingerprintEnabled}
@@ -571,7 +588,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
                 icon={isPasswordLockEnabled ? 'lock-closed-outline' : 'lock-open-outline'}
                 title="Password Lock"
                 desc="Enable password authentication"
-                noBorder={!isPasswordLockEnabled}
+                noBorder={!isPasswordLockEnabled && !isFingerprintEnabled}
             >
                 <Switch
                     value={!!isPasswordLockEnabled}
@@ -607,22 +624,24 @@ const SecurityCard = memo(({ animatedStyle }) => {
                             setPasswordPromptVisible(true);
                         }}
                     />
-                    {shouldUseLockout() && (
-                        <SettingRow icon="timer-outline" title="Lockout" desc="Set duration for reauthentication" noBorder>
-                            <PickerSheet
-                                value={lockoutMode}
-                                options={lockoutOptions}
-                                onChange={setLockoutModeValue}
-                                title="Lockout"
-                                placeholder="Select lockout"
-                                colors={colors}
-                                variables={variables}
-                                pillsPerRow={3}
-                            />
-                        </SettingRow>
-                    )}
                 </>
             )}
+
+            {shouldUseLockout() && (
+                <SettingRow icon="timer-outline" title="Lockout" desc="Set duration for reauthentication" noBorder>
+                    <PickerSheet
+                        value={lockoutMode}
+                        options={lockoutOptions}
+                        onChange={setLockoutModeValue}
+                        title="Lockout"
+                        placeholder="Select lockout"
+                        colors={colors}
+                        variables={variables}
+                        pillsPerRow={3}
+                    />
+                </SettingRow>
+            )}
+
             <PasswordPrompt
                 visible={PasswordPromptVisible}
                 onClose={() => setPasswordPromptVisible(false)}
@@ -917,6 +936,14 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                 icon={useEncryption ? 'shield-checkmark-outline' : 'shield-outline'}
                 title="Backup Encryption"
                 desc="Encrypt backup files for security"
+                onPress={() => {
+                    setUseEncryption(!useEncryption);
+                    if (!useEncryption) {
+                        addMessage('Backup encryption enabled - backups will be encrypted', 'success');
+                    } else {
+                        addMessage('Backup encryption disabled - backups will be plain text', 'info');
+                    }
+                }}
             >
                 <Switch
                     value={!!useEncryption}
@@ -1058,7 +1085,7 @@ const AppUpdatesCard = memo(({ animatedStyle }) => {
             />
 
             <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
-                
+
         </AnimatedCard>
     );
 });

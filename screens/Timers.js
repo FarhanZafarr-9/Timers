@@ -12,6 +12,7 @@ import { sortOptions } from '../utils/functions';
 import uuid from 'react-native-uuid';
 import ConfirmSheet from '../components/ConfirmSheet'
 import Toast from 'react-native-toast-message';
+import dayjs from 'dayjs';
 
 export default function Timers({ route }) {
 
@@ -21,7 +22,7 @@ export default function Timers({ route }) {
     const { variables, colors, border, layoutMode, defaultUnit } = useTheme();
     const { timers, addTimer, editTimer, removeTimer, toggleFavourite } = useTimers();
 
-    const [sortMethod, setSortMethod] = useState('priority');
+    const [sortMethod, setSortMethod] = useState(`${isCountdown ? 'timeLeft' : 'priority'}`);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDuplicate, setIsDuplicate] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -80,25 +81,34 @@ export default function Timers({ route }) {
         switch (sortMethod) {
             case 'priority':
                 return arr.sort((a, b) => (a.priority || '').localeCompare(b.priority || ''));
+
             case 'timeLeft':
                 return arr.sort((a, b) => {
-                    const now = Date.now();
-                    const aTime = isCountdown
-                        ? new Date(a.date).getTime() - now
-                        : now - new Date(a.date).getTime();
-                    const bTime = isCountdown
-                        ? new Date(b.date).getTime() - now
-                        : now - new Date(b.date).getTime();
-                    return aTime - bTime;
+                    const aDate = a.getEffectiveDate?.() || a.date;
+                    const bDate = b.getEffectiveDate?.() || b.date;
+
+                    const aDiff = isCountdown
+                        ? dayjs(aDate).diff()
+                        : dayjs().diff(aDate);
+
+                    const bDiff = isCountdown
+                        ? dayjs(bDate).diff()
+                        : dayjs().diff(bDate);
+
+                    return aDiff - bDiff;
                 });
+
             case 'recurring':
                 return arr.filter(t => t.isRecurring);
+
             case 'nonRecurring':
                 return arr.filter(t => !t.isRecurring);
+
             default:
                 return arr;
         }
     }, [filteredTimers, sortMethod, isCountdown]);
+
 
     const handleSelect = useCallback((id) => {
         setSelectedIds(prev => {
