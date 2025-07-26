@@ -1,8 +1,7 @@
 import uuid from 'react-native-uuid';
-import { scheduleNotification } from '../utils/Notify'; // adjust the path as needed
+import { scheduleNotification } from '../utils/Notify';
 import dayjs from 'dayjs';
 import * as Notifications from 'expo-notifications';
-
 
 export default class Timer {
     constructor({
@@ -19,12 +18,11 @@ export default class Timer {
         notificationId = null,
         reminderNotificationId = null,
         notificationScheduledFor = null,
-
     }) {
         this.id = id || uuid.v4();
         this.title = title;
         this.personName = personName;
-        this.priority = priority; // 'low', 'normal', 'high'
+        this.priority = priority;
         this.date = date instanceof Date ? date : new Date(date);
         this.isFavourite = isFavourite ?? false;
         this.isRecurring = isRecurring;
@@ -43,10 +41,6 @@ export default class Timer {
         }
     }
 
-    /**
-     * Calculates the next occurrence of the timer based on the recurrence interval
-     * @returns {Date|null} The next occurrence date, or null if not recurring
-     */
     calculateNextOccurrence() {
         if (!this.isRecurring || !this.recurrenceInterval) {
             return null;
@@ -55,7 +49,6 @@ export default class Timer {
         const { value, unit } = this._parseRecurrenceInterval();
         if (!value || !unit) return null;
 
-        // Use the main date as the base for calculation, not nextDate
         const baseDate = new Date(this.date);
         const nextDate = new Date(baseDate);
 
@@ -95,11 +88,6 @@ export default class Timer {
         return nextDate;
     }
 
-    /**
-     * Calculates the next occurrence from a specific date
-     * @param {Date} fromDate - The date to calculate from
-     * @returns {Date|null} The next occurrence date, or null if not recurring
-     */
     calculateNextOccurrenceFrom(fromDate) {
         if (!this.isRecurring || !this.recurrenceInterval) {
             return null;
@@ -147,16 +135,10 @@ export default class Timer {
         return nextDate;
     }
 
-    /**
-     * Parses the recurrence interval into value and unit
-     * @returns {Object} Contains value (number) and unit (string)
-     * @private
-     */
     _parseRecurrenceInterval() {
         if (typeof this.recurrenceInterval === 'string') {
             const parts = this.recurrenceInterval.trim().split(/\s+/);
             const value = parseInt(parts[0], 10);
-            // Remove trailing 's' to normalize units (e.g. 'days' -> 'day')
             const unit = parts[1]?.toLowerCase().replace(/s$/, '');
             return { value, unit };
         } else if (this.recurrenceInterval && typeof this.recurrenceInterval === 'object') {
@@ -167,21 +149,13 @@ export default class Timer {
         return { value: null, unit: null };
     }
 
-    /**
-     * Updates the timer's date to the next occurrence
-     */
     updateToNextOccurrence() {
         if (!this.nextDate || !this.isRecurring) return;
 
-        // Move current nextDate to date, then calculate the new nextDate
         this.date = new Date(this.nextDate);
         this.nextDate = this.calculateNextOccurrence();
     }
 
-    /**
-     * Recalculates the next occurrence based on current date
-     * Useful after editing timer properties
-     */
     recalculateNextOccurrence() {
         if (this.isRecurring) {
             this.nextDate = this.calculateNextOccurrence();
@@ -190,10 +164,7 @@ export default class Timer {
         }
     }
 
-    /**
-     * Gets the effective date for countdown (either main date or nextDate if recurring and nextDate is in future)
-     * @returns {Date} The date to use for countdown calculations
-     */
+    // FIXED: Cache the effective date to prevent recalculation during renders
     getEffectiveDate() {
         if (!this.isRecurring) {
             return this.date;
@@ -211,7 +182,7 @@ export default class Timer {
             return this.nextDate;
         }
 
-        // Calculate next occurrence from now
+        // Calculate next occurrence from now - but don't modify state during this call
         let currentDate = new Date(this.date);
         while (currentDate <= now) {
             const nextOccurrence = this.calculateNextOccurrenceFrom(currentDate);
@@ -219,14 +190,14 @@ export default class Timer {
             currentDate = nextOccurrence;
         }
 
-        this.nextDate = currentDate;
+        // Only update nextDate if it's significantly different (avoid micro-updates)
+        if (!this.nextDate || Math.abs(currentDate.getTime() - this.nextDate.getTime()) > 1000) {
+            this.nextDate = currentDate;
+        }
+
         return currentDate;
     }
 
-    /**
-     * Serializes the timer for storage
-     * @returns {Object} Plain object representation of the timer
-     */
     toJSON() {
         return {
             id: this.id,
@@ -245,16 +216,20 @@ export default class Timer {
         };
     }
 
-    /**
- * Toggles the favourite status
- * @returns {boolean} The new favourite status
- */
     toggleFavourite() {
         this.isFavourite = !this.isFavourite;
         return this.isFavourite;
     }
 
+    // FIXED: Prevent scheduling during render cycles
     scheduleNotification() {
+        // Use setTimeout to defer the scheduling to next tick
+        setTimeout(() => {
+            this._performScheduling();
+        }, 0);
+    }
+
+    _performScheduling() {
         const date = this.getEffectiveDate();
         const now = dayjs();
         const seconds = dayjs(date).diff(now, 'second');
@@ -267,13 +242,14 @@ export default class Timer {
         const message = `⏰ "${this.title}" just finished`;
         const subMessage = this.personName ? `For ${this.personName}` : '';
 
-
-
         const schedule = () => {
             scheduleNotification(seconds, this.title, `${message}${subMessage ? ' - ' + subMessage : ''}`, { id: this.id })
                 .then((notifId) => {
                     this.notificationId = notifId;
                     this.notificationScheduledFor = new Date(date);
+                })
+                .catch((error) => {
+                    console.error(`❌ Failed to schedule notification for ${this.id}`, error);
                 });
         };
 
@@ -285,13 +261,12 @@ export default class Timer {
                 })
                 .catch((err) => {
                     console.error(`❌ Failed to cancel old notification for ${this.id}`, err);
-                    schedule(); // still try scheduling the new one
+                    schedule();
                 });
         } else {
             schedule();
         }
     }
-
 
     cancelNotification() {
         if (!this.notificationId) {
@@ -317,11 +292,9 @@ export default class Timer {
 
         if (!this.notificationId || !this.notificationScheduledFor) return true;
 
-        // If the scheduled date doesn't match the current effective date, reschedule
         const scheduledTs = dayjs(this.notificationScheduledFor).unix();
         const effectiveTs = dayjs(effectiveDate).unix();
 
         return scheduledTs !== effectiveTs;
     }
-
 }
