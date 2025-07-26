@@ -2,111 +2,86 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TIMERS_KEY = 'timers_data';
 
-export async function saveTimers(timers) {
+export const saveTimers = async (timers) => {
     try {
-        //console.log('Saving Timers to AsyncStorage:', timers.length);
-        const jsonValue = JSON.stringify(timers);
-        await AsyncStorage.setItem(TIMERS_KEY, jsonValue);
-        //console.log('Timers successfully saved to AsyncStorage.');
+        await AsyncStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
         return true;
     } catch (e) {
-        console.error('Error saving timers to storage:', e);
+        console.error('Failed to save timers:', e);
         throw e;
     }
-}
+};
 
-export async function loadTimers() {
+export const loadTimers = async () => {
     try {
-        const jsonValue = await AsyncStorage.getItem(TIMERS_KEY);
-        if (!jsonValue) {
-            //console.log('No timers found in AsyncStorage.');
-            return [];
-        }
-        const timers = JSON.parse(jsonValue);
-        //console.log('Loaded Timers from AsyncStorage:', timers.length);
-        return timers;
+        const raw = await AsyncStorage.getItem(TIMERS_KEY);
+        return raw ? JSON.parse(raw) : [];
     } catch (e) {
-        console.error('Error loading timers from storage:', e);
+        console.error('Failed to load timers:', e);
         return [];
     }
-}
+};
 
-export async function clearTimers() {
+export const clearTimers = async () => {
     try {
         await AsyncStorage.removeItem(TIMERS_KEY);
-        //console.log('Timers cleared from AsyncStorage.');
         return true;
     } catch (e) {
-        console.error('Error clearing timers:', e);
+        console.error('Failed to clear timers:', e);
         throw e;
     }
-}
+};
 
-// Helper function to add a single timer (optional - you can use TimerManager instead)
-export async function addTimer(newTimer) {
+export const addTimer = async (newTimer) => {
     try {
         const timers = await loadTimers();
         timers.push(newTimer);
-        await saveTimers(timers);
-        //console.log('Timer added:', newTimer.id);
-        return true;
+        return await saveTimers(timers);
     } catch (e) {
-        console.error('Error adding timer:', e);
+        console.error('Failed to add timer:', e);
         throw e;
     }
-}
+};
 
-// Helper function to edit a timer (optional - you can use TimerManager instead)
-export async function editTimer(id, updatedFields) {
+export const editTimer = async (id, updates) => {
     try {
         const timers = await loadTimers();
-        const timerIndex = timers.findIndex(timer => timer.id === id);
+        const index = timers.findIndex(T => T.id === id);
+        if (index === -1) throw new Error(`Timer with ID ${id} not found`);
 
-        if (timerIndex === -1) {
+        timers[index] = { ...timers[index], ...updates };
+        return await saveTimers(timers);
+    } catch (e) {
+        console.error('Failed to edit timer:', e);
+        throw e;
+    }
+};
+
+export const deleteTimer = async (id) => {
+    try {
+        const timers = await loadTimers();
+        const updated = timers.filter(T => T.id !== id);
+        if (updated.length === timers.length)
             throw new Error(`Timer with ID ${id} not found`);
-        }
 
-        timers[timerIndex] = { ...timers[timerIndex], ...updatedFields };
-        await saveTimers(timers);
-        //console.log(`Timer with ID ${id} updated:`, updatedFields);
-        return true;
+        return await saveTimers(updated);
     } catch (e) {
-        console.error('Error editing timer:', e);
+        console.error('Failed to delete timer:', e);
         throw e;
     }
-}
+};
 
-// Helper function to delete a timer (optional - you can use TimerManager instead)
-export async function deleteTimer(id) {
+export const getStorageStats = async () => {
     try {
         const timers = await loadTimers();
-        const updatedTimers = timers.filter(timer => timer.id !== id);
-
-        if (updatedTimers.length === timers.length) {
-            throw new Error(`Timer with ID ${id} not found`);
-        }
-
-        await saveTimers(updatedTimers);
-        //console.log(`Timer with ID ${id} deleted.`);
-        return true;
-    } catch (e) {
-        console.error('Error deleting timer:', e);
-        throw e;
-    }
-}
-
-// Get storage stats (useful for debugging)
-export async function getStorageStats() {
-    try {
-        const timers = await loadTimers();
-        const jsonValue = JSON.stringify(timers);
+        const size = JSON.stringify(timers).length;
         return {
             timerCount: timers.length,
-            storageSize: jsonValue.length,
+            storageSize: size,
             lastModified: new Date().toISOString()
         };
     } catch (e) {
-        console.error('Error getting storage stats:', e);
+        console.error('Failed to get stats:', e);
         return {
             timerCount: 0,
             storageSize: 0,
@@ -114,4 +89,4 @@ export async function getStorageStats() {
             error: e.message
         };
     }
-}
+};
