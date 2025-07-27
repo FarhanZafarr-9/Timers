@@ -214,35 +214,49 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const [showExtra, setShowExtra] = useState(
-        progressMode !== 'linear' ||
-        backgroundPattern !== 'none' ||
-        borderMode !== 'subtle' ||
-        (!['default', ...accentOptions.slice(0, 5).map(o => o.value), accentOptions[accentOptions.length - 1].value].includes(accentMode))
-    );
-    
+    const getVisibleAccents = (extra = false) => {
+        return extra
+            ? accentOptions
+            : [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]];
+    };
+
+    const [showExtra, setShowExtra] = useState(() => {
+        const visible = getVisibleAccents(false).map(o => o.value);
+        return (
+            progressMode !== 'linear' ||
+            backgroundPattern !== 'none' ||
+            borderMode !== 'subtle' ||
+            !['default', ...visible].includes(accentMode)
+        );
+    });
+
+    const visibleAccents = useMemo(() => getVisibleAccents(showExtra), [showExtra]);
+
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
     );
 
-    const handleToggleExtra = (v) => {
-        setShowExtra(v);
-        addMessage(`Extra appearance options ${v ? 'enabled' : 'disabled'}.`);
+    const handleToggleExtra = useCallback(() => {
+        const V = !showExtra;
 
-        if (!v) {
-            setBorderMode('subtle');
+        if (!V) {
             setProgressMode('linear');
             setBackgroundPattern('none');
+            setBorderMode('subtle');
 
-            const visibleAccents = [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]];
-            if (!visibleAccents.find(opt => opt.value === accentMode)) {
+            const visibleValues = ['default', ...accentOptions.slice(0, 5).map(o => o.value), accentOptions[accentOptions.length - 1].value];
+            if (!visibleValues.includes(accentMode)) {
                 setAccentMode('blue');
-                addMessage("Accent reset to blue for compatibility.");
             }
-        }
-    };
 
+            setTimeout(() => {
+                setShowExtra(false);
+            }, 150);
+        } else {
+            setShowExtra(true);
+        }
+    }, [showExtra, accentMode]);
 
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
@@ -269,11 +283,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
             >
                 <PickerSheet
                     value={accentMode}
-                    options={
-                        showExtra
-                            ? accentOptions
-                            : [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]]
-                    }
+                    options={visibleAccents}
                     onChange={setAccentMode}
                     title="Accent"
                     placeholder="Select accent"
@@ -297,7 +307,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                     onValueChange={handleToggleExtra}
                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                     thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
-                    style={{ transform: [{ scaleY: 1 }] }}
+
                 />
             </SettingRow>
 
@@ -453,7 +463,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
                     onValueChange={handleToggleExtra}
                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                     thumbColor={!showExtra ? colors.switchThumbActive : colors.switchThumb}
-                    style={{ transform: [{ scaleY: 1 }] }}
+
                 />
             </SettingRow>
 
@@ -474,7 +484,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
                     </SettingRow>
 
                     {layoutMode === 'grid' && (
-                        <SettingRow icon="speedometer-outline" title="Default Unit" desc="Card unit setting">
+                        <SettingRow icon="speedometer-outline" title="Default Unit" desc="Card unit setting" noBorder={(navigationMode !== 'fixed' && headerMode !== 'fixed')}>
                             <PickerSheet
                                 value={defaultUnit}
                                 options={unitOptions}
@@ -502,7 +512,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
                                     onValueChange={handleToggleFixedBorder}
                                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                                     thumbColor={!fixedBorder ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scaleY: 1 }] }}
+
                                 />
                             </SettingRow>
 
@@ -518,7 +528,7 @@ const LayoutCard = memo(({ animatedStyle }) => {
                                     onValueChange={handleToggleImmerse}
                                     trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                                     thumbColor={!shouldHide ? colors.switchThumbActive : colors.switchThumb}
-                                    style={{ transform: [{ scaleY: 1 }] }}
+
                                 />
                             </SettingRow>
                         </>
@@ -592,7 +602,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
                         }}
                         trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                         thumbColor={!isFingerprintEnabled ? colors.switchThumbActive : colors.switchThumb}
-                        style={{ transform: [{ scaleY: 1 }] }}
+
                     />
                 </SettingRow>
             )}

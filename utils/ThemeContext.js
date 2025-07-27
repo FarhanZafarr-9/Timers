@@ -615,7 +615,7 @@ const getSystemTheme = () => {
         return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
     } catch (error) {
         console.warn('Failed to get system color scheme:', error);
-        return 'light';
+        return 'dark';
     }
 };
 
@@ -733,7 +733,7 @@ export const ThemeProvider = ({ children }) => {
 
                 // Set initial theme
                 const initialTheme = storedValues[0] === 'system' ? getSystemTheme() : storedValues[0];
-                setTheme(normalizeValue(initialTheme, ['light', 'dark'], 'light'));
+                setTheme(normalizeValue(initialTheme, ['light', 'dark'], 'dark'));
 
                 setIsLoading(false);
             } catch (e) {
