@@ -70,12 +70,6 @@ const useFormatDirectoryPath = () =>
         }
     }, []);
 
-const PathDisplay = memo(({ path, style }) => {
-    const format = useFormatDirectoryPath();
-    if (!path) return null;
-    return <Text style={style}>{format(path)}</Text>;
-});
-
 /* ------------------------------------------------------------------ */
 /*  Section header                                                    */
 /* ------------------------------------------------------------------ */
@@ -220,7 +214,13 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const [showExtra, setShowExtra] = useState(progressMode !== 'linear' || backgroundPattern !== 'none' || borderMode !== 'subtle' ? true : false);
+    const [showExtra, setShowExtra] = useState(
+        progressMode !== 'linear' ||
+        backgroundPattern !== 'none' ||
+        borderMode !== 'subtle' ||
+        (!['default', ...accentOptions.slice(0, 5).map(o => o.value), accentOptions[accentOptions.length - 1].value].includes(accentMode))
+    );
+    
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -229,12 +229,20 @@ const AppearanceCard = memo(({ animatedStyle }) => {
     const handleToggleExtra = (v) => {
         setShowExtra(v);
         addMessage(`Extra appearance options ${v ? 'enabled' : 'disabled'}.`);
+
         if (!v) {
             setBorderMode('subtle');
             setProgressMode('linear');
             setBackgroundPattern('none');
+
+            const visibleAccents = [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]];
+            if (!visibleAccents.find(opt => opt.value === accentMode)) {
+                setAccentMode('blue');
+                addMessage("Accent reset to blue for compatibility.");
+            }
         }
     };
+
 
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
@@ -261,7 +269,11 @@ const AppearanceCard = memo(({ animatedStyle }) => {
             >
                 <PickerSheet
                     value={accentMode}
-                    options={accentOptions}
+                    options={
+                        showExtra
+                            ? accentOptions
+                            : [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]]
+                    }
                     onChange={setAccentMode}
                     title="Accent"
                     placeholder="Select accent"
@@ -270,6 +282,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                     defaultValue="default"
                     pillsPerRow={3}
                 />
+
             </SettingRow>
 
             <SettingRow

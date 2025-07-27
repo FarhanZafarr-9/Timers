@@ -29,7 +29,7 @@ const ConfirmSheet = ({
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
     const [isReallyVisible, setIsReallyVisible] = useState(false);
-    const { isBorder, headerMode, border } = useTheme();
+    const {  headerMode, border } = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -220,6 +220,15 @@ const ConfirmSheet = ({
                         <Text style={styles.message}>{message}</Text>
 
                         <View style={styles.buttonContainer}>
+                            
+                            <TouchableOpacity
+                                style={[styles.button, styles.cancelButton]}
+                                onPress={handleCancel}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                            </TouchableOpacity>
+
                             <TouchableOpacity
                                 style={[styles.button, styles.confirmButton]}
                                 onPress={handleConfirm}
@@ -228,13 +237,6 @@ const ConfirmSheet = ({
                                 <Text style={styles.confirmButtonText}>{confirmText}</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.button, styles.cancelButton]}
-                                onPress={handleCancel}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.cancelButtonText}>{cancelText}</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
                 </Animated.View>

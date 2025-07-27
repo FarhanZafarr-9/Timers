@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Animated, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, TouchableOpacity } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
 import { Icons } from '../assets/icons';
 import HeaderScreen from '../components/HeaderScreen';
@@ -33,13 +33,14 @@ export default function About() {
                 Animated.timing(descOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
             Animated.parallel([
-                Animated.spring(creditsCardAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
-                Animated.timing(creditsOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-            ]),
-            Animated.parallel([
                 Animated.spring(buttonsAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
                 Animated.timing(buttonsOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
             ]),
+            Animated.parallel([
+                Animated.spring(creditsCardAnim, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }),
+                Animated.timing(creditsOpacityAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+            ]),
+
         ]).start();
     }, []);
 
@@ -47,13 +48,9 @@ export default function About() {
         Toast.show({
             type: 'info',
             text1: 'ChronoX',
-            text2: 'This stable version is optimized and mostly debugged.',
+            text2: 'This version is optimized and mostly debugged.',
         });
     }
-
-    const handleOpenLink = (url) => {
-        Linking.openURL(url).catch(err => console.error("Failed to open URL:", err));
-    };
 
     const styles = StyleSheet.create({
         content: { gap: 16 },
@@ -134,6 +131,7 @@ export default function About() {
                 <AboutModal onClose={() => setShowAboutMe(false)} />
             )}
             <View style={styles.content}>
+                
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
                     <Image source={require('../assets/icon.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
@@ -164,12 +162,10 @@ export default function About() {
 
                 </Animated.View>
 
-                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical: 12 }]}>
-                    <Text style={styles.credits}>Made with ❤️ by Parzival</Text>
+                <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical: 12, width: '100%' }]}>
+                    <Text style={[styles.credits]}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
-
-
-
+               
             </View>
         </HeaderScreen>
     );

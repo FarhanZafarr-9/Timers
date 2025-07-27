@@ -18,7 +18,7 @@ const STORAGE_KEYS = {
 
 const VALID_VALUES = {
     THEMES: ['light', 'dark', 'system'],
-    ACCENTS: ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate'],
+    ACCENTS: ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate', 'subtle'],
     UNITS: ['seconds', 'minutes', 'hours', 'days', 'months', 'years', 'auto'],
     BACKGROUND_PATTERNS: ['none', 'grid', 'polka', 'waves', 'noise', 'diagonal', 'cross'],
     NAVIGATION_MODES: ['floating', 'fixed', 'side'],
@@ -556,6 +556,48 @@ const ACCENT_THEMES = {
             accentBg: 'rgba(100, 116, 139, 0.12)',
             accentBorder: '#475569',
             addButtonBg: 'rgba(100, 116, 139, 0.08)'
+        }
+    },
+    subtle: {
+        light: {
+            backgrounds: {
+                primary: '#f8f8f8',
+                card: '#fcfcfc',
+                cardLighter: '#fefefe',
+                setting: '#f5f5f5',
+                modal: '#fcfcfc',
+                snackbar: '#fcfcfc'
+            },
+            borders: {
+                primary: '#ececec',
+                divider: '#f2f2f2',
+                card: '#eaeaea'
+            },
+            accent: '#4a4a4a',
+            accentText: '#3a3a3a',
+            accentBg: 'rgba(74, 74, 74, 0.05)',
+            accentBorder: '#5a5a5a',
+            addButtonBg: 'rgba(74, 74, 74, 0.03)'
+        },
+        dark: {
+            backgrounds: {
+                primary: '#0f0f0f',
+                card: '#141414',
+                cardLighter: '#181818',
+                setting: '#131313',
+                modal: '#141414',
+                snackbar: '#141414'
+            },
+            borders: {
+                primary: '#1a1a1a88',
+                divider: '#1c1c1c',
+                card: '#1c1c1c88'
+            },
+            accent: '#e5e5e5',
+            accentText: '#f0f0f0',
+            accentBg: 'rgba(229, 229, 229, 0.1)',
+            accentBorder: '#c8c8c8',
+            addButtonBg: 'rgba(229, 229, 229, 0.06)'
         }
     }
 };
