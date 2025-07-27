@@ -30,7 +30,7 @@ import { NavBarProvider } from './utils/NavContext';
 import { useCheckForUpdate } from './utils/useCheckForUpdate';
 
 // Utils & Helpers
-import { initializeNotifications } from './utils/Notify';
+import { requestNotificationPermissions } from './utils/Notify';
 import { checkForUpdateAndReload, toastConfig } from './utils/functions';
 
 export function useForceUpdateOnLoad() {
@@ -55,7 +55,7 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    initializeNotifications();
+    requestNotificationPermissions();
   }, []);
 
   if (showSplash || loading) {

@@ -31,7 +31,7 @@ const PickerSheet = ({
     defaultValue = null,
     note
 }) => {
-    useRenderLogger(`PickerSheet, ${title}`);
+    //useRenderLogger(`PickerSheet, ${title}`);
     const [visible, setVisible] = useState(false);
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));

@@ -32,6 +32,10 @@ export default class Timer {
         this.reminderNotificationId = reminderNotificationId;
         this.notificationScheduledFor = notificationScheduledFor ? new Date(notificationScheduledFor) : null;
 
+        // Cache the effective date to prevent recalculation
+        this._cachedEffectiveDate = null;
+        this._lastCalculated = null;
+
         // Set nextDate if provided, otherwise calculate it
         this.nextDate = nextDate ? (nextDate instanceof Date ? nextDate : new Date(nextDate)) : null;
 
@@ -154,6 +158,8 @@ export default class Timer {
 
         this.date = new Date(this.nextDate);
         this.nextDate = this.calculateNextOccurrence();
+        // Clear cache when dates change
+        this._invalidateCache();
     }
 
     recalculateNextOccurrence() {
@@ -162,40 +168,61 @@ export default class Timer {
         } else {
             this.nextDate = null;
         }
+        this._invalidateCache();
     }
 
-    // FIXED: Cache the effective date to prevent recalculation during renders
+    _invalidateCache() {
+        this._cachedEffectiveDate = null;
+        this._lastCalculated = null;
+    }
+
+    // FIXED: Cache the effective date with proper invalidation
     getEffectiveDate() {
+        const now = Date.now();
+
+        // Return cached result if it's still valid (within 1 minute)
+        if (this._cachedEffectiveDate && this._lastCalculated &&
+            (now - this._lastCalculated) < 60000) {
+            return this._cachedEffectiveDate;
+        }
+
+        let effectiveDate;
+
         if (!this.isRecurring) {
-            return this.date;
+            effectiveDate = this.date;
+        } else {
+            const nowDate = new Date();
+
+            // If main date is in the future, use it
+            if (this.date > nowDate) {
+                effectiveDate = this.date;
+            }
+            // If we have a nextDate and it's in the future, use it
+            else if (this.nextDate && this.nextDate > nowDate) {
+                effectiveDate = this.nextDate;
+            }
+            // Calculate next occurrence from now
+            else {
+                let currentDate = new Date(this.date);
+                while (currentDate <= nowDate) {
+                    const nextOccurrence = this.calculateNextOccurrenceFrom(currentDate);
+                    if (!nextOccurrence) break;
+                    currentDate = nextOccurrence;
+                }
+                effectiveDate = currentDate;
+
+                // Update nextDate if significantly different
+                if (!this.nextDate || Math.abs(currentDate.getTime() - this.nextDate.getTime()) > 1000) {
+                    this.nextDate = currentDate;
+                }
+            }
         }
 
-        const now = new Date();
+        // Cache the result
+        this._cachedEffectiveDate = effectiveDate;
+        this._lastCalculated = now;
 
-        // If main date is in the future, use it
-        if (this.date > now) {
-            return this.date;
-        }
-
-        // If we have a nextDate and it's in the future, use it
-        if (this.nextDate && this.nextDate > now) {
-            return this.nextDate;
-        }
-
-        // Calculate next occurrence from now - but don't modify state during this call
-        let currentDate = new Date(this.date);
-        while (currentDate <= now) {
-            const nextOccurrence = this.calculateNextOccurrenceFrom(currentDate);
-            if (!nextOccurrence) break;
-            currentDate = nextOccurrence;
-        }
-
-        // Only update nextDate if it's significantly different (avoid micro-updates)
-        if (!this.nextDate || Math.abs(currentDate.getTime() - this.nextDate.getTime()) > 1000) {
-            this.nextDate = currentDate;
-        }
-
-        return currentDate;
+        return effectiveDate;
     }
 
     toJSON() {
@@ -221,80 +248,133 @@ export default class Timer {
         return this.isFavourite;
     }
 
-    // FIXED: Prevent scheduling during render cycles
-    scheduleNotification() {
-        // Use setTimeout to defer the scheduling to next tick
-        setTimeout(() => {
-            this._performScheduling();
-        }, 0);
-    }
+    // FIXED: Synchronous scheduling with proper checks
+    async scheduleNotification() {
+        if (!this.isCountdown) {
+            console.log(`⏭️ Skipping notification for non-countdown timer: ${this.id}`);
+            return;
+        }
 
-    _performScheduling() {
         const date = this.getEffectiveDate();
         const now = dayjs();
-        const seconds = dayjs(date).diff(now, 'second');
+        const targetTime = dayjs(date);
+        const seconds = targetTime.diff(now, 'second');
 
         if (seconds <= 0) {
             console.warn(`⚠️ Skipping notification for ${this.id}: time already passed`);
             return;
         }
 
-        const message = `⏰ "${this.title}" just finished`;
-        const subMessage = this.personName ? `For ${this.personName}` : '';
-
-        const schedule = () => {
-            scheduleNotification(seconds, this.title, `${message}${subMessage ? ' - ' + subMessage : ''}`, { id: this.id })
-                .then((notifId) => {
-                    this.notificationId = notifId;
-                    this.notificationScheduledFor = new Date(date);
-                })
-                .catch((error) => {
-                    console.error(`❌ Failed to schedule notification for ${this.id}`, error);
-                });
-        };
-
-        if (this.notificationId) {
-            Notifications.cancelScheduledNotificationAsync(this.notificationId)
-                .then(() => {
-                    console.log(`🔁 Replacing old notification for ${this.id}`);
-                    schedule();
-                })
-                .catch((err) => {
-                    console.error(`❌ Failed to cancel old notification for ${this.id}`, err);
-                    schedule();
-                });
-        } else {
-            schedule();
-        }
-    }
-
-    cancelNotification() {
-        if (!this.notificationId) {
-            console.warn(`⚠️ No notification ID to cancel for ${this.id}`);
+        // Check if we need to reschedule
+        if (!this.shouldRescheduleNotification()) {
+            console.log(`✅ Notification already scheduled correctly for ${this.id}`);
             return;
         }
 
-        Notifications.cancelScheduledNotificationAsync(this.notificationId)
-            .then(() => {
-                console.log(`❌ Cancelled notification for ${this.id}`);
-            })
-            .catch((err) => {
-                console.error(`❌ Failed to cancel notification for ${this.id}`, err);
-            })
-            .finally(() => {
-                this.notificationId = null;
-                this.notificationScheduledFor = null;
-            });
+        try {
+            // Cancel existing notifications
+            await this.cancelNotification();
+
+            const message = `⏰ "${this.title}" just finished`;
+            const subMessage = this.personName ? `For ${this.personName}` : '';
+            const fullMessage = `${message}${subMessage ? ' - ' + subMessage : ''}`;
+
+            // Schedule main notification
+            const notifId = await scheduleNotification(
+                seconds,
+                this.title,
+                fullMessage,
+                {
+                    id: this.id,
+                    timerId: this.id,
+                    type: 'timer_complete'
+                }
+            );
+
+            this.notificationId = notifId;
+            this.notificationScheduledFor = new Date(date);
+
+            // Schedule reminder notification (5 minutes before, if more than 10 minutes away)
+            if (seconds > 600) { // More than 10 minutes
+                const reminderSeconds = seconds - 300; // 5 minutes before
+                const reminderMessage = `🔔 Reminder: "${this.title}" in 5 minutes`;
+
+                const reminderNotifId = await scheduleNotification(
+                    reminderSeconds,
+                    `Reminder: ${this.title}`,
+                    `${reminderMessage}${subMessage ? ' - ' + subMessage : ''}`,
+                    {
+                        id: `${this.id}_reminder`,
+                        timerId: this.id,
+                        type: 'timer_reminder'
+                    }
+                );
+
+                this.reminderNotificationId = reminderNotifId;
+            }
+
+            console.log(`✅ Scheduled notifications for ${this.id} at ${targetTime.format('HH:mm:ss')}`);
+
+        } catch (error) {
+            console.error(`❌ Failed to schedule notification for ${this.id}`, error);
+            throw error;
+        }
+    }
+
+    async cancelNotification() {
+        const promises = [];
+
+        if (this.notificationId) {
+            promises.push(
+                Notifications.cancelScheduledNotificationAsync(this.notificationId)
+                    .then(() => console.log(`❌ Cancelled main notification for ${this.id}`))
+                    .catch((err) => console.error(`❌ Failed to cancel main notification for ${this.id}`, err))
+            );
+        }
+
+        if (this.reminderNotificationId) {
+            promises.push(
+                Notifications.cancelScheduledNotificationAsync(this.reminderNotificationId)
+                    .then(() => console.log(`❌ Cancelled reminder notification for ${this.id}`))
+                    .catch((err) => console.error(`❌ Failed to cancel reminder notification for ${this.id}`, err))
+            );
+        }
+
+        if (promises.length > 0) {
+            await Promise.allSettled(promises);
+        }
+
+        this.notificationId = null;
+        this.reminderNotificationId = null;
+        this.notificationScheduledFor = null;
     }
 
     shouldRescheduleNotification() {
+        if (!this.notificationId || !this.notificationScheduledFor) {
+            return true;
+        }
+
         const effectiveDate = this.getEffectiveDate();
+        const scheduledTime = dayjs(this.notificationScheduledFor);
+        const effectiveTime = dayjs(effectiveDate);
 
-        if (!this.notificationId || !this.notificationScheduledFor) return true;
+        // Allow 5 second tolerance to prevent micro-rescheduling
+        const timeDiff = Math.abs(effectiveTime.diff(scheduledTime, 'second'));
 
-        const scheduledTs = dayjs(this.notificationScheduledFor).unix();
-        const effectiveTs = dayjs(effectiveDate).unix();
+        return timeDiff > 5;
+    }
 
-        return scheduledTs !== effectiveTs;
+    // Helper method to check if timer is active (not expired)
+    isActive() {
+        const effectiveDate = this.getEffectiveDate();
+        return dayjs(effectiveDate).isAfter(dayjs());
+    }
+
+    // Helper method to get time remaining
+    getTimeRemaining() {
+        if (!this.isActive()) return 0;
+
+        const effectiveDate = this.getEffectiveDate();
+        return dayjs(effectiveDate).diff(dayjs(), 'second');
     }
 }

@@ -79,7 +79,9 @@ export const accentOptions = [
     { label: 'Lime', value: 'lime', icon: <Icons.Ion name="sparkles-outline" size={16} color="#84cc16" />, description: 'Zesty lime pops, energetic highlights' },
     { label: 'Fuchsia', value: 'fuchsia', icon: <Icons.Ion name="sparkles-outline" size={16} color="#d946ef" />, description: 'Neon fuchsia pops, modern & playful' },
     { label: 'Slate', value: 'slate', icon: <Icons.Ion name="grid-outline" size={16} color="#64748b" />, description: 'Subtle slate blues, modern & muted' },
+    { label: 'Subtle', value: 'subtle', icon: <Icons.Ion name="ellipse-outline" size={16} color="#9ca3af" />, description: 'Neutral tones for a soft, balanced look' },
 ];
+
 
 export const privacyOptions = [
     { label: 'Off', value: 'off', icon: <Icons.Ion name="eye-outline" size={16} />, description: 'Everything visible, no masking' },

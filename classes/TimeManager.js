@@ -5,6 +5,7 @@ export class TimerManager {
     constructor() {
         this.timers = [];
         this._isInitialized = false;
+        this._schedulingQueue = new Set(); // Track timers being scheduled
     }
 
     async loadFromStorage() {
@@ -13,17 +14,13 @@ export class TimerManager {
 
         this.timers = saved.map(d => {
             const T = new Timer(d);
-            // Calculate nextDate before scheduling to avoid render cycle updates
+            // Calculate nextDate immediately to prevent render-time calculations
             T.nextDate = T.getEffectiveDate();
             return T;
         });
 
-        // Schedule notifications after all timers are created and state is stable
-        setTimeout(() => {
-            this.timers.forEach(timer => {
-                timer.scheduleNotification();
-            });
-        }, 100);
+        // Schedule notifications in batch after loading
+        await this._batchScheduleNotifications();
 
         this._isInitialized = true;
         return this.timers;
@@ -43,16 +40,42 @@ export class TimerManager {
             return T;
         });
 
-        // Defer notification scheduling to prevent render cycle updates
-        setTimeout(() => {
-            this.timers.forEach(timer => {
-                timer.scheduleNotification();
-            });
-        }, 100);
-
+        // Schedule notifications after initialization
+        await this._batchScheduleNotifications();
         await this.saveTimers();
+
         this._isInitialized = true;
         return this.timers;
+    }
+
+    // IMPROVED: Batch notification scheduling to prevent conflicts
+    async _batchScheduleNotifications() {
+        const activeTimers = this.timers.filter(timer =>
+            timer.isCountdown && timer.isActive()
+        );
+
+        console.log(`📅 Scheduling notifications for ${activeTimers.length} active timers`);
+
+        // Schedule in parallel but track progress
+        const schedulePromises = activeTimers.map(async (timer) => {
+            if (this._schedulingQueue.has(timer.id)) {
+                console.log(`⏳ Skipping ${timer.id} - already scheduling`);
+                return;
+            }
+
+            this._schedulingQueue.add(timer.id);
+
+            try {
+                await timer.scheduleNotification();
+            } catch (error) {
+                console.error(`❌ Failed to schedule for ${timer.id}:`, error);
+            } finally {
+                this._schedulingQueue.delete(timer.id);
+            }
+        });
+
+        await Promise.allSettled(schedulePromises);
+        console.log(`✅ Completed batch scheduling`);
     }
 
     async saveTimers() {
@@ -73,10 +96,10 @@ export class TimerManager {
 
             this.timers.push(T);
 
-            // Schedule notification after timer is added to prevent state conflicts
-            setTimeout(() => {
-                T.scheduleNotification();
-            }, 50);
+            // Schedule notification immediately if it's a countdown timer
+            if (T.isCountdown && T.isActive()) {
+                await T.scheduleNotification();
+            }
 
             await this.saveTimers();
             console.log(`✅ Added timer: ${T.title} (${T.id})`);
@@ -95,8 +118,8 @@ export class TimerManager {
                 return null;
             }
 
-            // Cancel old notification
-            this.timers[I].cancelNotification();
+            // Cancel old notifications first
+            await this.timers[I].cancelNotification();
 
             // Create updated timer
             const T = new Timer({ ...this.timers[I], ...D });
@@ -104,10 +127,10 @@ export class TimerManager {
 
             this.timers[I] = T;
 
-            // Schedule new notification after update
-            setTimeout(() => {
-                T.scheduleNotification();
-            }, 50);
+            // Schedule new notification if needed
+            if (T.isCountdown && T.isActive()) {
+                await T.scheduleNotification();
+            }
 
             await this.saveTimers();
             console.log(`✏️ Updated timer: ${T.title} (${T.id})`);
@@ -126,8 +149,8 @@ export class TimerManager {
                 return false;
             }
 
-            // Cancel notification before removing
-            this.timers[I].cancelNotification();
+            // Cancel notifications before removing
+            await this.timers[I].cancelNotification();
             const removedTimer = this.timers.splice(I, 1)[0];
 
             await this.saveTimers();
@@ -149,10 +172,12 @@ export class TimerManager {
 
     async clearAllTimers() {
         try {
-            // Cancel all notifications
-            this.timers.forEach(t => t.cancelNotification());
+            // Cancel all notifications in parallel
+            const cancelPromises = this.timers.map(t => t.cancelNotification());
+            await Promise.allSettled(cancelPromises);
 
             this.timers = [];
+            this._schedulingQueue.clear();
             await this.saveTimers();
             console.log('🧹 Cleared all timers');
         } catch (error) {
@@ -169,13 +194,13 @@ export class TimerManager {
                 return false;
             }
 
-            T.cancelNotification();
-            T.nextDate = T.getEffectiveDate();
+            await T.cancelNotification();
+            T.updateToNextOccurrence(); // This will also invalidate cache
 
-            // Schedule notification after advancing
-            setTimeout(() => {
-                T.scheduleNotification();
-            }, 50);
+            // Schedule new notification
+            if (T.isCountdown && T.isActive()) {
+                await T.scheduleNotification();
+            }
 
             await this.saveTimers();
             console.log(`⏭️ Advanced recurring timer: ${T.title} (${ID})`);
@@ -186,23 +211,39 @@ export class TimerManager {
         }
     }
 
-    // Helper method to refresh all timer effective dates
+    // IMPROVED: More efficient refresh with change detection
     async refreshTimers() {
         try {
             let hasChanges = false;
+            const refreshPromises = [];
 
             this.timers.forEach(timer => {
-                const oldNextDate = timer.nextDate;
-                timer.nextDate = timer.getEffectiveDate();
+                const oldNextDate = timer.nextDate?.getTime();
 
-                if (oldNextDate?.getTime() !== timer.nextDate?.getTime()) {
+                // Invalidate cache and recalculate
+                timer._invalidateCache();
+                const newEffectiveDate = timer.getEffectiveDate();
+
+                if (timer.isRecurring) {
+                    timer.nextDate = newEffectiveDate;
+                }
+
+                const newNextDate = timer.nextDate?.getTime();
+
+                if (oldNextDate !== newNextDate) {
                     hasChanges = true;
-                    // Reschedule notification if date changed
-                    setTimeout(() => {
-                        timer.scheduleNotification();
-                    }, 50);
+
+                    // Reschedule if needed
+                    if (timer.isCountdown && timer.isActive()) {
+                        refreshPromises.push(timer.scheduleNotification());
+                    }
                 }
             });
+
+            // Wait for all rescheduling to complete
+            if (refreshPromises.length > 0) {
+                await Promise.allSettled(refreshPromises);
+            }
 
             if (hasChanges) {
                 await this.saveTimers();
@@ -211,5 +252,60 @@ export class TimerManager {
         } catch (error) {
             console.error('❌ Failed to refresh timers:', error);
         }
+    }
+
+    // NEW: Method to handle expired timers
+    async handleExpiredTimers() {
+        try {
+            const expiredRecurringTimers = this.timers.filter(timer =>
+                timer.isRecurring && !timer.isActive()
+            );
+
+            for (const timer of expiredRecurringTimers) {
+                await this.advanceRecurringTimer(timer.id);
+            }
+
+            if (expiredRecurringTimers.length > 0) {
+                console.log(`🔄 Advanced ${expiredRecurringTimers.length} expired recurring timers`);
+            }
+        } catch (error) {
+            console.error('❌ Failed to handle expired timers:', error);
+        }
+    }
+
+    // NEW: Method to toggle favourite status
+    async toggleFavourite(ID) {
+        try {
+            const timer = this.getTimer(ID);
+            if (!timer) {
+                console.warn(`⚠️ Timer with ID ${ID} not found`);
+                return false;
+            }
+
+            timer.toggleFavourite();
+            await this.saveTimers();
+            console.log(`⭐ Toggled favourite for: ${timer.title} (${ID})`);
+            return timer.isFavourite;
+        } catch (error) {
+            console.error('❌ Failed to toggle favourite:', error);
+            throw error;
+        }
+    }
+
+    // NEW: Get timers that need attention (expired, soon to expire)
+    getTimersNeedingAttention() {
+        const now = new Date();
+        const in5Minutes = new Date(now.getTime() + 5 * 60 * 1000);
+
+        return {
+            expired: this.timers.filter(t => !t.isActive() && !t.isRecurring),
+            expiringSoon: this.timers.filter(t => {
+                const effectiveDate = t.getEffectiveDate();
+                return effectiveDate > now && effectiveDate <= in5Minutes;
+            }),
+            recurringToAdvance: this.timers.filter(t =>
+                t.isRecurring && !t.isActive()
+            )
+        };
     }
 }
