@@ -313,7 +313,7 @@ const QRShareSheet = ({
                                 onValueChange={handleLinkModeToggle}
                                 trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
                                 thumbColor={useLinkMode ? colors.switchThumbActive : colors.switchThumb}
-                                style={{ transform: [{ scaleY: 1 }] }}
+
                             />
                         </View>
 
