@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import TimerCard from '../components/TimerCard';
 import AddTimer from '../components/AddTimer';
 import HeaderActions from '../components/HeaderActions';
+import ActionBottomNav from '../components/ActionBottomNav';
 import { useTimers } from '../utils/TimerContext';
 import { Icons } from '../assets/icons';
 import { useTheme } from '../utils/ThemeContext';
@@ -12,6 +13,7 @@ import { sortOptions } from '../utils/functions';
 import uuid from 'react-native-uuid';
 import ConfirmSheet from '../components/ConfirmSheet'
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
 import dayjs from 'dayjs';
 
 export default function Timers({ route }) {
@@ -32,6 +34,8 @@ export default function Timers({ route }) {
     const [confirmAction, setConfirmAction] = useState(() => () => { });
     const [timerToDelete, setTimerToDelete] = useState(null);
     const [confirmVisible, setConfirmVisible] = useState(false);
+    // Add state for ActionBottomNav visibility
+    const [showActionNav, setShowActionNav] = useState(false);
 
     const showToast = (type, text1, text2 = '') => {
         Toast.show({
@@ -40,6 +44,14 @@ export default function Timers({ route }) {
             text2,
         });
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                setShowActionNav(false);
+            };
+        }, [])
+    );
 
     const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
@@ -109,7 +121,6 @@ export default function Timers({ route }) {
         }
     }, [filteredTimers, sortMethod, isCountdown]);
 
-
     const handleSelect = useCallback((id) => {
         setSelectedIds(prev => {
             const newSet = new Set(prev);
@@ -143,7 +154,7 @@ export default function Timers({ route }) {
         } catch (error) {
             addMessage('Error saving timer', 'error');
         }
-    }, [editingTimer, editTimer, addTimer, addMessage]);
+    }, [editingTimer, editTimer, addTimer, addMessage, isDuplicate]);
 
     const handleEditTimer = useCallback((timer) => {
         setEditingTimer(timer);
@@ -200,7 +211,7 @@ export default function Timers({ route }) {
                 selected={isSelected}
                 isCountdown={isCountdown}
                 searchText={searchQuery}
-                buttons='on'
+                buttons={isSelectable ? 'off' : 'on'} // Hide buttons when in selection mode
                 layoutMode={layoutMode}
                 defaultUnit={defaultUnit}
             />
@@ -234,6 +245,7 @@ export default function Timers({ route }) {
 
         if (!isSelectable) {
             setIsSelectable(true);
+            setShowActionNav(false); // Close action nav when entering selection mode
             addMessage("Select timers to delete");
         } else if (selectedCount > 0) {
             setConfirmAction(() => executeBatchDelete);
@@ -243,6 +255,17 @@ export default function Timers({ route }) {
             addMessage("Selection mode cancelled");
         }
     }, [isSelectable, selectedIds.size, executeBatchDelete, addMessage]);
+
+    // Handle ActionBottomNav toggle
+    const handleToggleActionNav = useCallback(() => {
+        setShowActionNav(prev => !prev);
+    }, []);
+
+    // Handle ActionBottomNav add
+    const handleActionNavAdd = useCallback(() => {
+        setModalVisible(true);
+        setShowActionNav(false);
+    }, []);
 
     // Memoized styles
     const styles = useMemo(() => StyleSheet.create({
@@ -281,7 +304,7 @@ export default function Timers({ route }) {
             fontSize: 14,
             fontWeight: '600',
         },
-    }), [colors, variables]);
+    }), [colors, variables, border]);
 
     const ListHeaderComponent = useMemo(() => (
         <HeaderActions
@@ -297,6 +320,8 @@ export default function Timers({ route }) {
             sortMethod={sortMethod}
             onSortChange={handleSortChange}
             sortOptions={sortOptions}
+            showActionNav={showActionNav}
+            onToggleActionNav={handleToggleActionNav}
         />
     ), [
         searchQuery,
@@ -306,7 +331,9 @@ export default function Timers({ route }) {
         variables,
         handleBatchDeletePress,
         sortMethod,
-        handleSortChange
+        handleSortChange,
+        showActionNav,
+        handleToggleActionNav
     ]);
 
     const ListEmptyComponent = useMemo(() => (
@@ -321,7 +348,7 @@ export default function Timers({ route }) {
                 <Text style={styles.actionText}>Quick Add Timer</Text>
             </TouchableOpacity>
         </View>
-    ), [colors]);
+    ), [colors, styles]);
 
     const handleModalClose = useCallback(() => {
         setModalVisible(false);
@@ -358,6 +385,20 @@ export default function Timers({ route }) {
                         minHeight: '100%',
                     }
                 }}
+            />
+
+            {/* ActionBottomNav positioned at the bottom of the screen */}
+            <ActionBottomNav
+                visible={showActionNav}
+                onClose={() => setShowActionNav(false)}
+                onAdd={handleActionNavAdd}
+                onBatchToggle={handleBatchDeletePress}
+                isSelectable={isSelectable}
+                sortValue={sortMethod}
+                onSortChange={handleSortChange}
+                sortOptions={sortOptions}
+                colors={colors}
+                variables={variables}
             />
 
             <ConfirmSheet

@@ -168,7 +168,7 @@ const NavBar = ({ state, navigation }) => {
                 left: 0,
                 right: 0,
                 marginHorizontal: floating ? 30 : 0,
-                height: floating ? 45 : fixed ? 60 : 0,
+                height: floating ? 50 : fixed ? 60 : 0,
                 borderTopLeftRadius: floating ? variables.radius.xl : 0,
                 borderTopRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
@@ -178,8 +178,8 @@ const NavBar = ({ state, navigation }) => {
             },
             container: {
                 flexDirection: 'row',
-                backgroundColor: floating ? colors.card : colors.cardLighter,
-                borderColor: colors.cardBorder,
+                backgroundColor: floating ? colors.settingBlock : colors.cardLighter,
+                borderColor: colors.border,
                 borderTopWidth: border,
                 borderBottomWidth: floating ? border : 0,
                 borderRightWidth: border,
@@ -189,7 +189,7 @@ const NavBar = ({ state, navigation }) => {
                 borderBottomRightRadius: floating ? variables.radius.xl : 0,
                 borderBottomLeftRadius: floating ? variables.radius.xl : 0,
                 alignItems: 'center',
-                height: floating ? 45 : fixed ? 60 : 0,
+                height: floating ? 50 : fixed ? 60 : 0,
                 paddingHorizontal: 10,
                 elevation: 10,
             },
@@ -281,7 +281,7 @@ const NavBar = ({ state, navigation }) => {
                                     {
                                         backgroundColor: highlightAnimations[index].interpolate({
                                             inputRange: [0, 1],
-                                            outputRange: ['transparent', colors.highlight]
+                                            outputRange: ['transparent', colors.highlight +'f2']
                                         }),
                                         borderColor: highlightAnimations[index].interpolate({
                                             inputRange: [0, 1],
@@ -301,7 +301,7 @@ const NavBar = ({ state, navigation }) => {
                                         <Icons.Ion
                                             name={iconName}
                                             size={iconSize}
-                                            color={isFocused ? colors.background : colors.textDesc}
+                                            color={isFocused ? colors.background : colors.textDesc +'a0'}
                                         />
                                     </Animated.View>
 

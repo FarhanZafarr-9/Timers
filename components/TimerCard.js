@@ -12,11 +12,9 @@ import {
     Text,
     TouchableOpacity,
     StyleSheet,
-    Animated,
-    Modal,
-    Dimensions,
-    TouchableWithoutFeedback
+    Dimensions
 } from 'react-native';
+
 
 import ViewShot from 'react-native-view-shot';
 import dayjs from 'dayjs';
@@ -26,17 +24,18 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
+import ExportSheet from './ExportSheet';
 import { useTheme } from '../utils/ThemeContext';
 import { useSecurity } from '../utils/SecurityContext';
 
 import HighlightText from './HighlightText';
-import ExportSheet from './ExportSheet';
 import Wave from './Wave';
 import ProgressWave from './ProgressWave';
+import TimerOverlay from './TimerOverlay';
+import TimerContextMenu from './TimerContextMenu';
 
 import {
     getPrivacyText,
-    getDetailedTimeDisplay,
     getFormattedDate,
     calculateProgress,
     getTimeParts,
@@ -64,108 +63,20 @@ const TimerCard = ({
 }) => {
 
     const [showOverlay, setShowOverlay] = useState(false);
-    const [showExportModal, setShowExportModal] = useState(false);
+    const [showContextMenu, setShowContextMenu] = useState(false);
     const [activeChip, setActiveChip] = useState(null);
-    const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const showOverlayRef = useRef(false); const { privacyMode } = useSecurity();
+    const cardRef = useRef();
 
-    useEffect(() => {
-        showOverlayRef.current = showOverlay;
-    }, [showOverlay]);
+    const { privacyMode } = useSecurity();
+    const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
 
+    // Static timer data calculation
     const [staticTimerData, setStaticTimerData] = useState({
         formattedDate: '',
         recurrenceCount: 0
     });
 
-    const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
-    
-    const isLongTitle = timer.title && timer.title.length > 12;
-    const isLongName = timer.personName && timer.personName.length > 12;
-
-    const getPrivText = (LIM, VAL) => getPrivacyText(LIM, privacyMode, VAL);
-    const shortStr = (TXT, LIM = 12) => TXT && TXT.length > LIM ? TXT.slice(0, LIM) + '…' : TXT;
-
-    const titleText = shortStr(timer.title);
-    const nameText = shortStr(timer.personName);
-
-    const privacyTitleText = useMemo(
-        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.title),
-        [timer.title, privacyMode]
-    );
-
-    const privacyNameText = useMemo(
-        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.personName),
-        [timer.personName, privacyMode]
-    );
-
-    const privacyInterval = useMemo(
-        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 5 : 100, timer.isRecurring ? timer.recurrenceInterval : ''),
-        [timer.recurrenceInterval, privacyMode]
-    );
-
-    const privacyDate = useMemo(
-        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 7 : 100, getFormattedDate(timer, dayjs())),
-        [timer.date, staticTimerData.formattedDate, privacyMode]
-    );
-
-    const privacyPriority = useMemo(
-        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 2 : 100, timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)),
-        [timer.priority, privacyMode]
-    );
-
-    const privacyRecurringText = useMemo(
-        () => getPrivText((privacyMode === 'emoji' || privacyMode === 'mask') ? 4 : 100, timer.isRecurring ? 'Recurring' : 'NonRecurring'),
-        [timer.isRecurring, privacyMode]
-    );
-
-    const cardRef = useRef();
-    const sheetRef = useRef();
-    const timerRef = useRef(timer);
-    timerRef.current = timer;
-
-    const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable]);
-
-    const staticStyles = useMemo(() => ({
-        header: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
-        },
-        midSection: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: 8,
-        },
-        alignItemsFlexStart: {
-            alignItems: 'flex-start',
-            marginTop: 8
-        },
-        flexRowGap8: {
-            flexDirection: 'row',
-            gap: 8,
-            justifyContent: 'center',
-            alignItems: 'center'
-        },
-        marginBottom2: {
-            marginBottom: 2
-        },
-        opacity05: {
-            opacity: 0.5
-        },
-        paddingLeft0: {
-            paddingLeft: 0
-        },
-        marginHorizontal0: {
-            marginHorizontal: 0
-        }
-    }), []);
-
     const calculateStaticTimerData = useCallback(() => {
-        const timer = timerRef.current;
         const now = Date.now();
         let targetDate = timer.date;
         let nextDate = timer.nextDate;
@@ -184,24 +95,47 @@ const TimerCard = ({
             formattedDate: getFormattedDate({ ...timer, date: targetDate, nextDate }, dayjs(now)),
             recurrenceCount
         };
-    }, []);
+    }, [timer]);
 
+    useEffect(() => {
+        setStaticTimerData(calculateStaticTimerData());
+    }, [calculateStaticTimerData]);
+
+    // Privacy and text utilities
+    const isLongTitle = timer.title && timer.title.length > 12;
+    const isLongName = timer.personName && timer.personName.length > 12;
+
+    const getPrivText = (LIM, VAL) => getPrivacyText(LIM, privacyMode, VAL);
+    const shortStr = (TXT, LIM = 12) => TXT && TXT.length > LIM ? TXT.slice(0, LIM) + '…' : TXT;
+
+    const titleText = shortStr(timer.title);
+    const nameText = shortStr(timer.personName);
+
+    const privacyTitleText = useMemo(
+        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.title),
+        [timer.title, privacyMode, layoutMode]
+    );
+
+    const privacyNameText = useMemo(
+        () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.personName),
+        [timer.personName, privacyMode, layoutMode]
+    );
+
+    // Compact Time Chip Component
     const CompactTimeChip = useMemo(() => memo(() => {
         const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
         const [status, setStatus] = useState('ongoing');
-        const [compactChipIndex, setCompactChipIndex] = useState(5); // Default to seconds
+        const [compactChipIndex, setCompactChipIndex] = useState(5);
         const timerRef = useRef(timer);
         const animationFrameRef = useRef(null);
         const lastUpdateRef = useRef(0);
 
         timerRef.current = timer;
 
-        // Calculate the appropriate index based on current timeParts and defaultUnit
         const calculateAutoIndex = useCallback((parts) => {
             if (defaultUnit === 'auto') {
-                // Find the largest non-zero unit
                 const index = parts.findIndex(part => part > 0);
-                return index !== -1 ? index : 5; // Fallback to seconds if all zero
+                return index !== -1 ? index : 5;
             }
             return defaultUnit === 'years' ? 0 :
                 defaultUnit === 'months' ? 1 :
@@ -236,7 +170,6 @@ const TimerCard = ({
             setTimeParts(newTimeParts);
             setStatus(newStatus);
 
-            // For auto mode, update the index when timeParts change
             if (defaultUnit === 'auto') {
                 setCompactChipIndex(prevIndex => {
                     const newIndex = calculateAutoIndex(newTimeParts);
@@ -245,10 +178,9 @@ const TimerCard = ({
             }
 
             animationFrameRef.current = requestAnimationFrame(updateTimeParts);
-        }, [calculateAutoIndex, defaultUnit]);
+        }, [calculateAutoIndex]);
 
         useEffect(() => {
-            // Initialize with correct index
             setCompactChipIndex(calculateAutoIndex(timeParts));
             animationFrameRef.current = requestAnimationFrame(updateTimeParts);
             return () => {
@@ -268,7 +200,6 @@ const TimerCard = ({
         ];
 
         const currentChip = timePartsArray[compactChipIndex];
-        const currentValue = timeParts[currentChip.index];
 
         if (status === 'completed') {
             return (
@@ -288,7 +219,6 @@ const TimerCard = ({
                     }
                 ]}
                 onPress={() => {
-                    // Cycle through all units in order
                     const nextIndex = (compactChipIndex + 1) % timePartsArray.length;
                     setCompactChipIndex(nextIndex);
                 }}
@@ -302,116 +232,9 @@ const TimerCard = ({
                 </Text>
             </TouchableOpacity>
         );
-    }), [defaultUnit, colors, styles, getChippedTime]);
+    }), [defaultUnit, colors, styles, getChippedTime, timer]);
 
-    useEffect(() => {
-        setStaticTimerData(calculateStaticTimerData());
-    }, [calculateStaticTimerData, timer]);
-
-    const TimeChipsDisplay = useMemo(() => memo(() => {
-        const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
-        const [status, setStatus] = useState('ongoing');
-        const timerRef = useRef(timer);
-        const animationFrameRef = useRef(null);
-        const lastUpdateRef = useRef(0);
-
-        timerRef.current = timer;
-
-        const updateTimeParts = useCallback(() => {
-            const now = Date.now();
-            if (now - lastUpdateRef.current < 200) {
-                animationFrameRef.current = requestAnimationFrame(updateTimeParts);
-                return;
-            }
-            lastUpdateRef.current = now;
-
-            const timer = timerRef.current;
-            let targetDate = timer.date;
-            let nextDate = timer.nextDate;
-
-            if (timer.isRecurring && timer.date < now) {
-                const result = calculateNextOccurrence(timer, now);
-                targetDate = result.nextDate;
-                nextDate = result.nextDate;
-            }
-
-            const newTimeParts = getTimeParts({ ...timer, date: targetDate, nextDate }, now);
-            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
-                ? 'completed'
-                : 'ongoing';
-
-            setTimeParts(newTimeParts);
-            setStatus(newStatus);
-
-            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
-        }, []);
-
-        useEffect(() => {
-            animationFrameRef.current = requestAnimationFrame(updateTimeParts);
-            return () => {
-                if (animationFrameRef.current) {
-                    cancelAnimationFrame(animationFrameRef.current);
-                }
-            };
-        }, [updateTimeParts]);
-
-        const [years, months, days, hours, minutes, seconds] = timeParts;
-
-        const timePartsArray = [
-            { value: years, label: 'y', id: 'years', fullLabel: 'Years' },
-            { value: months, label: 'mo', id: 'months', fullLabel: 'Months' },
-            { value: days, label: 'd', id: 'days', fullLabel: 'Days' },
-            { value: hours, label: 'h', id: 'hours', fullLabel: 'Hours' },
-            { value: minutes, label: 'm', id: 'minutes', fullLabel: 'Minutes' },
-            { value: seconds, label: 's', id: 'seconds', fullLabel: 'Seconds' },
-        ];
-        const nonZeroParts = timePartsArray.filter(part => part.value !== 0);
-
-        if (nonZeroParts.length === 0 || status === 'completed') {
-            return (
-                <View style={styles.chipContainer}>
-                    <Text style={styles.chipText}>Completed</Text>
-                </View>
-            );
-        }
-
-        if (activeChip) {
-            const chip = timePartsArray.find(part => part.id === activeChip);
-            if (!chip) return null;
-            return (
-                <View style={styles.chipContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.chip,
-                            { backgroundColor: colors.highlight + '30', borderColor: colors.highlight }
-                        ]}
-                        onPress={() => setActiveChip(null)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.chipText, { fontWeight: 'bold', color: colors.highlight }]}>
-                            {getChippedTime(chip.id, timeParts)} {chip.fullLabel}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
-        return (
-            <View style={styles.chipContainer}>
-                {nonZeroParts.map(part => (
-                    <TouchableOpacity
-                        key={part.id}
-                        style={styles.chip}
-                        onPress={() => setActiveChip(part.id)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.chipText}>{part.value}{part.label}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        );
-    }), [activeChip, colors.highlight, styles.chip, styles.chipContainer, styles.chipText, getChippedTime]);
-
+    // Time Display Component for List Mode
     const TimeDisplay = useMemo(() => memo(() => {
         const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
         const [status, setStatus] = useState('ongoing');
@@ -487,8 +310,9 @@ const TimerCard = ({
                 )}
             </>
         );
-    }), [timer.isCountdown]);
+    }), [timer.isCountdown, timer]);
 
+    // Progress Bar Component
     const ProgressBar = useMemo(() => memo(({ layoutMode }) => {
         const [progressPct, setProgressPct] = useState(0);
         const timerRef = useRef(timer);
@@ -513,13 +337,6 @@ const TimerCard = ({
                 const result = calculateNextOccurrence(timer, now);
                 targetDate = result.nextDate;
                 nextDate = result.nextDate;
-
-                if (
-                    !timer.notificationScheduledFor ||
-                    dayjs(timer.notificationScheduledFor).isBefore(result.nextDate)
-                ) {
-                    timer.scheduleNotification();
-                }
             }
 
             const newProgressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
@@ -543,255 +360,112 @@ const TimerCard = ({
             return null;
         }
 
-        if (layoutMode === 'grid') {
-            return (
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginTop: 12,
-                    gap: 8
-                }}>
-                    {progressMode === 'linear' ? (
-                        <View
-                            style={{
-                                height: 6,
-                                flex: 1,
-                                backgroundColor: colors.highlight + '20',
-                                borderRadius: 6,
-                                overflow: 'hidden'
-                            }}
-                        >
-                            <View
-                                style={{
-                                    width: `${Math.round(progressPct)}%`,
-                                    height: '100%',
-                                    backgroundColor: colors.highlight + 'b0',
-                                    borderRadius: 8
-                                }}
-                            />
-                        </View>
-                    ) : (
-                        progressMode === 'halfWave' ? (
-                            <View
-                                style={{
-                                    height: 20,
-                                    width: (screenWidth * 0.29) * (progressPct / 100),
-                                    maxWidth: screenWidth * 0.29,
-                                    backgroundColor: colors.highlight + '20',
-                                    borderRadius: 6,
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <Wave
-                                    amplitude={4}
-                                    frequency={10}
-                                    speed={3000}
-                                    height={20}
-                                    color={colors.highlight}
-                                />
-                            </View>
-                        ) : (
-                            <View
-                                style={{
-                                    backgroundColor: colors.highlight + '20',
-                                    borderRadius: 6,
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <ProgressWave
-                                    progressPct={progressPct}
-                                    amplitude={4}
-                                    frequency={8}
-                                    speed={3000}
-                                    height={20}
-                                    width={screenWidth * 0.29}
-                                    colorCompleted={colors.highlight}
-                                    colorRemaining={colors.highlight + '20'}
-                                />
-                            </View>
-                        )
-                    )}
+        const progressWidth = layoutMode === 'grid' ? screenWidth * 0.29 : screenWidth * 0.74;
 
-                    <Text
+        return (
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: layoutMode === 'grid' ? 12 : 8,
+                gap: layoutMode === 'grid' ? 8 : 10,
+                width: '100%'
+            }}>
+                {progressMode === 'linear' ? (
+                    <View
                         style={{
-                            color: colors.textDesc,
-                            fontSize: 12,
-                            fontWeight: '700',
-                            opacity: 0.8,
-                            minWidth: 40,
-                            textAlign: 'right',
+                            height: 6,
+                            flex: 1,
+                            backgroundColor: colors.highlight + '20',
+                            borderRadius: 6,
+                            overflow: 'hidden'
                         }}
                     >
-                        {progressPct.toFixed(1)}%
-                    </Text>
-                </View>
-            );
-        } else {
-            return (
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginTop: 8,
-                    gap: 10,
-                    width: '100%',
-                    justifyContent: 'space-between'
-                }}>
-                    {progressMode === 'linear' ? (
                         <View
                             style={{
-                                height: 6,
-                                width: '85%',
-                                backgroundColor: colors.highlight + '20',
-                                borderRadius: 6,
-                                overflow: 'hidden'
+                                width: `${Math.round(progressPct)}%`,
+                                height: '100%',
+                                backgroundColor: colors.highlight + 'b0',
+                                borderRadius: 8
                             }}
-                        >
-                            <View
-                                style={{
-                                    width: `${progressPct}%`,
-                                    height: '100%',
-                                    backgroundColor: colors.highlight + 'b0',
-                                    borderRadius: 8
-                                }}
-                            />
-                        </View>
-                    ) : (
-                        progressMode === 'halfWave' ? (
-                            <View
-                                style={{
-                                    height: 25,
-                                    width: (screenWidth * 0.74) * (progressPct / 100),
-                                    maxWidth: screenWidth * 0.74,
-                                    backgroundColor: colors.highlight + '20',
-                                    paddingVertical: 2,
-                                    borderRadius: 6,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <Wave
-                                    amplitude={6}
-                                    frequency={10}
-                                    speed={3000}
-                                    height={20}
-                                    color={colors.highlight}
-                                />
-                            </View>
-                        ) : (
-                            <View style={{
+                        />
+                    </View>
+                ) : (
+                    progressMode === 'halfWave' ? (
+                        <View
+                            style={{
+                                height: layoutMode === 'grid' ? 20 : 25,
+                                width: progressWidth * (progressPct / 100),
+                                maxWidth: progressWidth,
                                 backgroundColor: colors.highlight + '20',
                                 borderRadius: 6,
                                 overflow: 'hidden',
-                                paddingVertical: 4,
-                            }}>
-                                <ProgressWave
-                                    progressPct={progressPct}
-                                    amplitude={6}
-                                    frequency={10}
-                                    speed={3000}
-                                    height={20}
-                                    width={screenWidth * 0.74}
-                                    colorCompleted={colors.highlight}
-                                    colorRemaining={colors.highlight + '20'}
-                                />
-                            </View>
-                        )
-                    )}
+                                paddingVertical: layoutMode === 'grid' ? 0 : 2
+                            }}
+                        >
+                            <Wave
+                                amplitude={layoutMode === 'grid' ? 4 : 6}
+                                frequency={10}
+                                speed={3000}
+                                height={20}
+                                color={colors.highlight}
+                            />
+                        </View>
+                    ) : (
+                        <View
+                            style={{
+                                backgroundColor: colors.highlight + '20',
+                                borderRadius: 6,
+                                overflow: 'hidden',
+                                paddingVertical: layoutMode === 'grid' ? 0 : 4
+                            }}
+                        >
+                            <ProgressWave
+                                progressPct={progressPct}
+                                amplitude={layoutMode === 'grid' ? 4 : 6}
+                                frequency={layoutMode === 'grid' ? 8 : 10}
+                                speed={3000}
+                                height={20}
+                                width={progressWidth}
+                                colorCompleted={colors.highlight}
+                                colorRemaining={colors.highlight + '20'}
+                            />
+                        </View>
+                    )
+                )}
 
-                    <Text
-                        style={{
-                            color: colors.textDesc,
-                            fontSize: 12,
-                            fontWeight: '700',
-                            opacity: 0.8,
-                            width: '15%',
-                            lineHeight: 20,
-                            paddingLeft: 10,
-                            alignSelf: 'center'
-                        }}
-                    >
-                        {progressPct.toFixed(1)}%
-                    </Text>
-                </View>
-            );
-        }
-    }), [colors.highlight, progressMode, screenWidth]);
-
-    const DetailedProgressDisplay = useMemo(() => memo(() => {
-        const [progressPct, setProgressPct] = useState(0);
-        const [status, setStatus] = useState('ongoing');
-        const timerRef = useRef(timer);
-        const animationFrameRef = useRef(null);
-        const lastUpdateRef = useRef(0);
-
-        timerRef.current = timer;
-
-        const updateProgress = useCallback(() => {
-            const now = Date.now();
-            if (now - lastUpdateRef.current < 200) {
-                animationFrameRef.current = requestAnimationFrame(updateProgress);
-                return;
-            }
-            lastUpdateRef.current = now;
-
-            const timer = timerRef.current;
-            let targetDate = timer.date;
-            let nextDate = timer.nextDate;
-
-            if (timer.isRecurring && timer.date < now) {
-                const result = calculateNextOccurrence(timer, now);
-                targetDate = result.nextDate;
-                nextDate = result.nextDate;
-            }
-
-            const newProgressPct = timer.isCountdown ? calculateProgress({ ...timer, date: targetDate, nextDate }, now) : 0;
-            const newStatus = timer.isCountdown && !timer.isRecurring && (targetDate - now) <= 0
-                ? 'completed'
-                : 'ongoing';
-
-            setProgressPct(newProgressPct);
-            setStatus(newStatus);
-
-            animationFrameRef.current = requestAnimationFrame(updateProgress);
-        }, []);
-
-        useEffect(() => {
-            animationFrameRef.current = requestAnimationFrame(updateProgress);
-            return () => {
-                if (animationFrameRef.current) {
-                    cancelAnimationFrame(animationFrameRef.current);
-                }
-            };
-        }, [updateProgress]);
-
-        if (!timer.isCountdown || status !== 'ongoing') {
-            return null;
-        }
-
-        return (
-            <Text
-                style={{
-                    color: colors.textDesc,
-                    fontSize: 12,
-                    fontWeight: '600',
-                    opacity: 0.8,
-                    marginLeft: 8,
-                    marginBottom: 2
-                }}
-            >
-                {(100 - progressPct).toFixed(4)} %
-            </Text>
+                <Text
+                    style={{
+                        color: colors.textDesc,
+                        fontSize: 12,
+                        fontWeight: '700',
+                        opacity: 0.8,
+                        minWidth: 40,
+                        textAlign: 'right',
+                        width: layoutMode === 'grid' ? 'auto' : '15%',
+                        lineHeight: 20,
+                        paddingLeft: layoutMode === 'grid' ? 0 : 10,
+                        alignSelf: 'center'
+                    }}
+                >
+                    {progressPct.toFixed(1)}%
+                </Text>
+            </View>
         );
-    }), [colors.textDesc, timer.isCountdown]);
+    }), [colors.highlight, progressMode, screenWidth, timer]);
 
+    // Arrow Icon Component
     const ArrowIcon = useMemo(() => memo(({ colors, showOverlay }) => (
         <Icons.Material
             name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
             size={18}
             color={colors.text}
-            style={staticStyles.opacity05}
+            style={{ opacity: 0.5 }}
         />
-    )), [staticStyles.opacity05]);
+    )), []);
+
+    // Styles
+    const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable, layoutMode, isLongName, isLongTitle, border]);
 
     function createStyles() {
         return StyleSheet.create({
@@ -802,17 +476,11 @@ const TimerCard = ({
                 marginBottom: 10,
                 borderWidth: border,
                 borderColor: !isBorder ? 0 : (searchText === '' || privacyMode !== 'off') ? colors.border : colors.highlight + '3a',
-                minWidth: '48%',
-                maxWidth: '100%',
+                minWidth: layoutMode !== 'grid' ? screenWidth * 0.74 : '48%',
+                maxWidth: layoutMode === 'grid' ? screenWidth * 0.453 : '100%',
                 marginVertical: 6,
                 marginRight: layoutMode === 'grid' ? '1.5%' : 0,
                 marginLeft: layoutMode === 'grid' ? '0.5%' : 0,
-            },
-            header: {
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
             },
             timerTitle: {
                 color: colors.textDesc,
@@ -822,16 +490,6 @@ const TimerCard = ({
                 height: 30,
                 textAlign: 'center',
                 alignSelf: 'center',
-            },
-            priorityIndicator: {
-                flexDirection: 'row',
-                alignItems: 'center',
-            },
-            priorityDot: {
-                width: 10,
-                height: 10,
-                borderRadius: variables.radius.circle,
-                borderWidth: border,
             },
             timerQuickInfo: {
                 color: colors.text,
@@ -862,165 +520,6 @@ const TimerCard = ({
                 fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : (isLongName && isLongTitle) ? 10 : 12,
                 fontWeight: 'bold',
             },
-            midSection: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: 8,
-            },
-            overlay: {
-                flex: 1,
-                backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
-                justifyContent: 'flex-end',
-            },
-            bottomSheet: {
-                backgroundColor: colors.modalBg,
-                borderTopLeftRadius: variables.radius.lg,
-                borderTopRightRadius: variables.radius.lg,
-                paddingHorizontal: 20,
-                paddingTop: 20,
-                paddingBottom: 40,
-                minHeight: 280,
-                maxHeight: screenHeight * 0.9,
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            handle: {
-                width: 40,
-                height: 4,
-                backgroundColor: colors.border,
-                borderRadius: 2,
-                alignSelf: 'center',
-                marginBottom: 20,
-            },
-            overlayTitle: {
-                color: colors.text,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 10 : (isLongName && isLongTitle) ? 12 : 14,
-                fontWeight: '500',
-                height: 28,
-                alignSelf: 'center',
-                textAlign: 'center',
-                marginBottom: 6
-            },
-            overlayPersonName: {
-                color: colors.textDesc,
-                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12 : (isLongName && isLongTitle) ? 10 : 12,
-                fontWeight: '500',
-                height: 26,
-                backgroundColor: colors.settingBlock,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: variables.radius.sm,
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            timeSection: {
-                backgroundColor: colors.settingBlock,
-                padding: 16,
-                borderRadius: variables.radius.md,
-                marginBottom: 16,
-                borderWidth: border,
-                borderColor: colors.border,
-                position: 'relative',
-                overflow: 'hidden',
-            },
-            timeLabel: {
-                color: colors.textDesc,
-                fontSize: 12,
-                marginBottom: 4,
-                height: 20
-            },
-            timeValue: {
-                color: colors.text,
-                fontSize: 16,
-                height: 55,
-                fontWeight: '600',
-                paddingVertical: 4
-            },
-            detailsSection: {
-                backgroundColor: colors.highlight + '10',
-                padding: 16,
-                borderRadius: variables.radius.md,
-                marginBottom: 20,
-            },
-            detailRow: {
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-            },
-            detailLabel: {
-                color: colors.textDesc,
-                fontSize: 14,
-            },
-            detailValue: {
-                color: colors.text,
-                fontSize: 12,
-                fontWeight: '500',
-                height: 28,
-                backgroundColor: colors.settingBlock,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: variables.radius.sm,
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            actionsSection: {
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 12,
-            },
-            actionButton: {
-                flex: 1,
-                paddingVertical: 6,
-                borderRadius: variables.radius.sm,
-                alignItems: 'center',
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            editButton: {
-                backgroundColor: colors.settingBlock,
-            },
-            deleteButton: {
-                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                borderColor: 'rgba(239, 68, 68, 0.5)',
-                minHeight: 40,
-                marginBottom: 20,
-            },
-            exportButton: {
-                backgroundColor: colors.settingBlock,
-            },
-            actionButtonText: {
-                color: colors.text,
-                fontSize: 14,
-                fontWeight: '600',
-                textAlign: 'center',
-            },
-            exportButtonText: {
-                color: colors.highlight,
-                fontSize: 16,
-                fontWeight: '600',
-                textAlign: 'center',
-            },
-            statusIndicator: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.settingBlock,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: variables.radius.sm,
-                gap: 8,
-                borderWidth: border,
-                borderColor: colors.border,
-            },
-            statusText: {
-                color: colors.textDesc,
-                fontSize: 12,
-                fontWeight: '500',
-                height: 16,
-            },
             chipContainer: {
                 flexDirection: 'row',
                 flexWrap: 'wrap',
@@ -1048,54 +547,44 @@ const TimerCard = ({
         });
     }
 
+    // Event handlers
+    const handleCardPress = useCallback(() => {
+        if (!selectable) {
+            setShowOverlay(true);
+        }
+        if (onClick) onClick();
+    }, [onClick, selectable]);
+
+    const handleLongPress = useCallback(() => {
+        if (!selectable && buttons === 'on') {
+            setShowContextMenu(true);
+        }
+    }, [selectable, buttons]);
+
     const handleEdit = useCallback(() => {
-        closeOverlay();
+        setShowContextMenu(false);
+        setShowOverlay(false);
         onEdit(timer);
     }, [onEdit, timer]);
 
     const handleDelete = useCallback(() => {
-        closeOverlay();
+        setShowContextMenu(false);
+        setShowOverlay(false);
         onDelete(timer.id);
     }, [onDelete, timer.id]);
 
-    const handleCardPress = useCallback(() => {
-        if (!selectable) { openOverlay(); }
-        if (onClick) onClick();
-    }, [onClick, selectable]);
+    const handleDuplicateAction = useCallback(() => {
+        setShowContextMenu(false);
+        setShowOverlay(false);
+        handleDuplicate(timer);
+    }, [handleDuplicate, timer]);
 
-    const openOverlay = useCallback(() => {
-        setShowOverlay(true);
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [slideAnim, fadeAnim]);
+    const handleFavouriteAction = useCallback(() => {
+        setShowContextMenu(false);
+        handleFavourite(timer.id);
+    }, [handleFavourite, timer.id]);
 
-    const closeOverlay = useCallback(() => {
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: 280,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-            Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
-            setShowOverlay(false);
-        });
-    }, [slideAnim, fadeAnim]);
-
+    // Card style with selection states
     const cardStyle = useMemo(() => ({
         ...styles.timerItem,
         ...(selected && {
@@ -1107,10 +596,45 @@ const TimerCard = ({
         })
     }), [selected, selectable, styles.timerItem]);
 
+    const staticStyles = {
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        midSection: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 8,
+        },
+        alignItemsFlexStart: {
+            alignItems: 'flex-start',
+            marginTop: 8
+        },
+        flexRowGap8: {
+            flexDirection: 'row',
+            gap: 8,
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
+        paddingLeft0: {
+            paddingLeft: 0
+        },
+        marginHorizontal0: {
+            marginHorizontal: 0
+        }
+    };
+
     return (
         <>
             <ViewShot ref={cardRef} options={{ format: 'png', quality: 1 }}>
-                <TouchableOpacity onPress={handleCardPress} activeOpacity={1}>
+                <TouchableOpacity
+                    onPress={handleCardPress}
+                    onLongPress={handleLongPress}
+                    activeOpacity={1}
+                >
                     {layoutMode === 'grid' ? (
                         <View style={cardStyle}>
                             <View style={staticStyles.header}>
@@ -1163,7 +687,7 @@ const TimerCard = ({
                                             name={"favorite"}
                                             size={14}
                                             color={colors.highlight}
-                                            style={{marginBottom: 8}}
+                                            style={{ marginBottom: 8 }}
                                         />}
                                     </View>
                                 ) : (
@@ -1213,205 +737,60 @@ const TimerCard = ({
                         </View>
                     )}
                 </TouchableOpacity>
-            </ViewShot >
+            </ViewShot>
 
-            {/* Bottom Sheet Overlay */}
-            <Modal
+            {/* Timer Overlay Component */}
+            <TimerOverlay
                 visible={showOverlay}
-                transparent={true}
-                animationType="none"
-                onRequestClose={closeOverlay}
-            >
-                <TouchableWithoutFeedback onPress={closeOverlay}>
-                    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-                        <TouchableWithoutFeedback onPress={() => { }}>
-                            <Animated.View
-                                style={[
-                                    styles.bottomSheet,
-                                    {
-                                        transform: [{ translateY: slideAnim }],
-                                    },
-                                ]}
-                            >
-                                <ViewShot ref={sheetRef} options={{ format: 'png', quality: 1 }}>
-                                    <View style={styles.handle} />
-
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 0, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                        {/* Title and Person */}
-                                        <Text style={[
-                                            styles.overlayTitle,
-                                            (privacyMode === 'invisible' || privacyMode === 'ghost') && {
-                                                color: colors.modalBg + '00',
-                                                backgroundColor: colors.settingBlock,
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 0,
-                                                borderRadius: variables.radius.sm,
-                                                borderWidth: border,
-                                                borderColor: colors.border,
-                                            }
-                                        ]}>
-                                            {privacyTitleText}
-                                        </Text>
-
-                                        <Text style={[styles.detailValue, { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, marginBottom: 4 }]}>
-                                            {privacyMode === 'off' ? staticTimerData.formattedDate : privacyDate}
-                                        </Text>
-                                    </View>
-
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', paddingHorizontal: 4 }}>
-                                        {timer.personName && (
-                                            <Text style={[
-                                                styles.overlayPersonName,
-                                                privacyMode === 'invisible' && { color: colors.modalBg + '00' }
-                                            ]}>
-                                                For: {privacyNameText}
-                                            </Text>
-                                        )}
-
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
-
-                                            {timer.isRecurring && timer.recurrenceInterval && (
-                                                <View style={styles.statusIndicator}>
-                                                    <Text style={[styles.statusText, { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>{privacyInterval}</Text>
-                                                </View>
-                                            )}
-                                            {timer.isRecurring && (
-                                                <View style={styles.statusIndicator}>
-                                                    {privacyMode === 'off' && <Icons.Material
-                                                        name="autorenew"
-                                                        size={12}
-                                                        color={colors.textDesc}
-                                                    />}
-                                                    <Text style={[styles.statusText, , { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>{privacyRecurringText}</Text>
-                                                </View>
-                                            )}
-
-                                            {timer.isRecurring && staticTimerData.recurrenceCount > 0 && (
-                                                <View style={styles.statusIndicator}>
-                                                    <Text style={styles.statusText}>{staticTimerData.recurrenceCount}</Text>
-                                                </View>
-                                            )}
-                                            <View style={styles.statusIndicator}>
-                                                {timer.priority && privacyMode === 'off' && (
-                                                    <View
-                                                        style={[
-                                                            styles.priorityDot,
-                                                            {
-                                                                backgroundColor:
-                                                                    timer.priority === 'high'
-                                                                        ? 'hsla(0, 84.20%, 60.20%, 0.30)'
-                                                                        : timer.priority === 'normal'
-                                                                            ? 'hsla(134, 39.02%, 50.20%, 0.30)'
-                                                                            : 'hsla(210, 100%, 50.20%, 0.30)',
-                                                                borderColor:
-                                                                    timer.priority === 'high'
-                                                                        ? '#ef4444'
-                                                                        : timer.priority === 'normal'
-                                                                            ? '#22c55e'
-                                                                            : '#3b82f6',
-                                                            },
-                                                        ]}
-                                                    />
-                                                )}
-                                                <Text style={[styles.statusText, , { color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc }]}>
-                                                    {privacyPriority}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {/* Time Section */}
-                                    <View style={[styles.timeSection, { paddingBottom: 16 }]}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={styles.timeLabel}>
-                                                {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
-                                            </Text>
-                                            <DetailedProgressDisplay />
-                                        </View>
-                                        <Text style={styles.timeValue}>
-                                            <TimeChipsDisplay />
-                                        </Text>
-                                    </View>
-                                </ViewShot>
-
-                                {/* Action Buttons */}
-                                {buttons === 'on' &&
-                                    <>
-                                        <View style={styles.actionsSection}>
-                                            <TouchableOpacity
-                                                onPress={handleEdit}
-                                                style={[styles.actionButton, styles.editButton]}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Icons.Material name="edit" size={20} color={colors.highlight} />
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity
-                                                onPress={() => setShowExportModal(true)}
-                                                style={[styles.actionButton, styles.exportButton]}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Icons.Material name="file-upload" size={20} color={colors.highlight} />
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity
-                                                onPress={handleDuplicate}
-                                                style={[styles.actionButton, styles.exportButton]}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Icons.Material name="control-point-duplicate" size={20} color={colors.highlight} />
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity
-                                                onPress={() => handleFavourite(timer.id)}
-                                                style={[styles.actionButton, styles.exportButton]}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Icons.Material
-                                                    name={timer.isFavourite ? "favorite" : "favorite-border"}
-                                                    size={20}
-                                                    color={colors.highlight}
-                                                />
-                                            </TouchableOpacity>
-
-                                        </View>
-                                        <TouchableOpacity
-                                            onPress={handleDelete}
-                                            style={[styles.actionButton, styles.deleteButton]}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Icons.Material name="delete" size={22} color="#ef4444" />
-                                        </TouchableOpacity>
-                                    </>
-                                }
-                            </Animated.View>
-                        </TouchableWithoutFeedback>
-                    </Animated.View>
-                </TouchableWithoutFeedback>
-            </Modal >
-
-            {/* Export Bottom Sheet */}
-            < ExportSheet
-                visible={showExportModal}
-                onClose={() => setShowExportModal(false)}
-                cardRef={cardRef}
-                sheetRef={sheetRef}
+                onClose={() => setShowOverlay(false)}
+                timer={timer}
+                staticTimerData={staticTimerData}
+                privacyMode={privacyMode}
                 colors={colors}
                 variables={variables}
+                border={border}
+                headerMode={headerMode}
+                cardRef={cardRef}
+                getPrivText={getPrivText}
+                activeChip={activeChip}
+                setActiveChip={setActiveChip}
+                layoutMode={layoutMode}
+                isLongName={isLongName}
+                isLongTitle={isLongTitle}
             />
+
+            {/* Context Menu Component */}
+            <TimerContextMenu
+                visible={showContextMenu}
+                onClose={() => setShowContextMenu(false)}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onDuplicate={handleDuplicateAction}
+                onFavourite={handleFavouriteAction}
+                onShare={() => { }}
+                timer={timer}
+            />
+
+            {/*
+            <ExportSheet
+            visible={}
+            onClose={}
+            cardRef = {cardRef}
+            sheetRef={sheetRef}
+            />
+            */}
+
         </>
     );
 };
 
 export default memo(TimerCard, (prevProps, nextProps) => {
-    // Basic prop comparison
     if (prevProps.selected !== nextProps.selected) return false;
     if (prevProps.searchText !== nextProps.searchText) return false;
     if (prevProps.layoutMode !== nextProps.layoutMode) return false;
     if (prevProps.defaultUnit !== nextProps.defaultUnit) return false;
     if (prevProps.buttons !== nextProps.buttons) return false;
 
-    // Deep comparison for timer object - only check relevant properties
     const timerProps = ['id', 'title', 'personName', 'date', 'isRecurring', 'recurrenceInterval',
         'isCountdown', 'isFavourite', 'priority', 'nextDate'];
 
