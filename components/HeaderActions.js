@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     View,
     TextInput,
@@ -6,7 +6,6 @@ import {
     StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import HeaderSheet from './HeaderSheet';
 import { useTheme } from '../utils/ThemeContext';
 
 const HeaderActions = ({
@@ -23,10 +22,11 @@ const HeaderActions = ({
     sortOptions,
     colors,
     variables,
+    showActionNav,
+    onToggleActionNav,
 }) => {
     const inputRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
-    const [sheetVisible, setSheetVisible] = useState(false);
     const { isBorder, border } = useTheme();
 
     const handleSearch = (query) => {
@@ -41,16 +41,11 @@ const HeaderActions = ({
 
     const styles = StyleSheet.create({
         container: {
-            borderRadius: variables.radius.circle,
-            marginVertical: 12,
-            backgroundColor: colors.settingBlock,
-            borderWidth: isBorder ? 1 : 0,
-            borderColor: isFocused ? colors.highlight + '40' : colors.border,
-        },
-        row: {
             flexDirection: 'row',
             alignItems: 'center',
-            height: 38,
+            marginVertical: 12,
+            backgroundColor: 'transparent', // Container is now transparent
+            gap: 8, // Space between elements
         },
         searchContainer: {
             flex: 1,
@@ -58,6 +53,10 @@ const HeaderActions = ({
             alignItems: 'center',
             height: 38,
             paddingHorizontal: 12,
+            borderRadius: variables.radius.circle,
+            backgroundColor: colors.settingBlock,
+            borderWidth: isBorder ? 1 : 0,
+            borderColor: isFocused ? colors.highlight + '40' : colors.border,
         },
         searchInput: {
             flex: 1,
@@ -74,76 +73,60 @@ const HeaderActions = ({
         toggleButton: {
             width: 38,
             height: 38,
-            borderTopRightRadius: variables.radius.xl,
-            borderBottomRightRadius: variables.radius.xl,
-            backgroundColor: colors.highlight + '20',
+            borderRadius: variables.radius.circle,
+            backgroundColor: showActionNav ? colors.highlight : colors.settingBlock,
             justifyContent: 'center',
             alignItems: 'center',
-            marginLeft: 8,
+            borderWidth: isBorder ? 1 : 0,
+            borderColor: colors.border,
         },
-
     });
 
-    return true ? (
-        <>
-            <View style={styles.container}>
-                <View style={styles.row}>
-                    <View style={[styles.searchContainer, { flex: 1 }]}>
-                        <MaterialIcons
-                            name="search"
-                            size={20}
-                            color={colors.textDesc}
-                            style={{ marginRight: 4 }}
-                        />
-                        <TextInput
-                            ref={inputRef}
-                            style={styles.searchInput}
-                            placeholder="Search timers..."
-                            placeholderTextColor={colors.textDesc}
-                            value={searchQuery}
-                            onChangeText={handleSearch}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity
-                                onPress={clearSearch}
-                                style={styles.clearButton}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <MaterialIcons name="close" size={18} color={colors.textDesc} />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
+    return (
+        <View style={styles.container}>
+            {/* Search Input */}
+            <View style={styles.searchContainer}>
+                <MaterialIcons
+                    name="search"
+                    size={20}
+                    color={colors.textDesc}
+                    style={{ marginRight: 4 }}
+                />
+                <TextInput
+                    ref={inputRef}
+                    style={styles.searchInput}
+                    placeholder="Search timers..."
+                    placeholderTextColor={colors.textDesc}
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                />
+                {searchQuery.length > 0 && (
                     <TouchableOpacity
-                        onPress={() => setSheetVisible(true)}
-                        style={styles.toggleButton}
-                        activeOpacity={0.8}
+                        onPress={clearSearch}
+                        style={styles.clearButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <MaterialIcons
-                            name="tune"
-                            size={20}
-                            color={colors.textDesc}
-                        />
+                        <MaterialIcons name="close" size={18} color={colors.textDesc} />
                     </TouchableOpacity>
-                </View>
+                )}
             </View>
 
-            <HeaderSheet
-                visible={sheetVisible}
-                onClose={() => setSheetVisible(false)}
-                onAdd={onAdd}
-                onBatchToggle={onBatchDelete}
-                isSelectable={isSelectable}
-                sortValue={sortMethod}
-                onSortChange={onSortChange}
-                sortOptions={sortOptions}
-                colors={colors}
-                variables={variables}
-            />
-        </>
-    ) : <></>;
+            {/* Toggle Button */}
+            <TouchableOpacity
+                onPress={onToggleActionNav}
+                style={styles.toggleButton}
+                activeOpacity={0.8}
+            >
+                <MaterialIcons
+                    name="tune"
+                    size={20}
+                    color={!showActionNav ? colors.highlight : colors.card}
+                />
+            </TouchableOpacity>
+        </View>
+    );
 };
 
 export default HeaderActions;

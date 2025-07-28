@@ -25,15 +25,13 @@ const ExportSheet = ({
     onClose,
     cardRef,
     sheetRef,
-    colors,
-    variables
 }) => {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isExporting, setIsExporting] = useState(false);
     const [currentAction, setCurrentAction] = useState(null);
     const [isReallyVisible, setIsReallyVisible] = useState(false);
-    const { border } = useTheme();
+    const { border, colors, variables } = useTheme();
 
     useEffect(() => {
         if (visible) {
