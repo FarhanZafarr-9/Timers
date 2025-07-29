@@ -190,10 +190,6 @@ export default function AboutModal({ visible, onClose }) {
                     </View>
                     <View style={styles.bulletPoint}>
                         <View style={styles.bulletDot} />
-                        <Text style={styles.bulletText}>Smart notifications and reminders</Text>
-                    </View>
-                    <View style={styles.bulletPoint}>
-                        <View style={styles.bulletDot} />
                         <Text style={styles.bulletText}>Smooth animations for a delightful experience</Text>
                     </View>
                     <View style={styles.bulletPoint}>
