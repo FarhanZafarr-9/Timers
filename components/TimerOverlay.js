@@ -39,7 +39,7 @@ const TimerOverlay = ({
     variables,
     border,
     headerMode,
-    cardRef,
+    sheetRef,
     getPrivText,
     activeChip,
     setActiveChip,
@@ -71,258 +71,339 @@ const TimerOverlay = ({
             marginBottom: 20,
             backgroundColor: colors.border
         },
+        // Consolidated chip styles
+        chipContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 6,
+            marginVertical: 8,
+            minHeight: 32, // Fixed height to prevent layout shifts
+        },
+        chip: {
+            paddingVertical: 4,
+            paddingHorizontal: 12,
+            borderRadius: variables.radius.sm,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: border,
+        },
+        chipInactive: {
+            backgroundColor: colors.highlight + '10',
+            borderColor: colors.border,
+        },
+        chipActive: {
+            backgroundColor: colors.highlight + '30',
+            borderColor: colors.highlight,
+        },
+        chipText: {
+            fontSize: 14,
+            fontWeight: '600',
+            height: 20,
+            textAlign: 'center',
+        },
+        chipTextInactive: {
+            color: colors.text,
+        },
+        chipTextActive: {
+            color: colors.highlight,
+            fontWeight: 'bold',
+        },
     });
+
     /* ---------- refs / anims ---------- */
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const sheetRef = useRef();
 
-    /* ---------- privacy strings ---------- */
+    /* ---------- stable privacy strings (prevent jumbling) ---------- */
     const privacyTitleText = useMemo(
         () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.title),
-        [timer.title, privacyMode, layoutMode, getPrivText]
+        [timer.title, privacyMode, layoutMode] // Removed getPrivText dependency
     );
     const privacyNameText = useMemo(
         () => getPrivText(layoutMode === 'grid' ? 7 : 12, timer.personName),
-        [timer.personName, privacyMode, layoutMode, getPrivText]
+        [timer.personName, privacyMode, layoutMode] // Removed getPrivText dependency
     );
     const privacyDate = useMemo(
         () => getPrivText(
             privacyMode === 'emoji' || privacyMode === 'mask' ? 7 : 100,
             staticTimerData.formattedDate
         ),
-        [staticTimerData.formattedDate, privacyMode, getPrivText]
+        [staticTimerData.formattedDate, privacyMode] // Removed getPrivText dependency
     );
+
+    const privacyCount = useMemo(
+        () => getPrivText(
+            100,
+            staticTimerData.recurrenceCount > 0 ? staticTimerData.recurrenceCount : ''
+        ),
+        [staticTimerData.recurrenceCount, privacyMode] // Removed getPrivText dependency
+    );
+
     const privacyInterval = useMemo(
         () => getPrivText(
             privacyMode === 'emoji' || privacyMode === 'mask' ? 5 : 100,
             timer.isRecurring ? timer.recurrenceInterval : ''
         ),
-        [timer.recurrenceInterval, privacyMode, timer.isRecurring, getPrivText]
+        [timer.recurrenceInterval, privacyMode, timer.isRecurring] // Removed getPrivText dependency
     );
+
     const privacyPriority = useMemo(
         () => getPrivText(
             privacyMode === 'emoji' || privacyMode === 'mask' ? 2 : 100,
             timer.priority.charAt(0).toUpperCase() + timer.priority.slice(1)
         ),
-        [timer.priority, privacyMode, getPrivText]
+        [timer.priority, privacyMode] // Removed getPrivText dependency
     );
     const privacyRecurringText = useMemo(
         () => getPrivText(
             privacyMode === 'emoji' || privacyMode === 'mask' ? 4 : 100,
             timer.isRecurring ? 'Recurring' : 'NonRecurring'
         ),
-        [timer.isRecurring, privacyMode, getPrivText]
+        [timer.isRecurring, privacyMode] // Removed getPrivText dependency
     );
 
-    /* ---------- live time chips ---------- */
-    const TimeChipsDisplay = useMemo(
-        () =>
-            memo(() => {
-                const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
-                const [status, setStatus] = useState('ongoing');
-                const timerRef = useRef(timer);
-                const frame = useRef(null);
-                const last = useRef(0);
+    /* ---------- stable text styles (prevent re-renders) ---------- */
+    const titleTextStyle = useMemo(() => [
+        {
+            color: privacyMode === 'invisible' || privacyMode === 'ghost'
+                ? colors.text + '00'
+                : colors.text,
+            fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji')
+                ? 10
+                : isLongName && isLongTitle
+                    ? 12
+                    : 14,
+            fontWeight: '500',
+            height: 28,
+            alignSelf: 'center',
+            textAlign: 'center'
+        },
+        (privacyMode === 'invisible' || privacyMode === 'ghost') && {
+            backgroundColor: colors.settingBlock,
+            borderRadius: variables.radius.sm,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderWidth: border,
+            borderColor: colors.border
+        }
+    ], [colors, privacyMode, layoutMode, isLongName, isLongTitle, variables.radius.sm, border]);
 
-                const tick = () => {
-                    const now = Date.now();
-                    if (now - last.current < 200) {
-                        frame.current = requestAnimationFrame(tick);
-                        return;
-                    }
-                    last.current = now;
+    const dateTextStyle = useMemo(() => ({
+        color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc,
+        fontSize: 12,
+        fontWeight: '500',
+        height: 30,
+        alignSelf: 'center',
+        backgroundColor: colors.settingBlock,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        borderRadius: variables.radius.sm,
+        borderWidth: border,
+        borderColor: colors.border
+    }), [colors, privacyMode, variables.radius.sm, border]);
 
-                    const t = timerRef.current;
-                    let target = t.date;
-                    let next = t.nextDate;
-                    if (t.isRecurring && t.date < now) {
-                        const res = calculateNextOccurrence(t, now);
-                        target = res.nextDate;
-                        next = res.nextDate;
-                    }
+    const personNameStyle = useMemo(() => ({
+        color: privacyMode === 'invisible' ? colors.modalBg + '00' : colors.textDesc,
+        fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12
+            : (isLongName && isLongTitle) ? 10 : 12,
+        fontWeight: '500',
+        height: 26,
+        backgroundColor: colors.settingBlock,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: variables.radius.sm,
+        borderWidth: border,
+        borderColor: colors.border
+    }), [colors, privacyMode, layoutMode, isLongName, isLongTitle, variables.radius.sm, border]);
 
-                    const parts = getTimeParts({ ...t, date: target, next }, now);
-                    const st =
-                        t.isCountdown && !t.isRecurring && target - now <= 0
-                            ? 'completed'
-                            : 'ongoing';
+    /* ---------- isolated time chips component (prevents text re-renders) ---------- */
+    const TimeChipsDisplay = memo(() => {
+        const [timeParts, setTimeParts] = useState([0, 0, 0, 0, 0, 0]);
+        const [status, setStatus] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const frame = useRef(null);
+        const last = useRef(0);
 
-                    setTimeParts(parts);
-                    setStatus(st);
-                    frame.current = requestAnimationFrame(tick);
-                };
+        // Update timer ref when timer changes
+        useEffect(() => {
+            timerRef.current = timer;
+        }, [timer]);
 
-                useEffect(() => {
-                    frame.current = requestAnimationFrame(tick);
-                    return () => cancelAnimationFrame(frame.current);
-                }, []);
+        const tick = useCallback(() => {
+            const now = Date.now();
+            if (now - last.current < 200) {
+                frame.current = requestAnimationFrame(tick);
+                return;
+            }
+            last.current = now;
 
-                const [y, m, d, h, min, s] = timeParts;
-                const arr = [
-                    { v: y, l: 'y', id: 'years', full: 'Years' },
-                    { v: m, l: 'mo', id: 'months', full: 'Months' },
-                    { v: d, l: 'd', id: 'days', full: 'Days' },
-                    { v: h, l: 'h', id: 'hours', full: 'Hours' },
-                    { v: min, l: 'm', id: 'minutes', full: 'Minutes' },
-                    { v: s, l: 's', id: 'seconds', full: 'Seconds' }
-                ].filter(p => p.v !== 0);
+            const t = timerRef.current;
+            let target = t.date;
+            let next = t.nextDate;
+            if (t.isRecurring && t.date < now) {
+                const res = calculateNextOccurrence(t, now);
+                target = res.nextDate;
+                next = res.nextDate;
+            }
 
-                if (arr.length === 0 || status === 'completed')
-                    return (
-                        <View style={s.chipContainer}>
-                            <Text style={[{
-                                fontSize: 14,
-                                fontWeight: '600',
-                                height: 20,
-                                textAlign: 'center'
-                            }, { color: colors.text }]}>Completed</Text>
-                        </View>
-                    );
+            const parts = getTimeParts({ ...t, date: target, next }, now);
+            const st =
+                t.isCountdown && !t.isRecurring && target - now <= 0
+                    ? 'completed'
+                    : 'ongoing';
 
-                if (activeChip) {
-                    const chip = arr.find(p => p.id === activeChip);
-                    return (
-                        <View style={{
-                            flexDirection: 'row',
-                            flexWrap: 'wrap',
-                            gap: 6,
-                            marginVertical: 8,
-                        }}>
-                            <TouchableOpacity
-                                style={[
-                                    {
-                                        paddingVertical: 4,
-                                        paddingHorizontal: 12,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        backgroundColor: colors.highlight + '30',
-                                        borderColor: colors.highlight,
-                                        borderWidth: border,
-                                        borderRadius: variables.radius.sm,
+            setTimeParts(parts);
+            setStatus(st);
+            frame.current = requestAnimationFrame(tick);
+        }, []);
 
-                                    }
-                                ]}
-                                onPress={() => setActiveChip(null)}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={[{
-                                    fontSize: 14,
-                                    fontWeight: '600',
-                                    height: 20,
-                                    textAlign: 'center'
-                                }, { color: colors.highlight, fontWeight: 'bold' }]}>
-                                    {getChippedTime(activeChip, timeParts)} {chip?.full}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    );
+        useEffect(() => {
+            frame.current = requestAnimationFrame(tick);
+            return () => {
+                if (frame.current) {
+                    cancelAnimationFrame(frame.current);
                 }
+            };
+        }, [tick]);
 
-                return (
-                    <View style={{
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        gap: 6,
-                        marginVertical: 8,
+        // Memoize time parts array to prevent unnecessary re-renders
+        const timePartsArray = useMemo(() => {
+            const [y, m, d, h, min, sec] = timeParts;
+            return [
+                { v: y, l: 'y', id: 'years', full: 'Years' },
+                { v: m, l: 'mo', id: 'months', full: 'Months' },
+                { v: d, l: 'd', id: 'days', full: 'Days' },
+                { v: h, l: 'h', id: 'hours', full: 'Hours' },
+                { v: min, l: 'm', id: 'minutes', full: 'Minutes' },
+                { v: sec, l: 's', id: 'seconds', full: 'Seconds' }
+            ].filter(p => p.v !== 0);
+        }, [timeParts]);
 
-                    }}>
-                        {arr.map(p => (
-                            <TouchableOpacity
-                                key={p.id}
-                                style={[
-                                    {
-                                        paddingVertical: 4,
-                                        paddingHorizontal: 12,
-                                        borderRadius: variables.radius.sm,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        backgroundColor: colors.highlight + '10',
-                                        borderColor: colors.border, borderWidth: border
-                                    }
-                                ]}
-                                onPress={() => setActiveChip(p.id)}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={[{
-                                    fontSize: 14,
-                                    fontWeight: '600',
-                                    height: 20,
-                                    textAlign: 'center'
-                                }, { color: colors.text }]}>
-                                    {p.v}{p.l}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+        // Early return for completed status
+        if (timePartsArray.length === 0 || status === 'completed') {
+            return (
+                <View style={s.chipContainer}>
+                    <View style={[s.chip, s.chipActive]}>
+                        <Text style={[s.chipText, s.chipTextActive]}>
+                            Completed
+                        </Text>
                     </View>
-                );
-            }),
-        [activeChip, colors, border, getChippedTime, timer, setActiveChip]
-    );
+                </View>
+            );
+        }
 
-    /* ---------- live progress % ---------- */
-    const DetailedProgressDisplay = useMemo(
-        () =>
-            memo(() => {
-                const [pct, setPct] = useState(0);
-                const [st, setSt] = useState('ongoing');
-                const timerRef = useRef(timer);
-                const frame = useRef(null);
-                const last = useRef(0);
+        // Render active chip view (single chip expanded)
+        if (activeChip) {
+            const activeChipData = timePartsArray.find(p => p.id === activeChip);
+            if (!activeChipData) {
+                // If active chip is not found in current time parts, reset it
+                setActiveChip(null);
+                return null;
+            }
 
-                const tick = () => {
-                    const now = Date.now();
-                    if (now - last.current < 200) {
-                        frame.current = requestAnimationFrame(tick);
-                        return;
-                    }
-                    last.current = now;
-
-                    const t = timerRef.current;
-                    let target = t.date;
-                    let next = t.nextDate;
-                    if (t.isRecurring && t.date < now) {
-                        const res = calculateNextOccurrence(t, now);
-                        target = res.nextDate;
-                        next = res.nextDate;
-                    }
-
-                    const progress = t.isCountdown
-                        ? calculateProgress({ ...t, date: target, next }, now)
-                        : 0;
-                    const status =
-                        t.isCountdown && !t.isRecurring && target - now <= 0
-                            ? 'completed'
-                            : 'ongoing';
-
-                    setPct(progress);
-                    setSt(status);
-                    frame.current = requestAnimationFrame(tick);
-                };
-
-                useEffect(() => {
-                    frame.current = requestAnimationFrame(tick);
-                    return () => cancelAnimationFrame(frame.current);
-                }, []);
-
-                if (!timer.isCountdown || st !== 'ongoing') return null;
-                return (
-                    <Text
-                        style={{
-                            color: colors.textDesc,
-                            fontSize: 12,
-                            fontWeight: '600',
-                            opacity: 0.8,
-                            marginLeft: 8,
-                            marginBottom: 2
-                        }}
+            return (
+                <View style={s.chipContainer}>
+                    <TouchableOpacity
+                        style={[s.chip, s.chipActive]}
+                        onPress={() => setActiveChip(null)}
+                        activeOpacity={0.8}
                     >
-                        {(100 - pct).toFixed(4)} %
-                    </Text>
-                );
-            }),
-        [colors, timer]
-    );
+                        <Text style={[s.chipText, s.chipTextActive]}>
+                            {getChippedTime(activeChip, timeParts)} {activeChipData.full}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        // Render all chips view (multiple chips)
+        return (
+            <View style={s.chipContainer}>
+                {timePartsArray.map(p => (
+                    <TouchableOpacity
+                        key={p.id}
+                        style={[s.chip, s.chipInactive]}
+                        onPress={() => setActiveChip(p.id)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[s.chipText, s.chipTextInactive]}>
+                            {p.v}{p.l}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
+    });
+
+    /* ---------- isolated progress display (prevents text re-renders) ---------- */
+    const DetailedProgressDisplay = memo(() => {
+        const [pct, setPct] = useState(0);
+        const [st, setSt] = useState('ongoing');
+        const timerRef = useRef(timer);
+        const frame = useRef(null);
+        const last = useRef(0);
+
+        // Update timer ref when timer changes
+        useEffect(() => {
+            timerRef.current = timer;
+        }, [timer]);
+
+        const tick = useCallback(() => {
+            const now = Date.now();
+            if (now - last.current < 200) {
+                frame.current = requestAnimationFrame(tick);
+                return;
+            }
+            last.current = now;
+
+            const t = timerRef.current;
+            let target = t.date;
+            let next = t.nextDate;
+            if (t.isRecurring && t.date < now) {
+                const res = calculateNextOccurrence(t, now);
+                target = res.nextDate;
+                next = res.nextDate;
+            }
+
+            const progress = t.isCountdown
+                ? calculateProgress({ ...t, date: target, next }, now)
+                : 0;
+            const status =
+                t.isCountdown && !t.isRecurring && target - now <= 0
+                    ? 'completed'
+                    : 'ongoing';
+
+            setPct(progress);
+            setSt(status);
+            frame.current = requestAnimationFrame(tick);
+        }, []);
+
+        useEffect(() => {
+            frame.current = requestAnimationFrame(tick);
+            return () => {
+                if (frame.current) {
+                    cancelAnimationFrame(frame.current);
+                }
+            };
+        }, [tick]);
+
+        if (!timer.isCountdown || st !== 'ongoing') return null;
+
+        return (
+            <Text
+                style={{
+                    color: colors.textDesc,
+                    fontSize: 12,
+                    fontWeight: '600',
+                    opacity: 0.8,
+                    marginLeft: 8,
+                    marginBottom: 2
+                }}
+            >
+                {(100 - pct).toFixed(4)} %
+            </Text>
+        );
+    });
 
     /* ---------- slide animation ---------- */
     useEffect(() => {
@@ -353,9 +434,7 @@ const TimerOverlay = ({
                 })
             ]).start();
         }
-    }, [visible]);
-
-
+    }, [visible, slideAnim, fadeAnim]);
 
     /* ---------- render ---------- */
     return (
@@ -385,52 +464,13 @@ const TimerOverlay = ({
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
                                         paddingHorizontal: 4,
-                                        marginBottom: 6
+                                        marginBottom: 6,
                                     }}
                                 >
-                                    <Text
-                                        style={[
-                                            {
-                                                color:
-                                                    privacyMode === 'invisible' || privacyMode === 'ghost'
-                                                        ? colors.text + '00'
-                                                        : colors.text,
-                                                fontSize:
-                                                    layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji')
-                                                        ? 10
-                                                        : isLongName && isLongTitle
-                                                            ? 12
-                                                            : 14,
-                                                fontWeight: '500',
-                                                height: 28,
-                                                alignSelf: 'center',
-                                                textAlign: 'center'
-                                            },
-                                            (privacyMode === 'invisible' || privacyMode === 'ghost') && {
-                                                backgroundColor: colors.settingBlock ,
-                                                borderRadius: variables.radius.sm,
-                                                paddingHorizontal: 8,
-                                                paddingVertical: 4,
-                                                borderWidth: border,
-                                                borderColor: colors.border
-                                            }
-                                        ]}
-                                    >
+                                    <Text style={titleTextStyle}>
                                         {privacyTitleText}
                                     </Text>
-                                    <Text
-                                        style={{
-                                            color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc,
-                                            fontSize: 12,
-                                            marginBottom: 4,
-                                            backgroundColor: colors.settingBlock,
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 4,
-                                            borderRadius: variables.radius.sm,
-                                            borderWidth: border,
-                                            borderColor: colors.border
-                                        }}
-                                    >
+                                    <Text style={dateTextStyle}>
                                         {privacyMode === 'off' ? staticTimerData.formattedDate : privacyDate}
                                     </Text>
                                 </View>
@@ -446,22 +486,7 @@ const TimerOverlay = ({
                                     }}
                                 >
                                     {timer.personName && (
-                                        <Text
-                                            style={{
-                                                color: colors.textDesc,
-                                                fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 12
-                                                    : (isLongName && isLongTitle) ? 10 : 12,
-                                                fontWeight: '500',
-                                                height: 26,
-                                                backgroundColor: colors.settingBlock,
-                                                paddingHorizontal: 8,
-                                                paddingVertical: 4,
-                                                borderRadius: variables.radius.sm,
-                                                borderWidth: border,
-                                                borderColor: colors.border,
-                                                color: privacyMode === 'invisible' ? colors.modalBg + '00' : colors.textDesc
-                                            }}
-                                        >
+                                        <Text style={personNameStyle}>
                                             For: {privacyNameText}
                                         </Text>
                                     )}
@@ -484,7 +509,9 @@ const TimerOverlay = ({
                                         )}
                                         {timer.isRecurring && staticTimerData.recurrenceCount > 0 && (
                                             <View style={{ backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border }}>
-                                                <Text style={{ fontSize: 12, fontWeight: '500', color: privacyMode === 'invisible' || privacyMode === 'ghost' ? colors.text + '00' : colors.textDesc }}>{staticTimerData.recurrenceCount}</Text>
+                                                <Text style={{ fontSize: 11, fontWeight: '600', color: privacyMode === 'invisible' || privacyMode === 'ghost' ? colors.text + '00' : colors.textDesc }}>
+                                                    {privacyCount}
+                                                </Text>
                                             </View>
                                         )}
                                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border, gap: 4 }}>
@@ -534,9 +561,9 @@ const TimerOverlay = ({
                                         </Text>
                                         <DetailedProgressDisplay />
                                     </View>
-                                    <Text style={{ color: colors.text, fontSize: 16, height: 55, fontWeight: '600', paddingVertical: 4 }}>
+                                    <View style={{ color: colors.text, fontSize: 16, minHeight: 40, fontWeight: '600', paddingVertical: 4 }}>
                                         <TimeChipsDisplay />
-                                    </Text>
+                                    </View>
                                 </View>
                             </ViewShot>
                         </Animated.View>
