@@ -33,11 +33,10 @@ import { useCheckForUpdate } from './utils/useCheckForUpdate';
 import { requestNotificationPermissions } from './utils/Notify';
 import { checkForUpdateAndReload, toastConfig } from './utils/functions';
 
-export function useForceUpdateOnLoad() {
-  useEffect(() => {
-    checkForUpdateAndReload();
-  }, []);
+export async function runUpdateCheck() {
+  await checkForUpdateAndReload();
 }
+
 
 const Tab = createBottomTabNavigator();
 
@@ -50,8 +49,12 @@ function AppContent() {
   const [showChangelog, setShowChangelog] = useCheckForUpdate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2000);
-    return () => clearTimeout(timer);
+    const runStartup = async () => {
+      await runUpdateCheck();
+      await new Promise((res) => setTimeout(res, 1200));
+      setShowSplash(false);
+    };
+    runStartup();
   }, []);
 
   useEffect(() => {

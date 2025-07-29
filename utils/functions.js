@@ -576,9 +576,31 @@ export const quotes = [
 ];
 
 export const appBuild = 'stable';
-export const appVersion = '1.1.2';
+export const appVersion = '1.1.3';
 
 export const changelog = [
+    {
+        "version": "1.1.3",
+        "date": "2025-07-29",
+        "title": "Timer Card, UI & Sharing Enhancements",
+        "major": true,
+        "changes": [
+            { "type": "new", "text": "Added hold-based action menu for timer cards with quick controls" },
+            { "type": "new", "text": "Introduced QR share for app releases, repo, and developer profile – fast copy and scan supported" },
+            { "type": "new", "text": "Improved update handling – updates are now checked and applied directly from the splash screen" },
+
+            { "type": "improved", "text": "Timer card split into smaller components for better performance and code maintainability" },
+            { "type": "improved", "text": "Redesigned card UI and interactions in Basic mode with stricter layout constraints and better visual hierarchy" },
+            { "type": "improved", "text": "Updated header actions in the Timers screen for improved theme consistency and smoother animations" },
+            { "type": "improved", "text": "Enhanced font sizing and spacing in timer UI for a more consistent feel" },
+            { "type": "improved", "text": "Fixed minor re-rendering issues and optimized card update logic for performance" },
+
+            { "type": "fixed", "text": "Resolved UI glitches in timer interactions under privacy mode" },
+            { "type": "fixed", "text": "Fixed QR sharing edge cases for non-default themes and long repo links" },
+
+            { "type": "summarized", "text": "Timer cards restructured for speed, added hold-actions, improved visuals, header alignment, QR sharing, and better update handling. A 3D icon variant is in progress for future visibility improvements." }
+        ]
+    },
     {
         "version": "1.1.2",
         "date": "2025-07-26",
