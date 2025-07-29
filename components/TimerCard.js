@@ -64,8 +64,10 @@ const TimerCard = ({
 
     const [showOverlay, setShowOverlay] = useState(false);
     const [showContextMenu, setShowContextMenu] = useState(false);
+    const [exportVisible, setExportVisible] = useState(false);
     const [activeChip, setActiveChip] = useState(null);
     const cardRef = useRef();
+    const sheetRef = useRef();
 
     const { privacyMode } = useSecurity();
     const { isBorder, headerMode, border, colors, variables, progressMode } = useTheme();
@@ -584,6 +586,12 @@ const TimerCard = ({
         handleFavourite(timer.id);
     }, [handleFavourite, timer.id]);
 
+    const handleShareAction = useCallback(() => {
+        setShowContextMenu(false);
+        setShowOverlay(false);
+        setExportVisible(true);
+    }, []);
+
     // Card style with selection states
     const cardStyle = useMemo(() => ({
         ...styles.timerItem,
@@ -750,7 +758,7 @@ const TimerCard = ({
                 variables={variables}
                 border={border}
                 headerMode={headerMode}
-                cardRef={cardRef}
+                sheetRef={sheetRef}
                 getPrivText={getPrivText}
                 activeChip={activeChip}
                 setActiveChip={setActiveChip}
@@ -767,18 +775,15 @@ const TimerCard = ({
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicateAction}
                 onFavourite={handleFavouriteAction}
-                onShare={() => { }}
+                onShare={handleShareAction}
                 timer={timer}
             />
-
-            {/*
             <ExportSheet
-            visible={}
-            onClose={}
-            cardRef = {cardRef}
-            sheetRef={sheetRef}
+                visible={exportVisible}
+                onClose={() => setExportVisible(false)}
+                cardRef={cardRef}
+                sheetRef={sheetRef}
             />
-            */}
 
         </>
     );
