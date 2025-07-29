@@ -1198,7 +1198,7 @@ export default memo(function Settings() {
             colors={colors}
             contentContainerStyle={{ paddingBottom: 95, overflow: 'visible' }}
             useFlatList={false}
-            paddingX={20}
+            paddingX={15}
         >
             {mounted && (
                 <>
