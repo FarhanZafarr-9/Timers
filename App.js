@@ -37,12 +37,10 @@ export async function runUpdateCheck() {
   await checkForUpdateAndReload();
 }
 
-
 const Tab = createBottomTabNavigator();
 
 function AppContent() {
 
-  useForceUpdateOnLoad();
   const { variables, colors, border } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
