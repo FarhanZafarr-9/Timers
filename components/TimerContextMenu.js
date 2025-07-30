@@ -32,9 +32,7 @@ const TimerContextMenu = ({
 }) => {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const sheetRef = useRef();
-    const { border, colors,
-        variables, } = useTheme();
+    const { border, colors, } = useTheme();
 
 
     /* ---------- Animations ---------- */

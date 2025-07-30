@@ -7,7 +7,7 @@ import React, {
     useRef,
     useEffect,
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ActionSheetIOS } from 'react-native';
 import { Icons } from '../assets/icons';
 import { useTimers } from '../utils/TimerContext';
 import { useSecurity } from '../utils/SecurityContext';
@@ -214,23 +214,13 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const getVisibleAccents = (extra = false) => {
-        return extra
-            ? accentOptions
-            : [...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]];
-    };
-
     const [showExtra, setShowExtra] = useState(() => {
-        const visible = getVisibleAccents(false).map(o => o.value);
         return (
             progressMode !== 'linear' ||
             backgroundPattern !== 'none' ||
-            borderMode !== 'subtle' ||
-            !['default', ...visible].includes(accentMode)
+            borderMode !== 'subtle'
         );
     });
-
-    const visibleAccents = useMemo(() => getVisibleAccents(showExtra), [showExtra]);
 
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
@@ -253,8 +243,10 @@ const AppearanceCard = memo(({ animatedStyle }) => {
             setTimeout(() => {
                 setShowExtra(false);
             }, 150);
+            addMessage('Extra Layout options disabled.', 'info')
         } else {
             setShowExtra(true);
+            addMessage('Extra Layout options enabled.', 'success');
         }
     }, [showExtra, accentMode]);
 
@@ -283,7 +275,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
             >
                 <PickerSheet
                     value={accentMode}
-                    options={visibleAccents}
+                    options={[...accentOptions.slice(0, 5), accentOptions[accentOptions.length - 1]]}
                     onChange={setAccentMode}
                     title="Accent"
                     placeholder="Select accent"
