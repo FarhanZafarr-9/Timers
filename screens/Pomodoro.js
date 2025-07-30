@@ -17,7 +17,6 @@ dayjs.extend(durationPlugin);
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Static animation values outside component - initialize once
 let staticAnimations = null;
 
 const getStaticAnimations = () => {
@@ -54,7 +53,7 @@ const StatusDisplay = React.memo(({ isRunning, isPaused, colors, border }) => {
         if (isRunning) return {
             icon: "play",
             text: "Running",
-            color: colors.text
+            color: colors.textDesc +'f2'
         };
         if (isPaused) return {
             icon: "pause",
@@ -111,11 +110,9 @@ const timerDisplayStyles = StyleSheet.create({
 const TimerDisplay = React.memo(({ formattedTime, colors }) => (
     <View style={timerDisplayStyles.timerContainer}>
         <Text style={[timerDisplayStyles.timerText, { color: colors.text }]}>{formattedTime}</Text>
-        <Text style={[timerDisplayStyles.subLabel, { color: colors.textDesc }]}>Time Remaining</Text>
     </View>
 ));
 
-// ProgressDisplay styles
 const progressDisplayStyles = StyleSheet.create({
     waveContainer: {
         borderRadius: 12,
@@ -339,7 +336,7 @@ export default function Pomodoro() {
         sessionTitle: {
             fontSize: 18,
             fontWeight: '600',
-            color: colors.text,
+            color: colors.textDesc,
             marginBottom: 14,
             height: 26
         },

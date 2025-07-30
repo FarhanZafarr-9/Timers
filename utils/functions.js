@@ -576,9 +576,25 @@ export const quotes = [
 ];
 
 export const appBuild = 'stable';
-export const appVersion = '1.1.3';
+export const appVersion = '1.1.4';
 
 export const changelog = [
+    {
+        "version": "1.1.4",
+        "date": "2025-07-30",
+        "title": "Fixes & Visual Consistency Improvements",
+        "major": false,
+        "changes": [
+            { "type": "fixed", "text": "Resolved sheet sharing bug – TimerOverlay content now exports correctly when shared" },
+            { "type": "fixed", "text": "Fixed accent visibility issue in custom themes and highlight overlays" },
+            { "type": "fixed", "text": "Corrected prominence dimming behavior while timer is running in Pomodoro mode" },
+
+            { "type": "improved", "text": "Enhanced internal logging for easier debugging and context tracking" },
+            { "type": "improved", "text": "Refined under-the-hood consistency in UI padding, text scaling, and spacing across all timer screens" },
+
+            { "type": "summarized", "text": "Fixed export bug, accent visibility, and Pomodoro dimming; improved logs and cleaned up visual inconsistencies in core timer UI components." }
+        ]
+    },
     {
         "version": "1.1.3",
         "date": "2025-07-29",
