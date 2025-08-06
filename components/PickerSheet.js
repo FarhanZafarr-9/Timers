@@ -29,6 +29,7 @@ const PickerSheet = ({
     maxHeight = screenHeight * 0.6,
     pillsPerRow = 2,
     defaultValue = null,
+    hideLabel,
     note
 }) => {
     //useRenderLogger(`PickerSheet, ${title}`);
@@ -74,10 +75,10 @@ const PickerSheet = ({
         trigger: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderRadius: variables.radius.sm,
+            borderRadius: variables.radius.lg,
             paddingVertical: 6,
             paddingHorizontal: 8,
-            backgroundColor: colors.highlight + '12',
+            backgroundColor: colors.highlight + '10',
             borderWidth: border,
             borderColor: colors.border,
             minWidth: 60,
@@ -229,7 +230,8 @@ const PickerSheet = ({
             paddingVertical: 10,
             backgroundColor: colors.card,
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
+            flexDirection: 'row',
             borderRadius: variables.radius.sm,
             borderWidth: border,
             borderColor: colors.border,
@@ -247,7 +249,7 @@ const PickerSheet = ({
     const selectedOption = options.find(opt => opt.value === value);
     const selectedLabel = selectedOption?.label || placeholder;
     const selectedIcon = selectedOption?.icon;
- 
+
     const handlePillPress = useCallback((optionValue) => {
         onChange(optionValue);
     }, [onChange]);
@@ -312,16 +314,19 @@ const PickerSheet = ({
                             })}
                         </View>
                     )}
-                    <Text
-                        style={[
-                            styles.pillText,
-                            isSelected && styles.selectedPillText,
-                        ]}
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
-                    >
-                        {option.label}
-                    </Text>
+                    {!hideLabel && (
+                        <Text
+                            style={[
+                                styles.pillText,
+                                isSelected && styles.selectedPillText,
+                            ]}
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                        >
+                            {option.label}
+                        </Text>
+                    )}
+
                 </TouchableOpacity>
             </Animated.View>
         );
@@ -402,9 +407,12 @@ const PickerSheet = ({
                             )}
                         </ScrollView>
 
-                        {note && <View style={[styles.descContainer, { marginTop: 0, marginBottom: 20 }]}>
+                        {note || hideLabel && <View style={[styles.descContainer, { marginTop: 0, marginBottom: 20 }]}>
                             <Text style={styles.desc}>
-                                Note :  {note}
+                                {note ? `Note` : `Selected option`}
+                            </Text>
+                            <Text style={styles.desc}>
+                                {note ? note : selectedLabel}
                             </Text>
                         </View>}
 

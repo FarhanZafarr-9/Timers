@@ -80,6 +80,7 @@ export const accentOptions = [
     { label: 'Fuchsia', value: 'fuchsia', icon: <Icons.Ion name="sparkles-outline" size={16} color="#d946ef" />, description: 'Neon fuchsia pops, modern & playful' },
     { label: 'Slate', value: 'slate', icon: <Icons.Ion name="grid-outline" size={16} color="#64748b" />, description: 'Subtle slate blues, modern & muted' },
     { label: 'Subtle', value: 'subtle', icon: <Icons.Ion name="ellipse-outline" size={16} color="#9ca3af" />, description: 'Neutral tones for a soft, balanced look' },
+    { label: 'Ash', value: 'ash', icon: <Icons.Ion name="cloudy-outline" size={16} color="#6b7280" />, description: 'Muted greys with a cool, minimal touch' }
 ];
 
 
@@ -576,9 +577,28 @@ export const quotes = [
 ];
 
 export const appBuild = 'stable';
-export const appVersion = '1.1.4';
+export const appVersion = '1.1.5';
 
 export const changelog = [
+    {
+        "version": "1.1.5",
+        "date": "2025-08-06",
+        "title": "Visual, UI Polishing and  Accents Return",
+        "major": false,
+        "changes": [
+            { "type": "new", "text": "Introduced new theme with distinct tones for more personalization" },
+            { "type": "new", "text": "Re-added previously removed accents, bringing the total to 13" },
+            { "type": "new", "text": "Added multiple progress modes in Pomodoro screen for different tracking preferences" },
+
+            { "type": "improved", "text": "Polished settings page UI for a more refined and intuitive experience" },
+            { "type": "improved", "text": "Enhanced PickerSheet visuals and added better handling for overflow pills" },
+            { "type": "improved", "text": "General UI enhancements and consistency adjustments across components" },
+
+            { "type": "fixed", "text": "Minor bug fixes and layout inconsistencies across various views" },
+
+            { "type": "summarized", "text": "New theme and Pomodoro modes added, all 13 accents now available again, settings and picker visuals polished, plus minor UI improvements and fixes." }
+        ]
+    },
     {
         "version": "1.1.4",
         "date": "2025-07-30",
