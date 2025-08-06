@@ -888,11 +888,6 @@ const AddTimer = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) =
                                             <Switch
                                                 value={useModernPicker}
                                                 onValueChange={setUseModernPicker}
-                                                trackColor={{
-                                                    false: colors.switchTrack,
-                                                    true: colors.switchTrackActive,
-                                                }}
-                                                thumbColor={useModernPicker ? colors.switchThumb : colors.switchThumbActive}
                                             />
                                         </View>
                                     </View>
@@ -948,11 +943,6 @@ const AddTimer = ({ visible, onClose, onAdd, initialData, mode, isDuplicate }) =
                                                             recurrenceInterval: val ? prev.recurrenceInterval : '',
                                                         }))
                                                     }
-                                                    trackColor={{
-                                                        false: colors.switchTrack,
-                                                        true: colors.switchTrackActive,
-                                                    }}
-                                                    thumbColor={timerData.isRecurring ? colors.switchThumb : colors.switchThumbActive}
                                                 />
                                             </View>
                                         </View>

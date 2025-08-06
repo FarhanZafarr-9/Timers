@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, ScrollView } from 'react-native';
 import { useTheme } from '../utils/ThemeContext';
+import Wave from '../components/Wave';
 import HeaderScreen from '../components/HeaderScreen';
 import { Icons } from '../assets/icons';
 import PickerSheet from '../components/PickerSheet';
@@ -9,7 +10,6 @@ import ProgressWave from '../components/ProgressWave';
 import { pomodoroOptions } from '../utils/functions';
 import Toast from 'react-native-toast-message';
 import { scheduleNotification, cancelScheduledNotification } from '../utils/Notify';
-import Switch from '../components/Switch';
 import FadeQuote from '../components/FadeQuote';
 import dayjs from 'dayjs';
 import durationPlugin from 'dayjs/plugin/duration';
@@ -113,6 +113,100 @@ const TimerDisplay = React.memo(({ formattedTime, colors }) => (
     </View>
 ));
 
+
+const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
+    const { progressMode } = useTheme(); 
+    const progressData = useMemo(() => ({
+        percentage: (progress * 100).toFixed(2),
+        elapsed: dayjs.duration(progress * duration).format('HH:mm:ss')
+    }), [progress, duration]);
+
+    const progressWidth = screenWidth * 0.85;
+
+    return (
+        <View style={[
+            progressDisplayStyles.waveContainer,
+            {
+                backgroundColor: colors.settingBlock + '60',
+                borderColor: colors.border,
+                borderWidth: border
+            }
+        ]}>
+            {progressMode === 'linear' ? (
+                <View
+                    style={{
+                        height: 6,
+                        width: '100%',
+                        backgroundColor: colors.highlight + '20',
+                        borderRadius: 6,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <View
+                        style={{
+                            width: `${progressData.percentage}%`,
+                            height: '100%',
+                            backgroundColor: colors.highlight + 'b0',
+                            borderRadius: 8
+                        }}
+                    />
+                </View>
+            ) : progressMode === 'halfWave' ? (
+                <View
+                    style={{
+                        height: 25,
+                        width: progressWidth * (progressData.percentage / 100),
+                        maxWidth: progressWidth,
+                        backgroundColor: colors.highlight + '20',
+                        borderRadius: 6,
+                        overflow: 'hidden',
+                        paddingVertical: 2
+                    }}
+                >
+                    <Wave
+                        amplitude={6}
+                        frequency={10}
+                        speed={3000}
+                        height={20}
+                            color={colors.highlight}
+                            width={progressWidth}
+                    />
+                </View>
+            ) : (
+                <View
+                    style={{
+                        backgroundColor: colors.highlight + '20',
+                        borderRadius: 6,
+                        overflow: 'hidden',
+                        paddingVertical: 4
+                    }}
+                >
+                    <ProgressWave
+                        progressPct={progressData.percentage}
+                        amplitude={8}
+                        frequency={12}
+                        speed={3000}
+                        height={20}
+                        width={progressWidth}
+                        colorCompleted={colors.highlight}
+                        colorRemaining={colors.highlight + '20'}
+                    />
+                </View>
+            )}
+
+            <View style={progressDisplayStyles.progressInfo}>
+                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>
+                    Progress: {progressData.percentage}%
+                </Text>
+                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>
+                    Elapsed: {progressData.elapsed}
+                </Text>
+            </View>
+        </View>
+    );
+});
+
+// Update the progressDisplayStyles to match TimerCard styling
 const progressDisplayStyles = StyleSheet.create({
     waveContainer: {
         borderRadius: 12,
@@ -120,14 +214,6 @@ const progressDisplayStyles = StyleSheet.create({
         marginBottom: 20,
         width: '100%',
         alignItems: 'center',
-    },
-    waveBox: {
-        width: '100%',
-        height: 24,
-        borderRadius: 8,
-        overflow: 'hidden',
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     progressInfo: {
         flexDirection: 'row',
@@ -139,48 +225,6 @@ const progressDisplayStyles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
     }
-});
-
-const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
-    const progressData = useMemo(() => ({
-        percentage: (progress * 100).toFixed(2),
-        elapsed: dayjs.duration(progress * duration).format('HH:mm:ss')
-    }), [progress, duration]);
-
-    return (
-        <View style={[
-            progressDisplayStyles.waveContainer,
-            {
-                backgroundColor: colors.settingBlock + '60',
-                borderColor: colors.border,
-                borderWidth: border
-            }
-        ]}>
-            <View style={[
-                progressDisplayStyles.waveBox,
-                { backgroundColor: colors.highlight + '10' }
-            ]}>
-                <ProgressWave
-                    progressPct={progressData.percentage}
-                    amplitude={5}
-                    frequency={15}
-                    speed={3000}
-                    height={24}
-                    width={screenWidth * 0.8}
-                    colorCompleted={colors.highlight}
-                    colorRemaining={colors.highlight + '20'}
-                />
-            </View>
-            <View style={progressDisplayStyles.progressInfo}>
-                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>
-                    Progress: {progressData.percentage}%
-                </Text>
-                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>
-                    Elapsed: {progressData.elapsed}
-                </Text>
-            </View>
-        </View>
-    );
 });
 
 const TimerUpdater = React.memo(({ isRunning, isPaused, duration, colors, border, onTimerComplete }) => {
@@ -611,7 +655,7 @@ export default function Pomodoro() {
                         >
                             <View style={styles.controlsGrid}>
                                 {/* Duration Picker */}
-                                <View style={styles.pickerContainer}>
+                                {!(isRunning || isPaused) && <View style={styles.pickerContainer}>
                                     <Text style={styles.settingsText}>Choose the interval</Text>
                                     <PickerSheet
                                         value={String(duration)}
@@ -622,31 +666,12 @@ export default function Pomodoro() {
                                         variables={variables}
                                         note={'Choose your focus duration'}
                                         defaultValue={'1500000'}
-                                        disabled={isRunning || isPaused}
                                         pillsPerRow={3}
                                     />
-                                </View>
-
-                                {/*
-                                <View style={styles.settingsRow}>
-                                    <View style={styles.settingsLabel}>
-                                        <Text style={styles.settingsText}>Notify when the timer ends</Text>
-                                    </View>
-                                    <Switch
-                                        value={notify}
-                                        onValueChange={handleNotifyChange}
-                                        thumbColor={!notify ? colors.switchThumbActive : colors.switchThumb}
-                                        trackColor={{
-                                            true: colors.switchTrackActive,
-                                            false: colors.switchTrack
-                                        }}
-                                    />
-                                </View>
-                                */}
+                                </View>}
 
                                 {/* Action Buttons */}
                                 <View style={styles.controlRow}>
-
 
                                     <TouchableOpacity
                                         style={[

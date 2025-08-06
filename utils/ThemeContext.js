@@ -18,7 +18,7 @@ const STORAGE_KEYS = {
 
 const VALID_VALUES = {
     THEMES: ['light', 'dark', 'system'],
-    ACCENTS: ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate', 'subtle'],
+    ACCENTS: ['default', 'blue', 'green', 'purple', 'rose', 'amber', 'teal', 'indigo', 'cyan', 'lime', 'fuchsia', 'slate', 'subtle','ash'],
     UNITS: ['seconds', 'minutes', 'hours', 'days', 'months', 'years', 'auto'],
     BACKGROUND_PATTERNS: ['none', 'grid', 'polka', 'waves', 'noise', 'diagonal', 'cross'],
     NAVIGATION_MODES: ['floating', 'fixed', 'side'],
@@ -584,7 +584,7 @@ const ACCENT_THEMES = {
                 primary: '#0f0f0f',
                 card: '#141414',
                 cardLighter: '#181818',
-                setting: '#131313',
+                setting: '#151515',
                 modal: '#141414',
                 snackbar: '#141414'
             },
@@ -599,7 +599,50 @@ const ACCENT_THEMES = {
             accentBorder: '#c8c8c8',
             addButtonBg: 'rgba(229, 229, 229, 0.06)'
         }
+    },
+    ash: {
+        light: {
+            backgrounds: {
+                primary: '#f6f7f8',       // subtle cooler tint
+                card: '#fbfbfd',
+                cardLighter: '#f1f3f5',
+                setting: '#eceff1',
+                modal: '#fbfbfd',
+                snackbar: '#fbfbfd'
+            },
+            borders: {
+                primary: '#caced3',
+                divider: '#e2e4e7',
+                card: '#caced3'
+            },
+            accent: '#8d99a7',
+            accentText: '#5e6671',
+            accentBg: 'rgba(141, 153, 167, 0.06)',
+            accentBorder: '#7d8b98',
+            addButtonBg: 'rgba(141, 153, 167, 0.04)'
+        },
+        dark: {
+            backgrounds: {
+                primary: '#0e0f11',
+                card: '#18191b',
+                cardLighter: '#1f2023',
+                setting: '#1a1c1e',
+                modal: '#18191b',
+                snackbar: '#18191b'
+            },
+            borders: {
+                primary: '#2f333688',
+                divider: '#25272a',
+                card: '#2f333688'
+            },
+            accent: '#8d99a7',
+            accentText: '#d1d5db',
+            accentBg: 'rgba(141, 153, 167, 0.14)',
+            accentBorder: '#6c7481',
+            addButtonBg: 'rgba(141, 153, 167, 0.08)'
+        }
     }
+
 };
 
 // Helper functions

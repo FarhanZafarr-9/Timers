@@ -57,7 +57,7 @@ const TimerOverlay = forwardRef(({
             borderTopRightRadius: variables.radius.lg,
             paddingHorizontal: 20,
             paddingTop: 20,
-            paddingBottom: 40,
+            paddingBottom: 20,
             minHeight: 280,
             maxHeight: screenHeight * 0.9,
             borderWidth: border,
@@ -116,7 +116,7 @@ const TimerOverlay = forwardRef(({
             paddingHorizontal: 20,
             paddingTop: 20,
             paddingBottom: 40,
-            minHeight: 280,
+            minHeight: 260,
             borderWidth: border,
             borderColor: colors.border
         }

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, Pressable, StyleSheet } from 'react-native';
+import { useTheme } from '../utils/ThemeContext';
 
 const Switch = ({
     value,
     onValueChange,
-    trackColor = { false: '#ccc', true: '#4cd964' },
-    thumbColor = '#fff',
+    track,
+    thumb,
     style
 }) => {
     const offsetX = useRef(new Animated.Value(value ? 32 : 2.5)).current;
@@ -17,6 +18,10 @@ const Switch = ({
             useNativeDriver: false,
         }).start();
     }, [value]);
+
+    const { colors } = useTheme();
+    const trackColor = track ? track : { false: colors.switchTrack, true: colors.switchTrackActive };
+    const thumbColor = thumb ? thumb : { true: colors.switchThumbActive, false: colors.switchThumb };
 
     return (
         <Pressable
@@ -33,7 +38,7 @@ const Switch = ({
                 style={[
                     styles.thumb,
                     {
-                        backgroundColor: thumbColor,
+                        backgroundColor: value ? thumbColor.true : thumbColor.false,
                         transform: [{ translateX: offsetX }],
                     },
                 ]}
@@ -54,12 +59,7 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 12,
-        backgroundColor: '#fff',
-        elevation: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 0.5 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1,
+        elevation: 4,
     },
 });
 

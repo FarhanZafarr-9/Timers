@@ -29,7 +29,7 @@ const QRShareSheet = ({
     const [translateY] = useState(new Animated.Value(screenHeight));
     const [opacity] = useState(new Animated.Value(0));
     const [isReallyVisible, setIsReallyVisible] = useState(false);
-    const [useLinkMode, setUseLinkMode] = useState(true);
+    const [useLinkMode, setUseLinkMode] = useState(false);
     const qrRef = useRef();
     const { colors, border, variables, headerMode } = useTheme();
 
@@ -311,8 +311,6 @@ const QRShareSheet = ({
                             <Switch
                                 value={useLinkMode}
                                 onValueChange={handleLinkModeToggle}
-                                trackColor={{ false: colors.switchTrack, true: colors.switchTrackActive }}
-                                thumbColor={useLinkMode ? colors.switchThumbActive : colors.switchThumb}
 
                             />
                         </View>
