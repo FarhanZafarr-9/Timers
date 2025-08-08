@@ -15,23 +15,26 @@ import Pomodoro from './screens/Pomodoro';
 import Splash from './screens/Splash';
 
 // Components
-import NavBar from './components/NavBar';
+import NavBar from './components/navigation/NavBar';
 import Toast from 'react-native-toast-message';
-import AuthContext from './utils/AuthContext';
-import ChnageLogSheet from './components/ChnageLogSheet';
+import AuthContext from './contexts/AuthContext';
+import ChnageLogSheet from './components/sheets/ChnageLogSheet';
 
 // Context Providers
-import { TimerProvider } from './utils/TimerContext';
-import { SecurityProvider, useSecurity } from './utils/SecurityContext';
-import { ThemeProvider, useTheme } from './utils/ThemeContext';
-import { NavBarProvider } from './utils/NavContext';
+import { TimerProvider } from './contexts/TimerContext';
+import { SecurityProvider, useSecurity } from './contexts/SecurityContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { NavBarProvider } from './contexts/NavContext';
 
 // Hooks
-import { useCheckForUpdate } from './utils/useCheckForUpdate';
+import { useCheckForUpdate } from './utils/updates/updateUtils';
 
 // Utils & Helpers
-import { requestNotificationPermissions } from './utils/Notify';
+import { requestNotificationPermissions } from './utils/notifications/Notify';
 import { checkForUpdateAndReload, toastConfig } from './utils/functions';
+import { setupIgnoredWarnings } from './utils/warnings/ignoreWarnings';
+
+setupIgnoredWarnings();
 
 export async function runUpdateCheck() {
   await checkForUpdateAndReload();
@@ -49,7 +52,7 @@ function AppContent() {
   useEffect(() => {
     const runStartup = async () => {
       await runUpdateCheck();
-      await new Promise((res) => setTimeout(res, 1200));
+      await new Promise((res) => setTimeout(res, 900));
       setShowSplash(false);
     };
     runStartup();

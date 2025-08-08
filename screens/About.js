@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, TouchableOpacity } from 'react-native';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Icons } from '../assets/icons';
-import HeaderScreen from '../components/HeaderScreen';
+import HeaderScreen from '../components/navigation/HeaderScreen';
 import { appVersion } from '../utils/functions';
 import { appBuild } from '../utils/functions';
-import AboutModal from '../components/AboutModal';
+import AboutModal from '../components/sheets/AboutModal';
 import Toast from 'react-native-toast-message';
 
 export default function About() {
@@ -131,7 +131,7 @@ export default function About() {
                 <AboutModal onClose={() => setShowAboutMe(false)} />
             )}
             <View style={styles.content}>
-                
+
                 <Animated.View style={[styles.card, styles.row, { transform: [{ translateY: topCardAnim }], opacity: topOpacityAnim }]}>
                     <Image source={require('../assets/icon.png')} style={styles.appIcon} />
                     <View style={{ flex: 1 }}>
@@ -165,7 +165,7 @@ export default function About() {
                 <Animated.View style={[styles.card, { transform: [{ translateY: creditsCardAnim }], opacity: creditsOpacityAnim, paddingVertical: 12, width: '100%' }]}>
                     <Text style={[styles.credits]}>Made with ❤️ by Parzival</Text>
                 </Animated.View>
-               
+
             </View>
         </HeaderScreen>
     );

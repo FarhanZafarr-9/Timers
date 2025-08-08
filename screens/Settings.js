@@ -1,5 +1,6 @@
 // Settings.js
-import React, {
+// React and React Native Imports
+import {
     memo,
     useCallback,
     useMemo,
@@ -7,23 +8,35 @@ import React, {
     useRef,
     useEffect,
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, ActionSheetIOS } from 'react-native';
-import { Icons } from '../assets/icons';
-import { useTimers } from '../utils/TimerContext';
-import { useSecurity } from '../utils/SecurityContext';
-import { useTheme } from '../utils/ThemeContext';
-import { useNavBar } from '../utils/NavContext';
-import HeaderScreen from '../components/HeaderScreen';
-import PickerSheet from '../components/PickerSheet';
-import Switch from '../components/Switch';
-import ConfirmSheet from '../components/ConfirmSheet';
-import PasswordPrompt from '../components/PasswordPrompt';
-import ChnageLogSheet from '../components/ChnageLogSheet';
-import { checkForUpdateAndReload, useRenderLogger } from '../utils/functions';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Animated
+} from 'react-native';
+
+// Custom Components
+import HeaderScreen from '../components/navigation/HeaderScreen';
+import PickerSheet from '../components/sheets/PickerSheet';
+import Switch from '../components/ui/Switch';
+import ConfirmSheet from '../components/sheets/ConfirmSheet';
+import PasswordPrompt from '../components/sheets/PasswordPrompt';
+import ChnageLogSheet from '../components/sheets/ChnageLogSheet';
+import QRShareSheet from '../components/sheets/ShareSheet';
+import BottomSheet from '../components/sheets/SettingsSheet';
+
+// Contexts
+import { useTimers } from '../contexts/TimerContext';
+import { useSecurity } from '../contexts/SecurityContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { useNavBar } from '../contexts/NavContext';
+
+// Utilities and Functions
+import {
+    checkForUpdateAndReload,
+    useRenderLogger
+} from '../utils/functions';
 import {
     themeOptions,
     accentOptions,
@@ -37,11 +50,22 @@ import {
     unitOptions,
     backgroundOptions,
     linkOptions,
-    encryptData, decryptData
+    encryptData,
+    decryptData
 } from '../utils/functions';
-import Timer from '../classes/Timer';
+import { Icons } from '../assets/icons';
+
+// Expo and Third-Party Libraries
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 import { Linking } from 'react-native';
-import QRShareSheet from '../components/ShareSheet';
+
+// Classes
+import Timer from '../classes/Timer';
+import { populateTimers as populate } from '../utils/timer/populateTimers';
+import { TimerManager } from '../classes/TimeManager';
 
 const DIRECTORY_KEY = 'download_directory_uri';
 
@@ -126,48 +150,98 @@ const CardShell = memo(({ children }) => {
 /* ------------------------------------------------------------------ */
 /*  Re-usable setting row                                             */
 /* ------------------------------------------------------------------ */
-const SettingRow = memo(
-    ({
-        icon,
-        title,
-        desc,
-        onPress,
-        children,
-        disabled,
-        extraStyle,
-    }) => {
-        const { colors, border } = useTheme();
-        const styles = useMemo(
-            () =>
-                StyleSheet.create({
-                    settingBlock: {
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        paddingTop: 18,
-                        paddingBottom: 14,
-                        paddingHorizontal: 20,
-                        backgroundColor: colors.settingBlock + 'f5',
-                        borderRadius: 5
-                    },
-                    settingTextBlock: { flex: 1 },
-                    settingTitle: {
-                        fontSize: 16,
-                        fontWeight: '600',
-                        color: colors.text,
-                        marginBottom: 2,
-                        height: 22,
-                    },
-                    settingDesc: {
-                        fontSize: 13,
-                        color: colors.textDesc,
-                        opacity: 0.85,
-                        height: 18,
-                    },
+const SettingRow = memo(({
+    icon,
+    title,
+    desc,
+    onPress,
+    children,
+    disabled,
+    extraStyle,
+    pillText,
+    pillPosition = 'top-right', // 'top-left', 'top-center', 'top-right', 
+    // 'center-left', 'center', 'center-right',
+    // 'bottom-left', 'bottom-center', 'bottom-right'
+    pillMargin = [0, 0, 0, 0], // additional margin adjustment top, right, bottom , left
+    destructive = false, // for destructive pill style
+}) => {
+    const { colors, border, variables } = useTheme();
+    const styles = useMemo(
+        () => StyleSheet.create({
+            settingRowContainer: {
+                position: 'relative',
+            },
+            settingBlock: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 18,
+                paddingBottom: 14,
+                paddingHorizontal: 20,
+                backgroundColor: colors.settingBlock + 'f5',
+                borderRadius: 5,
+                opacity: disabled ? 0.5 : 1,
+            },
+            settingTextBlock: {
+                flex: 1
+            },
+            settingTitle: {
+                fontSize: 16,
+                fontWeight: '600',
+                color: colors.text,
+                marginBottom: 2,
+                height: 22,
+            },
+            settingDesc: {
+                fontSize: 13,
+                color: colors.textDesc,
+                opacity: 0.85,
+                height: 18,
+            },
+            pillContainer: {
+                position: 'absolute',
+                zIndex: 10,
+                ...(pillPosition.includes('top') && { top: -8 + pillMargin[0] }),
+                ...(pillPosition.includes('center') && { top: '50%', marginTop: -8 }),
+                ...(pillPosition.includes('bottom') && { bottom: -8 + pillMargin[2] }),
+                ...(pillPosition.includes('left') && { left: 12 + pillMargin[3] }),
+                ...(pillPosition.includes('center') && pillPosition.split('-')[1] === 'center' && {
+                    left: '50%',
+                    transform: [{ translateX: -50 }]
                 }),
-            [colors, border]
-        );
-        return (
+                ...(pillPosition.includes('right') && { right: 12 + pillMargin[1] }),
+            },
+            pill: {
+                backgroundColor: destructive ? '#F4433620' : colors.highlight,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: destructive ? '#F44336c0' : colors.border + '85',
+                elevation: 2,
+                opacity: disabled ? 0.5 : 1,
+            },
+            pillText: {
+                fontSize: 10,
+                fontWeight: '700',
+                color: destructive ? '#F44336' : colors.background,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+                lineHeight: 12,
+            },
+        }),
+        [colors, border, variables, pillPosition, pillMargin, destructive]
+    );
+
+    return (
+        <View style={styles.settingRowContainer}>
+            {pillText && (
+                <View style={styles.pillContainer}>
+                    <View style={styles.pill}>
+                        <Text style={styles.pillText}>{pillText}</Text>
+                    </View>
+                </View>
+            )}
             <TouchableOpacity
                 style={[styles.settingBlock, extraStyle]}
                 onPress={onPress}
@@ -188,10 +262,9 @@ const SettingRow = memo(
                 </View>
                 {children}
             </TouchableOpacity>
-        );
-    }
-);
-
+        </View>
+    );
+});
 /* ------------------------------------------------------------------ */
 /*  Card 1 – Appearance                                               */
 /* ------------------------------------------------------------------ */
@@ -211,37 +284,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
         setBackgroundPattern,
     } = useTheme();
 
-    const [showExtra, setShowExtra] = useState(() => {
-        return (
-            progressMode !== 'linear' ||
-            backgroundPattern !== 'none' ||
-            borderMode !== 'subtle'
-        );
-    });
-
-    const addMessage = useCallback(
-        (text, type = 'info') => showToast(type, capitalize(type), text),
-        []
-    );
-
-    const handleToggleExtra = useCallback(() => {
-        const V = !showExtra;
-
-        if (!V) {
-            setProgressMode('linear');
-            setBackgroundPattern('none');
-            setBorderMode('subtle');
-
-            setTimeout(() => {
-                setShowExtra(false);
-            }, 150);
-            addMessage('Extra Layout options disabled.', 'info')
-        } else {
-            setShowExtra(true);
-            addMessage('Extra Layout options enabled.', 'success');
-        }
-    }, [showExtra, accentMode]);
-
+    const [showExtra, setShowExtra] = useState(false);
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
             <SettingRow
@@ -284,67 +327,74 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                 icon="rocket-outline"
                 title="Extra"
                 desc="Extra UI options"
-                onPress={() => handleToggleExtra(!showExtra)}
+                onPress={() => setShowExtra(true)}
             >
-                <Switch
-                    value={showExtra}
-                    onValueChange={handleToggleExtra}
-
+                <Icons.Ion
+                    name={"arrow-forward-outline"}
+                    size={18}
+                    color={colors.highlight}
+                    style={{ transform: [{ scale: 1.15 }], marginRight: 22 }}
                 />
+
             </SettingRow>
 
-            {showExtra && (
-                <>
-                    <SettingRow
-                        icon="analytics-outline"
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Appearance Options">
+                <SettingRow
+                    icon="analytics-outline"
+                    title="Progress"
+                    desc="Choose progress mode"
+                >
+                    <PickerSheet
+                        value={progressMode}
+                        options={progressOptions}
+                        onChange={setProgressMode}
                         title="Progress"
-                        desc="Choose progress mode"
-                    >
-                        <PickerSheet
-                            value={progressMode}
-                            options={progressOptions}
-                            onChange={setProgressMode}
-                            title="Progress"
-                            placeholder="Select progress"
-                            colors={colors}
-                            variables={variables}
-                            defaultValue="linear"
-                            note="Wavy motion completely stabled and working fluidly, enjoy ✨"
-                        />
-                    </SettingRow>
+                        placeholder="Select progress"
+                        colors={colors}
+                        variables={variables}
+                        defaultValue="linear"
+                        note="Wavy motion completely stabled and working fluidly, enjoy ✨"
+                    />
+                </SettingRow>
 
-                    <SettingRow
-                        icon="color-palette-outline"
+                <SettingRow
+                    icon="color-palette-outline"
+                    title="Border"
+                    desc="Choose border mode"
+                >
+                    <PickerSheet
+                        value={borderMode}
+                        options={borderOptions}
+                        onChange={setBorderMode}
                         title="Border"
-                        desc="Choose border mode"
-                    >
-                        <PickerSheet
-                            value={borderMode}
-                            options={borderOptions}
-                            onChange={setBorderMode}
-                            title="Border"
-                            placeholder="Select Border mode"
-                            colors={colors}
-                            variables={variables}
-                            defaultValue="subtle"
-                        />
-                    </SettingRow>
+                        placeholder="Select Border mode"
+                        colors={colors}
+                        variables={variables}
+                        defaultValue="subtle"
+                    />
+                </SettingRow>
 
-                    <SettingRow icon="color-fill-outline" title="Background" desc="Select background pattern">
-                        <PickerSheet
-                            value={backgroundPattern}
-                            options={backgroundOptions}
-                            onChange={setBackgroundPattern}
-                            title="Background"
-                            placeholder="Select background pattern"
-                            colors={colors}
-                            variables={variables}
-                            defaultValue="none"
-                            note="Still under development, so use carefully."
-                        />
-                    </SettingRow>
-                </>
-            )}
+                <SettingRow
+                    icon="color-fill-outline"
+                    title="Background"
+                    desc="Select background pattern"
+                    destructive
+                    pillText={"Battery Intensive"}
+                    pillMargin={[6, 6, 0, 0]}
+                >
+                    <PickerSheet
+                        value={backgroundPattern}
+                        options={backgroundOptions}
+                        onChange={setBackgroundPattern}
+                        title="Background"
+                        placeholder="Select background pattern"
+                        colors={colors}
+                        variables={variables}
+                        defaultValue="none"
+                        note="Not fully developed, so use carefully."
+                    />
+                </SettingRow>
+            </BottomSheet>
         </AnimatedCard>
     );
 });
@@ -369,23 +419,11 @@ const LayoutCard = memo(({ animatedStyle }) => {
     } = useTheme();
     const { shouldHide, setShouldHide } = useNavBar();
 
-    const [showExtra, setShowExtra] = useState(layoutMode === 'grid' || defaultUnit !== 'auto' || fixedBorder || shouldHide ? true : false);
+    const [showExtra, setShowExtra] = useState(false);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
     );
-
-
-    const handleToggleExtra = (v) => {
-        setShowExtra(v);
-        addMessage(`Extra Layout options ${v ? 'enabled' : 'disabled'}.`);
-        if (!v) {
-            setDefaultUnit('auto');
-            setFixedBorder(false);
-            setShouldHide(false);
-            setLayoutMode('list');
-        }
-    };
 
     const handleToggleFixedBorder = (v) => {
         setFixedBorder(v);
@@ -435,78 +473,90 @@ const LayoutCard = memo(({ animatedStyle }) => {
 
             <SettingRow
                 icon="construct-outline"
-                title="Experimental"
-                desc="Experimental Layout Features"
-                onPress={() => handleToggleExtra(!showExtra)}
+                title="Extra"
+                desc="Extra Layout Features"
+                onPress={() => setShowExtra(true)}
             >
-                <Switch
-                    value={showExtra}
-                    onValueChange={handleToggleExtra}
-
+                <Icons.Ion
+                    name={"arrow-forward-outline"}
+                    size={18}
+                    color={colors.highlight}
+                    style={{ transform: [{ scale: 1.15 }], marginRight: 22 }}
                 />
             </SettingRow>
 
-            {showExtra && (
-                <>
-                    <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode">
-                        <PickerSheet
-                            value={layoutMode}
-                            options={layoutOptions}
-                            onChange={setLayoutMode}
-                            title="Layout"
-                            placeholder="Layout"
-                            colors={colors}
-                            variables={variables}
-                            defaultValue="list"
-                            note="Grid layout minimizes privacy text for easier view"
-                        />
-                    </SettingRow>
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Layout Options">
+                <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode">
+                    <PickerSheet
+                        value={layoutMode}
+                        options={layoutOptions}
+                        onChange={setLayoutMode}
+                        title="Layout"
+                        placeholder="Layout"
+                        colors={colors}
+                        variables={variables}
+                        defaultValue="list"
+                        note="Grid layout minimizes privacy text for easier view"
+                    />
+                </SettingRow>
 
-                    {layoutMode === 'grid' && (
-                        <SettingRow icon="speedometer-outline" title="Default Unit" desc="Card unit setting" >
-                            <PickerSheet
-                                value={defaultUnit}
-                                options={unitOptions}
-                                onChange={setDefaultUnit}
-                                title="Unit"
-                                placeholder="Unit"
-                                colors={colors}
-                                variables={variables}
-                                defaultValue="auto"
-                                note="This default unit is only considered in grid mode"
-                            />
-                        </SettingRow>
-                    )}
 
-                    {(navigationMode === 'fixed' || headerMode === 'fixed') && (
-                        <>
-                            <SettingRow
-                                icon="crop-outline"
-                                title="Border radius"
-                                desc="Fixed mode corners"
-                                onPress={() => handleToggleFixedBorder(!fixedBorder)}
-                            >
-                                <Switch
-                                    value={!!fixedBorder}
-                                    onValueChange={handleToggleFixedBorder}
-                                />
-                            </SettingRow>
+                <SettingRow
+                    icon="speedometer-outline"
+                    title="Default Unit"
+                    desc="Card unit setting"
+                    disabled={layoutMode !== 'grid'}
+                    pillText={`${layoutMode === 'grid' ? '' : 'For Grid'}`}
+                    pillMargin={[8, 4, 0, 0]}
+                >
+                    <PickerSheet
+                        value={defaultUnit}
+                        options={unitOptions}
+                        onChange={setDefaultUnit}
+                        title="Unit"
+                        placeholder="Unit"
+                        colors={colors}
+                        variables={variables}
+                        defaultValue="auto"
+                        note="This default unit is only considered in grid mode"
+                        disabled={layoutMode !== 'grid'}
+                    />
+                </SettingRow>
 
-                            <SettingRow
-                                icon="expand-outline"
-                                title="Immerse"
-                                desc="Auto-hide fixed modes"
-                                onPress={() => handleToggleImmerse(!shouldHide)}
-                            >
-                                <Switch
-                                    value={!!shouldHide}
-                                    onValueChange={handleToggleImmerse}
-                                />
-                            </SettingRow>
-                        </>
-                    )}
-                </>
-            )}
+                <SettingRow
+                    icon="crop-outline"
+                    title="Border radius"
+                    desc="Fixed mode corners"
+                    onPress={() => handleToggleFixedBorder(!fixedBorder)}
+                    disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
+                    pillText={`${navigationMode !== 'fixed' && headerMode !== 'fixed' ? 'For Fixed modes' : ''}`}
+                    pillMargin={[8, 4, 0, 0]}
+                >
+                    <Switch
+                        value={!!fixedBorder}
+                        onValueChange={handleToggleFixedBorder}
+                        disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
+                    />
+                </SettingRow>
+
+                <SettingRow
+                    icon="expand-outline"
+                    title="Immerse"
+                    desc="Auto-hide fixed modes"
+                    onPress={() => handleToggleImmerse(!shouldHide)}
+                    disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
+                    pillText={"Experimental"}
+                    pillMargin={[8, 4, 0, 0]}
+                    destructive
+                >
+                    <Switch
+                        value={!!shouldHide}
+                        onValueChange={handleToggleImmerse}
+                        disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
+                    />
+                </SettingRow>
+
+            </BottomSheet>
         </AnimatedCard>
     );
 });
@@ -540,6 +590,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
     );
+    const [showExtra, setShowExtra] = useState(false);
 
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
@@ -597,26 +648,46 @@ const SecurityCard = memo(({ animatedStyle }) => {
                 />
             </SettingRow>
 
-            {isPasswordLockEnabled && (
-                <>
-                    <SettingRow
-                        icon="key-outline"
-                        title={isPasswordLockEnabled ? 'Change Password' : 'Set Password'}
-                        desc={
-                            isPasswordLockEnabled
-                                ? 'Change your current password'
-                                : 'Set a password for extra security'
-                        }
-                        onPress={() => {
-                            setMode(isPasswordLockEnabled ? 'change' : 'set');
-                            setPasswordPromptVisible(true);
-                        }}
-                    />
-                </>
-            )}
+            <SettingRow
+                icon="apps-outline"
+                title="Extra"
+                desc="Extra security options"
+                onPress={() => setShowExtra(true)}
+            >
+                <Icons.Ion
+                    name={"arrow-forward-outline"}
+                    size={18}
+                    color={colors.highlight}
+                    style={{ transform: [{ scale: 1.15 }], marginRight: 22 }}
+                />
+            </SettingRow>
 
-            {shouldUseLockout() && (
-                <SettingRow icon="timer-outline" title="Lockout" desc="Set duration for reauthentication">
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Security Options">
+                <SettingRow
+                    icon="key-outline"
+                    title={isPasswordLockEnabled ? 'Change Password' : 'Set Password'}
+                    desc={
+                        isPasswordLockEnabled
+                            ? 'Change your current password'
+                            : 'Set a password for extra security'
+                    }
+                    onPress={() => {
+                        setMode(isPasswordLockEnabled ? 'change' : 'set');
+                        setPasswordPromptVisible(true);
+                    }}
+                    disabled={!isPasswordLockEnabled || loading}
+                    pillText={`${isPasswordLockEnabled ? '' : 'Enable Password'}`}
+                    pillMargin={[12, -4, 0, 0]}
+                />
+
+                <SettingRow
+                    icon="timer-outline"
+                    title="Lockout"
+                    desc="Set duration for reauthentication"
+                    disabled={!shouldUseLockout()}
+                    pillText={`${isFingerprintEnabled || isPasswordLockEnabled ? 'Experimental' : 'Enable Lock'}`}
+                    pillMargin={[6, -4, 0, 0]}
+                >
                     <PickerSheet
                         value={lockoutMode}
                         options={lockoutOptions}
@@ -626,9 +697,11 @@ const SecurityCard = memo(({ animatedStyle }) => {
                         colors={colors}
                         variables={variables}
                         pillsPerRow={3}
+                        disabled={!shouldUseLockout()}
                     />
                 </SettingRow>
-            )}
+            </BottomSheet>
+
 
             <PasswordPrompt
                 visible={PasswordPromptVisible}
@@ -653,12 +726,12 @@ const SecurityCard = memo(({ animatedStyle }) => {
 const TimerManagementCard = memo(({ animatedStyle }) => {
     const { initializeTimers, clearAllTimers, timers, setTimersAndSave } = useTimers();
     const [directoryUri, setDirectoryUri] = useState(null);
-    const [populateDisabled, setPopulateDisabled] = useState(false);
-    const [showExtra, setShowExtra] = useState(0);
+    const [populateDisabled, setPopulateDisabled] = useState(!__DEV__);
+    const [showExtra, setShowExtra] = useState(false);
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
     const [confirmText, setConfirmText] = useState('');
-    const [useEncryption, setUseEncryption] = useState(true);
+    const [useEncryption, setUseEncryption] = useState(false);
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -701,13 +774,39 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
         })();
     }, []);
 
+    // In your TimerManagementCard component, replace the existing populateTimers function:
+
     const populateTimers = useCallback(async () => {
         if (populateDisabled) return;
-        setPopulateDisabled(true);
-        await initializeTimers();
-        addMessage('Sample timers have been added.', 'success');
-        setTimeout(() => setPopulateDisabled(false), 2000);
-    }, [populateDisabled, initializeTimers, addMessage]);
+
+        try {
+            setPopulateDisabled(true);
+            addMessage('Adding sample timers...', 'info');
+
+            // Create a TimerManager instance
+            const timerManager = new TimerManager();
+
+            // Initialize it with existing timers from your context
+            timerManager.timers = timers.map(timer => new Timer(timer));
+
+            // Use the populate function (make sure import path is correct)
+            const createdTimers = await populate(timerManager, {
+                countdownCount: 3,
+                countupCount: 3
+            });
+
+            // Update your context with all timers (existing + new ones)
+            setTimersAndSave(timerManager.getAllTimers());
+
+            addMessage(`Added ${createdTimers.length} sample timers successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Failed to populate timers:', error);
+            addMessage('Failed to add sample timers', 'error');
+        } finally {
+            setTimeout(() => setPopulateDisabled(false), 2000);
+        }
+    }, [populateDisabled, timers, setTimersAndSave, addMessage]);
 
     const changeDir = useCallback(async () => {
         try {
@@ -731,7 +830,6 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
             }),
         [colors]
     );
-
 
     /* ---------- EXPORT ---------- */
     const handleExport = useCallback(async () => {
@@ -876,7 +974,6 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
         setDefaultUnit, setFixedBorder, setShouldHide, setTimersAndSave, addMessage,
     ]);
 
-
     /* helper map for dynamic setting in import */
     const setters = {
         accentMode: setAccentMode,
@@ -908,44 +1005,8 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
 
     return (
         <AnimatedCard animatedStyle={animatedStyle}>
-            {showExtra === 3 && (
-                <SettingRow
-                    icon="refresh"
-                    title="Populate Timers"
-                    desc="Add sample timers for quick testing"
-                    disabled={populateDisabled}
-                    onPress={populateTimers}
-                />
-            )}
 
-            <SettingRow icon="trash" title="Clear All Timers" desc="Remove all timers from your device" onPress={clearTimers} />
-
-            <SettingRow
-                icon={useEncryption ? 'shield-checkmark-outline' : 'shield-outline'}
-                title="Backup Encryption"
-                desc="Encrypt backup files for security"
-                onPress={() => {
-                    setUseEncryption(!useEncryption);
-                    if (!useEncryption) {
-                        addMessage('Backup encryption enabled - backups will be encrypted', 'success');
-                    } else {
-                        addMessage('Backup encryption disabled - backups will be plain text', 'info');
-                    }
-                }}
-            >
-                <Switch
-                    value={!!useEncryption}
-                    onValueChange={(v) => {
-                        setUseEncryption(v);
-                        if (v) {
-                            addMessage('Backup encryption enabled - backups will be encrypted', 'success');
-                        } else {
-                            addMessage('Backup encryption disabled - backups will be plain text', 'info');
-                        }
-                    }
-                }
-                />
-            </SettingRow>
+            <SettingRow icon="trash" title="Clear All Timers" desc="Remove all timers from your device" onPress={clearTimers} pillText={"Destructive"} pillPosition={"top-right"} destructive pillMargin={[18, -4, 0, 0]} />
 
             <SettingRow
                 icon="swap-horizontal-outline"
@@ -962,11 +1023,66 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
             />
 
             <SettingRow
-                icon="file-tray-outline"
-                title="Change Export Folder"
-                desc={directoryUri ? `Current: ${format(directoryUri)}` : 'No folder selected'}
-                onPress={changeDir}
-            />
+                icon="code-working-outline"
+                title="Extra"
+                desc="Extra timer options"
+                onPress={() => setShowExtra(true)}
+            >
+                <Icons.Ion
+                    name={"arrow-forward-outline"}
+                    size={18}
+                    color={colors.highlight}
+                    style={{ transform: [{ scale: 1.15 }], marginRight: 22 }}
+                />
+            </SettingRow>
+
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Timer Options">
+
+                <SettingRow
+                    icon={useEncryption ? 'shield-checkmark-outline' : 'shield-outline'}
+                    title="Backup Encryption"
+                    desc="Encrypt backup files for security"
+                    onPress={() => {
+                        setUseEncryption(!useEncryption);
+                        if (!useEncryption) {
+                            addMessage('Backup encryption enabled - backups will be encrypted', 'success');
+                        } else {
+                            addMessage('Backup encryption disabled - backups will be plain text', 'info');
+                        }
+                    }}
+                >
+                    <Switch
+                        value={!!useEncryption}
+                        onValueChange={(v) => {
+                            setUseEncryption(v);
+                            if (v) {
+                                addMessage('Backup encryption enabled - backups will be encrypted', 'success');
+                            } else {
+                                addMessage('Backup encryption disabled - backups will be plain text', 'info');
+                            }
+                        }}
+                    />
+                </SettingRow>
+
+                <SettingRow
+                    icon="file-tray-outline"
+                    title="Change Export Folder"
+                    desc={directoryUri ? `Current: ${format(directoryUri)}` : 'No folder selected'}
+                    onPress={changeDir}
+
+                />
+
+                <SettingRow
+                    icon="refresh"
+                    title="Populate Timers"
+                    desc="Add sample timers for quick testing"
+                    onPress={populateTimers}
+                    disabled={true}
+                    pillText={"Dev feature"}
+                    pillMargin={[18, -6, 0, 0]}
+                />
+
+            </BottomSheet>
 
             <ConfirmSheet
                 visible={confirmVisible}

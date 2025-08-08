@@ -1,16 +1,16 @@
 // Pomodoro.js
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, ScrollView } from 'react-native';
-import { useTheme } from '../utils/ThemeContext';
-import Wave from '../components/Wave';
-import HeaderScreen from '../components/HeaderScreen';
+import { useTheme } from '../contexts/ThemeContext';
+import Wave from '../components/ui/Wave';
+import HeaderScreen from '../components/navigation/HeaderScreen';
 import { Icons } from '../assets/icons';
-import PickerSheet from '../components/PickerSheet';
-import ProgressWave from '../components/ProgressWave';
+import PickerSheet from '../components/sheets/PickerSheet';
+import ProgressWave from '../components/ui/ProgressWave';
 import { pomodoroOptions } from '../utils/functions';
 import Toast from 'react-native-toast-message';
-import { scheduleNotification, cancelScheduledNotification } from '../utils/Notify';
-import FadeQuote from '../components/FadeQuote';
+import { scheduleNotification, cancelScheduledNotification } from '../utils/notifications/Notify';
+import FadeQuote from '../components/ui/FadeQuote';
 import dayjs from 'dayjs';
 import durationPlugin from 'dayjs/plugin/duration';
 dayjs.extend(durationPlugin);
@@ -53,7 +53,7 @@ const StatusDisplay = React.memo(({ isRunning, isPaused, colors, border }) => {
         if (isRunning) return {
             icon: "play",
             text: "Running",
-            color: colors.textDesc +'f2'
+            color: colors.textDesc + 'f2'
         };
         if (isPaused) return {
             icon: "pause",
@@ -115,7 +115,7 @@ const TimerDisplay = React.memo(({ formattedTime, colors }) => (
 
 
 const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
-    const { progressMode } = useTheme(); 
+    const { progressMode } = useTheme();
     const progressData = useMemo(() => ({
         percentage: (progress * 100).toFixed(2),
         elapsed: dayjs.duration(progress * duration).format('HH:mm:ss')
@@ -168,8 +168,8 @@ const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
                         frequency={10}
                         speed={3000}
                         height={20}
-                            color={colors.highlight}
-                            width={progressWidth}
+                        color={colors.highlight}
+                        width={progressWidth}
                     />
                 </View>
             ) : (
