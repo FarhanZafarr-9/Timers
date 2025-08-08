@@ -1,5 +1,5 @@
 import uuid from 'react-native-uuid';
-import { scheduleNotification } from '../utils/Notify';
+import { scheduleNotification } from '../utils/notifications/Notify';
 import dayjs from 'dayjs';
 import * as Notifications from 'expo-notifications';
 

@@ -1,14 +1,14 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
-import { useTimers } from '../utils/TimerContext';
-import { useTheme } from '../utils/ThemeContext';
+import { useTimers } from '../contexts/TimerContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Icons } from '../assets/icons';
-import AddTimer from '../components/AddTimer';
-import HeaderScreen from '../components/HeaderScreen';
-import TimerCard from '../components/TimerCard';
-import { useSecurity } from '../utils/SecurityContext';
+import AddTimer from '../components/timer/AddTimer';
+import HeaderScreen from '../components/navigation/HeaderScreen';
+import TimerCard from '../components/timer/TimerCard';
+import { useSecurity } from '../contexts/SecurityContext';
 import { getPrivacyText } from '../utils/functions';
-import FadeQuote from '../components/FadeQuote';
+import FadeQuote from '../components/ui/FadeQuote';
 
 export default function Home({ navigation }) {
     const { timers, addTimer } = useTimers();
