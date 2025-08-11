@@ -1,4 +1,3 @@
-// Settings.js
 // React and React Native Imports
 import {
     memo,
@@ -22,9 +21,9 @@ import PickerSheet from '../components/sheets/PickerSheet';
 import Switch from '../components/ui/Switch';
 import ConfirmSheet from '../components/sheets/ConfirmSheet';
 import PasswordPrompt from '../components/sheets/PasswordPrompt';
-import ChnageLogSheet from '../components/sheets/ChnageLogSheet';
+import ChangeLogSheet from '../components/sheets/ChangeLogSheet';
 import QRShareSheet from '../components/sheets/ShareSheet';
-import BottomSheet from '../components/sheets/SettingsSheet';
+import { ExtraSheet as BottomSheet } from '../components/sheets/ExtraSheet';
 
 // Contexts
 import { useTimers } from '../contexts/TimerContext';
@@ -162,8 +161,9 @@ const SettingRow = memo(({
     pillPosition = 'top-right', // 'top-left', 'top-center', 'top-right', 
     // 'center-left', 'center', 'center-right',
     // 'bottom-left', 'bottom-center', 'bottom-right'
-    pillMargin = [0, 0, 0, 0], // additional margin adjustment top, right, bottom , left
-    destructive = false, // for destructive pill style
+    pillMargin = [0, 0, 0, 0],  // additional margin adjustment top, right, bottom , left
+    destructive = false,
+    isExtra = false
 }) => {
     const { colors, border, variables } = useTheme();
     const styles = useMemo(
@@ -178,7 +178,7 @@ const SettingRow = memo(({
                 paddingTop: 18,
                 paddingBottom: 14,
                 paddingHorizontal: 20,
-                backgroundColor: colors.settingBlock + 'f5',
+                backgroundColor: !isExtra ? colors.settingBlock : colors.highlight + '10',
                 borderRadius: 5,
                 opacity: disabled ? 0.5 : 1,
             },
@@ -217,8 +217,7 @@ const SettingRow = memo(({
                 paddingVertical: 3,
                 borderRadius: 12,
                 borderWidth: 1.5,
-                borderColor: destructive ? '#F44336c0' : colors.border + '85',
-                elevation: 2,
+                borderColor: destructive ? '#F44336c0' : colors.border,
                 opacity: disabled ? 0.5 : 1,
             },
             pillText: {
@@ -338,11 +337,27 @@ const AppearanceCard = memo(({ animatedStyle }) => {
 
             </SettingRow>
 
-            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Appearance Options">
+            <BottomSheet
+                visible={showExtra}
+                setVisible={setShowExtra}
+                title="Extra Appearance Options"
+                num={3}
+                onClear={() => {
+                    if (progressMode !== 'linear' || borderMode !== 'subtle' || backgroundPattern !== 'none') {
+                        setProgressMode('linear');
+                        setBorderMode('subtle');
+                        setBackgroundPattern('none');
+                        showToast('info', 'Settings Reset', 'Appearance settings have been reset to defaults.');
+                    } else {
+                        showToast('info', 'No Changes', 'Appearance settings are already at defaults.');
+                    }
+                }}
+            >
                 <SettingRow
                     icon="analytics-outline"
                     title="Progress"
                     desc="Choose progress mode"
+                    isExtra
                 >
                     <PickerSheet
                         value={progressMode}
@@ -353,7 +368,6 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                         colors={colors}
                         variables={variables}
                         defaultValue="linear"
-                        note="Wavy motion completely stabled and working fluidly, enjoy ✨"
                     />
                 </SettingRow>
 
@@ -361,6 +375,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                     icon="color-palette-outline"
                     title="Border"
                     desc="Choose border mode"
+                    isExtra
                 >
                     <PickerSheet
                         value={borderMode}
@@ -380,7 +395,9 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                     desc="Select background pattern"
                     destructive
                     pillText={"Battery Intensive"}
-                    pillMargin={[6, 6, 0, 0]}
+                    pillMargin={[8, 6, 0, 0]}
+                    disabled={true} // Not fully developed
+                    isExtra
                 >
                     <PickerSheet
                         value={backgroundPattern}
@@ -392,6 +409,7 @@ const AppearanceCard = memo(({ animatedStyle }) => {
                         variables={variables}
                         defaultValue="none"
                         note="Not fully developed, so use carefully."
+                        disabled={true} // Not fully developed
                     />
                 </SettingRow>
             </BottomSheet>
@@ -485,8 +503,23 @@ const LayoutCard = memo(({ animatedStyle }) => {
                 />
             </SettingRow>
 
-            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Layout Options">
-                <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode">
+            <BottomSheet
+                visible={showExtra}
+                setVisible={setShowExtra}
+                title="Extra Layout Options"
+                num={4}
+                onClear={() => {
+                    if (layoutMode !== 'list' || fixedBorder || shouldHide) {
+                        setLayoutMode('list');
+                        setFixedBorder(false);
+                        setShouldHide(false);
+                        showToast('info', 'Settings Reset', 'Layout settings have been reset to defaults.');
+                    } else {
+                        showToast('info', 'No Changes', 'Layout settings are already at defaults.');
+                    }
+                }}
+            >
+                <SettingRow icon="grid-outline" title="Layout" desc="Select layout mode" isExtra>
                     <PickerSheet
                         value={layoutMode}
                         options={layoutOptions}
@@ -507,7 +540,8 @@ const LayoutCard = memo(({ animatedStyle }) => {
                     desc="Card unit setting"
                     disabled={layoutMode !== 'grid'}
                     pillText={`${layoutMode === 'grid' ? '' : 'For Grid'}`}
-                    pillMargin={[8, 4, 0, 0]}
+                    pillMargin={[8, 6, 0, 0]}
+                    isExtra
                 >
                     <PickerSheet
                         value={defaultUnit}
@@ -518,7 +552,6 @@ const LayoutCard = memo(({ animatedStyle }) => {
                         colors={colors}
                         variables={variables}
                         defaultValue="auto"
-                        note="This default unit is only considered in grid mode"
                         disabled={layoutMode !== 'grid'}
                     />
                 </SettingRow>
@@ -530,7 +563,8 @@ const LayoutCard = memo(({ animatedStyle }) => {
                     onPress={() => handleToggleFixedBorder(!fixedBorder)}
                     disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
                     pillText={`${navigationMode !== 'fixed' && headerMode !== 'fixed' ? 'For Fixed modes' : ''}`}
-                    pillMargin={[8, 4, 0, 0]}
+                    pillMargin={[10, 6, 0, 0]}
+                    isExtra
                 >
                     <Switch
                         value={!!fixedBorder}
@@ -546,8 +580,9 @@ const LayoutCard = memo(({ animatedStyle }) => {
                     onPress={() => handleToggleImmerse(!shouldHide)}
                     disabled={(navigationMode !== 'fixed' && headerMode !== 'fixed')}
                     pillText={"Experimental"}
-                    pillMargin={[8, 4, 0, 0]}
+                    pillMargin={[10, 6, 0, 0]}
                     destructive
+                    isExtra
                 >
                     <Switch
                         value={!!shouldHide}
@@ -603,7 +638,6 @@ const SecurityCard = memo(({ animatedStyle }) => {
                     placeholder="Select mode"
                     colors={colors}
                     variables={variables}
-                    note="Emoji mode has been re enabled, enjoy ✨"
                 />
             </SettingRow>
 
@@ -632,6 +666,15 @@ const SecurityCard = memo(({ animatedStyle }) => {
                 icon={isPasswordLockEnabled ? 'lock-closed-outline' : 'lock-open-outline'}
                 title="Password Lock"
                 desc="Enable password authentication"
+                onPress={() => {
+                    if (!isPasswordLockEnabled) {
+                        setMode('set');
+                        setPasswordPromptVisible(true);
+                    } else {
+                        clearPassword();
+                        addMessage('Password lock disabled.');
+                    }
+                }}
             >
                 <Switch
                     value={!!isPasswordLockEnabled}
@@ -662,7 +705,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
                 />
             </SettingRow>
 
-            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Security Options">
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Security Options" num={2}>
                 <SettingRow
                     icon="key-outline"
                     title={isPasswordLockEnabled ? 'Change Password' : 'Set Password'}
@@ -678,6 +721,7 @@ const SecurityCard = memo(({ animatedStyle }) => {
                     disabled={!isPasswordLockEnabled || loading}
                     pillText={`${isPasswordLockEnabled ? '' : 'Enable Password'}`}
                     pillMargin={[12, -4, 0, 0]}
+                    isExtra
                 />
 
                 <SettingRow
@@ -686,7 +730,8 @@ const SecurityCard = memo(({ animatedStyle }) => {
                     desc="Set duration for reauthentication"
                     disabled={!shouldUseLockout()}
                     pillText={`${isFingerprintEnabled || isPasswordLockEnabled ? 'Experimental' : 'Enable Lock'}`}
-                    pillMargin={[6, -4, 0, 0]}
+                    pillMargin={[8, 6, 0, 0]}
+                    isExtra
                 >
                     <PickerSheet
                         value={lockoutMode}
@@ -731,7 +776,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
     const [confirmText, setConfirmText] = useState('');
-    const [useEncryption, setUseEncryption] = useState(false);
+    const { useEncryption, setUseEncryption } = useSecurity();
     const addMessage = useCallback(
         (text, type = 'info') => showToast(type, capitalize(type), text),
         []
@@ -823,13 +868,6 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
     }, [format, addMessage]);
 
     const { colors } = useTheme();
-    const styles = useMemo(
-        () =>
-            StyleSheet.create({
-                pathDisplay: { fontSize: 12, marginLeft: 12, color: colors.textDesc },
-            }),
-        [colors]
-    );
 
     /* ---------- EXPORT ---------- */
     const handleExport = useCallback(async () => {
@@ -871,6 +909,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                 preferences: {
                     theme: { accentMode, themeMode, borderMode, progressMode, backgroundPattern, privacyMode },
                     layout: { headerMode, navigationMode, layoutMode, defaultUnit, fixedBorder, shouldHide },
+                    security: { useEncryption }
                 },
             };
             const prefsName = `p-${today}.json`;
@@ -935,9 +974,10 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
 
                     // Handle preferences
                     if (parsed?.type === 'preferences' && parsed.preferences) {
-                        const { theme, layout } = parsed.preferences;
+                        const { theme, layout, security } = parsed.preferences;
                         theme && Object.entries(theme).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
                         layout && Object.entries(layout).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
+                        security && Object.entries(security).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
                         addMessage(`Prefs loaded from ${file.name}`, 'success');
                         okPrefs = true;
                         continue;
@@ -971,7 +1011,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
         setAccentMode, setThemeMode, setBorderMode, setProgressMode,
         setBackgroundPattern, setPrivacyModeValue,
         setHeaderMode, setNavigationMode, setLayoutMode,
-        setDefaultUnit, setFixedBorder, setShouldHide, setTimersAndSave, addMessage,
+        setDefaultUnit, setFixedBorder, setShouldHide, setTimersAndSave, addMessage, setUseEncryption
     ]);
 
     /* helper map for dynamic setting in import */
@@ -988,6 +1028,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
         defaultUnit: setDefaultUnit,
         fixedBorder: setFixedBorder,
         shouldHide: setShouldHide,
+        useEncryption: setUseEncryption,
     };
 
     const showConfirm = useCallback((text, action) => {
@@ -1036,7 +1077,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                 />
             </SettingRow>
 
-            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Timer Options">
+            <BottomSheet visible={showExtra} setVisible={setShowExtra} title="Extra Timer Options" num={3}>
 
                 <SettingRow
                     icon={useEncryption ? 'shield-checkmark-outline' : 'shield-outline'}
@@ -1050,6 +1091,9 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                             addMessage('Backup encryption disabled - backups will be plain text', 'info');
                         }
                     }}
+                    isExtra
+                    pillText={"Recommended"}
+                    pillMargin={[10, 6, 0, 0]}
                 >
                     <Switch
                         value={!!useEncryption}
@@ -1069,7 +1113,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                     title="Change Export Folder"
                     desc={directoryUri ? `Current: ${format(directoryUri)}` : 'No folder selected'}
                     onPress={changeDir}
-
+                    isExtra
                 />
 
                 <SettingRow
@@ -1079,7 +1123,8 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                     onPress={populateTimers}
                     disabled={true}
                     pillText={"Dev feature"}
-                    pillMargin={[18, -6, 0, 0]}
+                    pillMargin={[18, 6, 0, 0]}
+                    isExtra
                 />
 
             </BottomSheet>
@@ -1184,7 +1229,7 @@ const AppUpdatesCard = memo(({ animatedStyle }) => {
                 addMessage={addMessage}
             />
 
-            <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
+            <ChangeLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} forced />
 
         </AnimatedCard>
     );
@@ -1194,7 +1239,6 @@ const AppUpdatesCard = memo(({ animatedStyle }) => {
 /*  Main Settings Screen                                              */
 /* ------------------------------------------------------------------ */
 export default memo(function Settings() {
-    useRenderLogger('Settings');
     const { loading: themeLoading } = useTheme();
     const {
         loading: securityLoading,
@@ -1202,6 +1246,7 @@ export default memo(function Settings() {
         isFingerprintEnabled,
         privacyMode,
         lockoutMode,
+        useEncryption
     } = useSecurity();
     const { navigationMode } = useTheme();
 
@@ -1213,7 +1258,8 @@ export default memo(function Settings() {
         isFingerprintEnabled === undefined ||
         privacyMode === undefined ||
         lockoutMode === undefined ||
-        navigationMode === undefined
+        navigationMode === undefined ||
+        useEncryption === undefined
     )
         return null;
 

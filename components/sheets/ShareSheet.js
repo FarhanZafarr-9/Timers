@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-    Modal,
     TouchableOpacity,
     View,
     Text,
     StyleSheet,
-    Animated,
     Dimensions,
     Linking,
     Share
@@ -15,9 +13,8 @@ import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { useTheme } from '../../contexts/ThemeContext';
+import BottomSheet from './BottomSheet';
 import Switch from '../ui/Switch';
-
-const { height: screenHeight } = Dimensions.get('window');
 
 const QRShareSheet = ({
     visible,
@@ -26,54 +23,9 @@ const QRShareSheet = ({
     label = 'Share',
     addMessage,
 }) => {
-    const [translateY] = useState(new Animated.Value(screenHeight));
-    const [opacity] = useState(new Animated.Value(0));
-    const [isReallyVisible, setIsReallyVisible] = useState(false);
     const [useLinkMode, setUseLinkMode] = useState(false);
     const qrRef = useRef();
-    const { colors, border, variables, headerMode } = useTheme();
-
-    useEffect(() => {
-        if (visible) {
-            setIsReallyVisible(true);
-            showSheet();
-        } else {
-            hideSheet();
-        }
-    }, [visible]);
-
-    const showSheet = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    };
-
-    const hideSheet = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: screenHeight,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
-            setIsReallyVisible(false);
-            onClose();
-        });
-    };
+    const { colors, border, variables } = useTheme();
 
     const copyLink = async () => {
         try {
@@ -87,20 +39,17 @@ const QRShareSheet = ({
 
     const shareLink = async () => {
         try {
-            // Try using React Native's built-in Share first
             const result = await Share.share({
                 message: link,
                 url: link,
             });
 
             if (result.action === Share.dismissedAction) {
-                // User dismissed the share dialog
                 return;
             }
         } catch (error) {
             console.error('Built-in share failed, trying expo-sharing:', error);
             try {
-                // Fallback to expo-sharing
                 if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(link, {
                         mimeType: 'text/plain',
@@ -124,13 +73,11 @@ const QRShareSheet = ({
                 result: 'base64'
             });
 
-            // Set image to clipboard using base64 string
             await Clipboard.setImageAsync(uri);
             addMessage('QR code copied to clipboard');
         } catch (error) {
             console.error('Failed to copy QR code:', error);
 
-            // Fallback: try copying the link instead
             try {
                 await Clipboard.setStringAsync(link);
                 addMessage('QR code copy failed, link copied instead');
@@ -185,164 +132,150 @@ const QRShareSheet = ({
     };
 
     const styles = StyleSheet.create({
-        blurOverlay: {
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
-        },
-        sheet: {
-            backgroundColor: colors.modalBg,
-            borderTopLeftRadius: variables.radius.lg || 20,
-            borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 20,
-            borderWidth: border,
-            borderColor: colors.border,
-            elevation: 10,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-        },
-        handle: {
-            width: 40,
-            height: 4,
-            backgroundColor: colors.border,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginVertical: 12,
-        },
         content: {
             paddingHorizontal: 20,
-            alignItems: 'center',
-            width: '100%',
+            paddingBottom: 20,
+            flex: 1,
         },
         header: {
-            width: '100%',
-            paddingBottom: 16,
-            marginBottom: 16,
-            borderBottomWidth: border,
-            borderBottomColor: colors.border,
+            paddingBottom: 15,
+            marginBottom: 5,
+            paddingHorizontal: 5
         },
         headerText: {
-            fontSize: 18,
-            fontWeight: '600',
-            color: colors.text,
-            textAlign: 'center',
-            height: 25
-        },
-        linkContainer: {
-            width: '100%',
-            minHeight: 80,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginVertical: 20,
-            backgroundColor: colors.highlight + '08',
-            borderRadius: 10,
-        },
-        linkText: {
             fontSize: 16,
-            textAlign: 'center',
-            color: colors.highlight,
-            fontStyle: 'italic',
-            paddingHorizontal: 16,
-            height: 25
-        },
-        actions: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            marginTop: 20,
-            gap: 10,
-        },
-        actionBtn: {
-            flex: 1,
-            backgroundColor: colors.highlight + '10',
-            borderRadius: 10,
-            paddingVertical: 12,
-            alignItems: 'center',
-            borderWidth: border,
-            borderColor: colors.border,
-        },
-        actionText: {
-            fontSize: 15,
             fontWeight: '600',
             color: colors.text,
+            height: 22
         },
         toggleRow: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            width: '100%',
-            marginBottom: 10,
+            marginBottom: 20,
+            backgroundColor: colors.settingBlock,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            borderRadius: variables.radius.sm,
+            borderWidth: border,
+            borderColor: colors.border,
         },
         toggleLabel: {
             fontSize: 14,
+            fontWeight: '500',
             color: colors.text,
         },
+        linkContainer: {
+            minHeight: 250,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginBottom: 20,
+            backgroundColor: colors.highlight + '08',
+            borderRadius: variables.radius.md,
+            padding: 16,
+            borderWidth: border,
+            borderColor: colors.border,
+        },
+        linkText: {
+            fontSize: 15,
+            textAlign: 'center',
+            color: colors.highlight,
+            fontWeight: '500',
+            lineHeight: 22,
+        },
         qrContainer: {
-            width: '100%',
-            height: 300,
+            height: 250,
             justifyContent: 'center',
             alignItems: 'center',
             backgroundColor: '#fefefe',
-            borderRadius: 10,
+            borderRadius: variables.radius.md,
+            marginBottom: 20,
+            borderWidth: border,
+            borderColor: colors.border,
+        },
+        actions: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: 'auto',
+            paddingTop: 10,
+            gap: 12,
+        },
+        actionBtn: {
+            flex: 1,
+            backgroundColor: colors.highlight + '08',
+            borderRadius: variables.radius.md,
+            paddingVertical: 12,
+            alignItems: 'center',
+            borderWidth: border,
+            borderColor: colors.border,
+        },
+        shareBtn: {
+            backgroundColor: colors.highlight,
+            borderColor: colors.highlight,
+        },
+        actionText: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.text,
+        },
+        shareText: {
+            color: colors.background,
         },
     });
 
     return (
-        <Modal
-            visible={isReallyVisible}
-            transparent
-            animationType="none"
-            onRequestClose={hideSheet}
-            statusBarTranslucent
+        <BottomSheet
+            visible={visible}
+            onClose={onClose}
+            snapPoints={[0.55]}
+            initialSnapIndex={0}
+            backdropOpacity={1}
+            enableBackdropDismiss={true}
+            enablePanDownToClose={true}
         >
-            <Animated.View style={[styles.blurOverlay, { opacity }]}>
-                <TouchableOpacity style={{ flex: 1 }} onPress={hideSheet} activeOpacity={1} />
-                <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-                    <View style={styles.handle} />
-                    <View style={styles.content}>
-                        <View style={styles.header}>
-                            <Text style={styles.headerText}>Sharing {label} Link</Text>
-                        </View>
 
-                        <View style={styles.toggleRow}>
-                            <Text style={styles.toggleLabel}>Use Link Instead of QR</Text>
-                            <Switch
-                                value={useLinkMode}
-                                onValueChange={handleLinkModeToggle}
+            <View style={styles.header}>
+                <Text style={styles.headerText}>Sharing {label} Link</Text>
+            </View>
 
-                            />
-                        </View>
+            <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Use Link Instead of QR</Text>
+                <Switch
+                    value={useLinkMode}
+                    onValueChange={handleLinkModeToggle}
+                />
+            </View>
 
-                        {useLinkMode ? (
-                            <View style={styles.linkContainer}>
-                                <TouchableOpacity onPress={() => handleOpenLink(link)} >
-                                    <Text style={styles.linkText}>{link}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View ref={qrRef} collapsable={false} style={styles.qrContainer}>
-                                <QRCode value={link} size={200} color='#000000' />
-                            </View>
-                        )}
+            {useLinkMode ? (
+                <View style={styles.linkContainer}>
+                    <TouchableOpacity onPress={() => handleOpenLink(link)} activeOpacity={0.8}>
+                        <Text style={styles.linkText}>{link}</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <View ref={qrRef} collapsable={false} style={styles.qrContainer}>
+                    <QRCode value={link} size={180} color='#000000' />
+                </View>
+            )}
 
-                        <View style={styles.actions}>
-                            <TouchableOpacity style={styles.actionBtn} onPress={handleCopy}>
-                                <Text style={styles.actionText}>Copy</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: colors.highlight }]}
-                                onPress={handleShare}
-                            >
-                                <Text style={[styles.actionText, { color: colors.background }]}>Share</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Animated.View>
-            </Animated.View>
+            <View style={styles.actions}>
+                <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={handleCopy}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.actionText}>Copy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionBtn, styles.shareBtn]}
+                    onPress={handleShare}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.actionText, styles.shareText]}>Share</Text>
+                </TouchableOpacity>
+            </View>
 
-        </Modal>
+        </BottomSheet>
     );
 };
 

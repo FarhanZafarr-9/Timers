@@ -1,113 +1,102 @@
 import { useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Animated } from 'react-native';
-import { quotes } from '../utils/functions';
+import { View, Image, StyleSheet, Animated, Dimensions, Text } from 'react-native';
+
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 const Splash = ({ variables, colors, visible = true, onHide }) => {
-
-    // Animated values for sliding
-    const logoSlide = useRef(new Animated.Value(-550)).current;
-    const textSlide = useRef(new Animated.Value(350)).current;
+    const logoSlide = useRef(new Animated.Value(-300)).current;
+    const creditSlide = useRef(new Animated.Value(200)).current;
 
     useEffect(() => {
         if (visible) {
-            // Slide in
-            Animated.parallel([
+            Animated.stagger(150, [
                 Animated.spring(logoSlide, {
                     toValue: 0,
                     useNativeDriver: true,
                     friction: 7,
                 }),
-                Animated.spring(textSlide, {
+                Animated.spring(creditSlide, {
                     toValue: 0,
                     useNativeDriver: true,
-                    friction: 7,
+                    friction: 8,
                 }),
             ]).start();
         } else {
-            // Slide out
             Animated.parallel([
                 Animated.timing(logoSlide, {
-                    toValue: -200,
-                    duration: 400,
+                    toValue: -300,
+                    duration: 300,
                     useNativeDriver: true,
                 }),
-                Animated.timing(textSlide, {
-                    toValue: 100,
-                    duration: 400,
+                Animated.timing(creditSlide, {
+                    toValue: 200,
+                    duration: 300,
                     useNativeDriver: true,
                 }),
             ]).start(() => {
-                if (onHide) onHide();
+                onHide?.();
             });
         }
-    }, [visible, logoSlide, textSlide, onHide]);
+    }, [visible, logoSlide, creditSlide, onHide]);
 
     const styles = StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: colors.background,
-            justifyContent: 'flex-start',
+            justifyContent: 'center',
             alignItems: 'center',
         },
         logoContainer: {
-            marginTop: '30%',
             alignItems: 'center',
-            width: 220,
+            marginBottom: screenHeight * 0.15,
         },
         logo: {
-            width: 160,
-            height: 160,
+            width: screenWidth * 0.4,
+            height: screenWidth * 0.4,
             borderRadius: variables.radius.xl,
         },
-        quote: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: '30%',
-            textAlign: 'center',
-            fontStyle: 'italic',
-            fontSize: 16,
-            color: colors.highlight + 'f0',
-            fontWeight: '600',
-            height: 25
-        },
         credits: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: '5%',
             textAlign: 'center',
             fontSize: 14,
             color: colors.textDesc,
             fontWeight: 'bold',
-            height: 20
+            height: 20,
         },
     });
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[
-                styles.logoContainer,
-                { transform: [{ translateY: logoSlide }] }
-            ]}>
+            {/* Logo */}
+            <Animated.View
+                style={[styles.logoContainer, { transform: [{ translateY: logoSlide }] }]}
+            >
                 <Image
                     source={require('../assets/icon.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
             </Animated.View>
-            <Animated.Text style={[
-                styles.quote,
-                { transform: [{ translateY: textSlide }] }
-            ]}>
-                {quotes[Math.floor(Math.random() * quotes.length)]}
-            </Animated.Text>
-            <Animated.Text style={[
-                styles.credits,
-                { transform: [{ translateY: textSlide }] }
-            ]}>
-                Made with ❤️ by Parzival.
-            </Animated.Text>
+
+            {/* Credits */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    bottom: '6%',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    transform: [{ translateY: creditSlide }],
+                }}
+            >
+                <Text style={styles.credits}>Made with </Text>
+                <Image
+                    source={require('../assets/heart.png')}
+                    style={{ width: 16, height: 16 }}
+                />
+                <Text style={styles.credits}> by Parzival.</Text>
+            </Animated.View>
+
+
         </View>
     );
 };

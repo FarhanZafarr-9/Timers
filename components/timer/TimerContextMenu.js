@@ -1,24 +1,8 @@
-// 🌐 React & React Native
-import {
-    useEffect,
-    useRef,
-    useCallback,
-    memo
-} from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    Animated,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    StyleSheet,
-    Dimensions
-} from 'react-native';
+import React, { memo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icons } from '../../assets/icons';
 import { useTheme } from '../../contexts/ThemeContext';
-
-const { height: screenHeight } = Dimensions.get('window');
+import BottomSheet from '../sheets/BottomSheet';
 
 const TimerContextMenu = ({
     visible,
@@ -30,69 +14,66 @@ const TimerContextMenu = ({
     onShare,
     timer,
 }) => {
-    const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { border, colors, } = useTheme();
+    const { border, colors, variables } = useTheme();
 
+    const handleAction = useCallback(
+        (action) => {
+            onClose();
+            action();
+        },
+        [onClose]
+    );
 
-    /* ---------- Animations ---------- */
-    useEffect(() => {
-        if (visible) {
-            Animated.parallel([
-                Animated.timing(slideAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(slideAnim, {
-                    toValue: 280,
-                    duration: 250,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: 250,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }
-    }, [visible, slideAnim, fadeAnim]);
+    const actions = [
+        {
+            label: 'Edit',
+            icon: <Icons.Material name="edit" size={20} color={colors.highlight} />,
+            onPress: onEdit,
+            color: colors.text,
+        },
+        {
+            label: 'Duplicate',
+            icon: (
+                <Icons.Material
+                    name="control-point-duplicate"
+                    size={20}
+                    color={colors.highlight}
+                />
+            ),
+            onPress: onDuplicate,
+            color: colors.text,
+        },
+        {
+            label: 'Share',
+            icon: <Icons.Material name="share" size={20} color={colors.highlight} />,
+            onPress: onShare,
+            color: colors.text,
+        },
+        {
+            label: timer.isFavourite ? 'Un-Favourite' : 'Favourite',
+            icon: (
+                <Icons.Material
+                    name={timer.isFavourite ? 'favorite' : 'favorite-border'}
+                    size={20}
+                    color={colors.highlight}
+                />
+            ),
+            onPress: onFavourite,
+            color: colors.text,
+        },
+        {
+            label: 'Delete',
+            icon: <Icons.Material name="delete" size={20} color="#ef4444" />,
+            onPress: onDelete,
+            color: '#ef4444',
+        },
+    ];
 
-    /* ---------- Handlers ---------- */
-    const handleAction = useCallback((action) => {
-        onClose(); // always close the menu first
-        action();
-    }, [onClose]);
-    /* ---------- Styles ---------- */
     const styles = StyleSheet.create({
-        overlay: {
-            flex: 1,
-            justifyContent: 'flex-end',
-        },
-        sheet: {
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            paddingHorizontal: 30,
-            paddingTop: 12,
-            paddingBottom: 40,
-            minHeight: 200,
-            maxHeight: screenHeight * 0.5,
-            borderWidth: border,
-        },
-        handle: {
-            width: 40,
-            height: 4,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginBottom: 36,
+        container: {
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 26,
         },
         actions: {
             gap: 10,
@@ -102,120 +83,46 @@ const TimerContextMenu = ({
             alignItems: 'center',
             paddingVertical: 12,
             paddingHorizontal: 16,
-            borderRadius: 10,
-            borderWidth: border * 0.75,
+            borderRadius: variables.radius.md,
+            borderWidth: !border ? 0 : 0.75,
             justifyContent: 'space-between',
-            backgroundColor: colors.highlight + '08'
+            backgroundColor: colors.settingBlock,
         },
         btnText: {
             fontSize: 16,
             fontWeight: '600',
         },
     });
-    /* ---------- Render ---------- */
+
     return (
-        <Modal
+        <BottomSheet
             visible={visible}
-            transparent
-            animationType="none"
-            onRequestClose={onClose}
+            onClose={onClose}
+            snapPoints={[Math.min(0.38, actions.length * 0.10 + 0.2)]}
+            initialSnapIndex={0}
+            backdropOpacity={1}
+            enableBackdropDismiss
+            enablePanDownToClose
+            closeThreshold={80}
         >
-            <TouchableWithoutFeedback onPress={onClose}>
-                <Animated.View
-                    style={[
-                        styles.overlay,
-                        { opacity: fadeAnim, backgroundColor: colors.background + '90' }
-                    ]}
-                >
-                    <TouchableWithoutFeedback>
-                        <Animated.View
-                            style={[
-                                styles.sheet,
-                                {
-                                    transform: [{ translateY: slideAnim }],
-                                    backgroundColor: colors.modalBg,
-                                    borderColor: colors.border,
-                                },
-                            ]}
-                        >
 
-                            <View style={[styles.handle, { backgroundColor: colors.border }]} />
-
-                            {/* Buttons */}
-                            <View style={styles.actions}>
-                                <TouchableOpacity
-                                    style={[styles.btn, { borderColor: colors.border }]}
-                                    onPress={() => handleAction(onEdit)}
-                                >
-
-                                    <Text style={[styles.btnText, { color: colors.text }]}>
-                                        Edit
-                                    </Text>
-                                    <Icons.Material name="edit" size={22} color={colors.highlight} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.btn, { borderColor: colors.border }]}
-                                    onPress={() => handleAction(onDuplicate)}
-                                >
-
-                                    <Text style={[styles.btnText, { color: colors.text }]}>
-                                        Duplicate
-                                    </Text>
-                                    <Icons.Material
-                                        name="control-point-duplicate"
-                                        size={22}
-                                        color={colors.highlight}
-                                    />
-
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.btn, { borderColor: colors.border }]}
-                                    onPress={() => handleAction(onFavourite)}
-                                >
-
-                                    <Text style={[styles.btnText, { color: colors.text }]}>
-                                        {timer.isFavourite ? 'Un-Favourite' : 'Favourite'}
-                                    </Text>
-                                    <Icons.Material
-                                        name={timer.isFavourite ? 'favorite' : 'favorite-border'}
-                                        size={22}
-                                        color={colors.highlight}
-                                    />
-
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.btn, { borderColor: colors.border }]}
-                                    onPress={() => handleAction(onShare)}
-                                >
-                                    <Text style={[styles.btnText, { color: colors.text }]}>
-                                        Share
-                                    </Text>
-                                    <Icons.Material name="share" size={22} color={colors.highlight} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.btn, { borderColor: colors.border }]}
-                                    onPress={() => handleAction(onDelete)}
-                                >
-
-                                    <Text style={[styles.btnText, { color: '#ef4444' }]}>
-                                        Delete
-                                    </Text>
-                                    <Icons.Material name="delete" size={22} color="#ef4444" />
-
-                                </TouchableOpacity>
-                            </View>
-
-                        </Animated.View>
-                    </TouchableWithoutFeedback>
-                </Animated.View>
-            </TouchableWithoutFeedback>
-        </Modal>
+            <View style={styles.actions}>
+                {actions.map((action, idx) => (
+                    <TouchableOpacity
+                        key={idx}
+                        style={[styles.btn, { borderColor: colors.border }]}
+                        onPress={() => handleAction(action.onPress)}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.btnText, { color: action.color }]}>
+                            {action.label}
+                        </Text>
+                        {action.icon}
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </BottomSheet>
     );
 };
 
 export default memo(TimerContextMenu);
-

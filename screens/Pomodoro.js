@@ -195,7 +195,7 @@ const ProgressDisplay = React.memo(({ progress, duration, colors, border }) => {
             )}
 
             <View style={progressDisplayStyles.progressInfo}>
-                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>
+                <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc, height: 20 }]}>
                     Progress: {progressData.percentage}%
                 </Text>
                 <Text style={[progressDisplayStyles.progressLabel, { color: colors.textDesc }]}>

@@ -41,7 +41,8 @@
     "react-native-toast-message": "^2.3.3",
     "react-native-uuid": "^2.0.3",
     "react-native-view-shot": "^4.0.3",
-    "react-native-wheel-picker-expo": "^0.5.4"
+    "react-native-wheel-picker-expo": "^0.5.4",
+    "expo-linear-gradient": "~14.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

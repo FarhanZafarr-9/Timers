@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-    Modal,
     TouchableOpacity,
     View,
     Text,
     StyleSheet,
-    Animated,
-    Dimensions
 } from 'react-native';
 import { Icons } from '../../assets/icons';
 import { useTheme } from '../../contexts/ThemeContext';
-
-const { height: screenHeight } = Dimensions.get('window');
+import BottomSheet from './BottomSheet'; // Import the new Animated BottomSheet
 
 const ConfirmSheet = ({
     visible,
@@ -24,98 +20,19 @@ const ConfirmSheet = ({
     confirmColor = "#ef4444",
     icon,
     colors,
-    variables,
 }) => {
-    const [translateY] = useState(new Animated.Value(screenHeight));
-    const [opacity] = useState(new Animated.Value(0));
-    const [isReallyVisible, setIsReallyVisible] = useState(false);
-    const { headerMode, border } = useTheme();
-
-    useEffect(() => {
-        if (visible) {
-            setIsReallyVisible(true);
-            showBottomSheet();
-        } else {
-            hideBottomSheet();
-        }
-    }, [visible]);
-
-    const showBottomSheet = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    };
-
-    const hideBottomSheet = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: screenHeight,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
-            setIsReallyVisible(false);
-            onClose();
-        });
-    };
+    const { border } = useTheme();
 
     const handleConfirm = () => {
         onConfirm();
-        hideBottomSheet();
-    };
-
-    const handleCancel = () => {
-        hideBottomSheet();
+        onClose();
     };
 
     const styles = StyleSheet.create({
-        overlay: {
-            flex: 1,
-            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
-            justifyContent: 'flex-end',
-        },
-        bottomSheet: {
-            backgroundColor: colors.settingBlock,
-            borderTopLeftRadius: variables.radius.lg || 20,
-            borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 15,
-            borderWidth: border,
-            borderColor: colors.border,
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: -2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-            elevation: 10,
-        },
-        handle: {
-            width: 40,
-            height: 4,
-            backgroundColor: colors.border,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginTop: 12,
-            marginBottom: 20,
-        },
         content: {
             paddingHorizontal: 20,
-            paddingBottom: 20,
+            paddingBottom: 30,
+            paddingTop: 10,
         },
         iconContainer: {
             width: 56,
@@ -155,7 +72,7 @@ const ConfirmSheet = ({
             borderColor: colors.border,
         },
         cancelButton: {
-            backgroundColor: colors.card,
+            backgroundColor: colors.highlight + '08',
             borderColor: colors.border,
         },
         confirmButton: {
@@ -174,74 +91,58 @@ const ConfirmSheet = ({
         },
     });
 
+    // Custom BottomSheet with theme-aware styling
     return (
-        <Modal
-            visible={isReallyVisible}
-            transparent
-            animationType="none"
-            onRequestClose={handleCancel}
-            statusBarTranslucent
+        <BottomSheet
+            visible={visible}
+            onClose={onClose}
+            snapPoints={[0.4]}
+            initialSnapIndex={0}
+            backdropOpacity={1}
+            enableBackdropDismiss={true}
+            enablePanDownToClose={true}
+            closeThreshold={80}
         >
-            <Animated.View style={[styles.overlay, { opacity }]}>
+
+            {icon && (
+                <View style={styles.iconContainer}>
+                    {typeof icon === 'string' ? (
+                        <Icons.Ion
+                            name={icon}
+                            size={28}
+                            color={confirmColor}
+                        />
+                    ) : (
+                        React.cloneElement(icon, {
+                            color: confirmColor,
+                            size: 28
+                        })
+                    )}
+                </View>
+            )}
+
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.message}>{message}</Text>
+
+            <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={handleCancel}
-                    activeOpacity={1}
-                />
-                <Animated.View
-                    style={[
-                        styles.bottomSheet,
-                        {
-                            transform: [{ translateY }],
-                        }
-                    ]}
+                    style={[styles.button, styles.cancelButton]}
+                    onPress={onClose}
+                    activeOpacity={0.7}
                 >
-                    <View style={styles.handle} />
+                    <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                </TouchableOpacity>
 
-                    <View style={styles.content}>
-                        {icon && (
-                            <View style={styles.iconContainer}>
-                                {typeof icon === 'string' ? (
-                                    <Icons.Ion
-                                        name={icon}
-                                        size={28}
-                                        color={confirmColor}
-                                    />
-                                ) : (
-                                    React.cloneElement(icon, {
-                                        color: confirmColor,
-                                        size: 28
-                                    })
-                                )}
-                            </View>
-                        )}
+                <TouchableOpacity
+                    style={[styles.button, styles.confirmButton]}
+                    onPress={handleConfirm}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.confirmButtonText}>{confirmText}</Text>
+                </TouchableOpacity>
 
-                        <Text style={styles.title}>{title}</Text>
-                        <Text style={styles.message}>{message}</Text>
-
-                        <View style={styles.buttonContainer}>
-
-                            <TouchableOpacity
-                                style={[styles.button, styles.cancelButton]}
-                                onPress={handleCancel}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.cancelButtonText}>{cancelText}</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.button, styles.confirmButton]}
-                                onPress={handleConfirm}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.confirmButtonText}>{confirmText}</Text>
-                            </TouchableOpacity>
-
-                        </View>
-                    </View>
-                </Animated.View>
-            </Animated.View>
-        </Modal>
+            </View>
+        </BottomSheet>
     );
 };
 

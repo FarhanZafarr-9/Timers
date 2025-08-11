@@ -6,6 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+// Gesture Handler
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 // Screens
 import Home from './screens/Home';
 import Settings from './screens/Settings';
@@ -18,7 +21,7 @@ import Splash from './screens/Splash';
 import NavBar from './components/navigation/NavBar';
 import Toast from 'react-native-toast-message';
 import AuthContext from './contexts/AuthContext';
-import ChnageLogSheet from './components/sheets/ChnageLogSheet';
+import ChangeLogSheet from './components/sheets/ChangeLogSheet';
 
 // Context Providers
 import { TimerProvider } from './contexts/TimerContext';
@@ -43,7 +46,6 @@ export async function runUpdateCheck() {
 const Tab = createBottomTabNavigator();
 
 function AppContent() {
-
   const { variables, colors, border } = useTheme();
   const { loading } = useSecurity();
   const [showSplash, setShowSplash] = useState(true);
@@ -89,7 +91,7 @@ function AppContent() {
           </Tab.Navigator>
         </NavigationContainer>
       </AuthContext>
-      <ChnageLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} />
+      <ChangeLogSheet visible={showChangelog} onClose={() => setShowChangelog(false)} />
       <Toast config={toastConfig(colors, variables, border)} />
     </>
   );
@@ -97,14 +99,16 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SecurityProvider>
-      <ThemeProvider>
-        <NavBarProvider>
-          <TimerProvider>
-            <AppContent />
-          </TimerProvider>
-        </NavBarProvider>
-      </ThemeProvider>
-    </SecurityProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SecurityProvider>
+        <ThemeProvider>
+          <NavBarProvider>
+            <TimerProvider>
+              <AppContent />
+            </TimerProvider>
+          </NavBarProvider>
+        </ThemeProvider>
+      </SecurityProvider>
+    </GestureHandlerRootView>
   );
 }
