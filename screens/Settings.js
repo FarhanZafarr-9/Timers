@@ -53,6 +53,7 @@ import {
     decryptData
 } from '../utils/functions';
 import { Icons } from '../assets/icons';
+import { appVersion } from '../utils/functions';
 
 // Expo and Third-Party Libraries
 import * as DocumentPicker from 'expo-document-picker';
@@ -870,12 +871,13 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
     const { colors } = useTheme();
 
     /* ---------- EXPORT ---------- */
+    // Updated handleExport with version information
     const handleExport = useCallback(async () => {
         try {
             let uri = directoryUri;
             if (!uri) {
                 const perm = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (!perm.granted) return addMessage('Export cancelled ‑ no folder', 'error');
+                if (!perm.granted) return addMessage('Export cancelled - no folder', 'error');
                 uri = perm.directoryUri;
                 await AsyncStorage.setItem(DIRECTORY_KEY, uri);
                 setDirectoryUri(uri);
@@ -885,7 +887,11 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // dd-mm-yy
 
             // timers
-            const timersPayload = { version: '1.0', exportDate: new Date().toISOString(), timers };
+            const timersPayload = {
+                version: `${appVersion}`, // Updated version
+                exportDate: new Date().toISOString(),
+                timers
+            };
             const timersExt = useEncryption ? 'enc' : 'json';
             const timersMime = useEncryption ? 'application/octet-stream' : 'application/json';
             const timersName = `t-${today}.${timersExt}`;
@@ -903,13 +909,13 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
 
             // preferences
             const prefsPayload = {
-                version: '1.0',
+                version: `${appVersion}`, // Updated version
                 type: 'preferences',
                 exportDate: new Date().toISOString(),
                 preferences: {
                     theme: { accentMode, themeMode, borderMode, progressMode, backgroundPattern, privacyMode },
                     layout: { headerMode, navigationMode, layoutMode, defaultUnit, fixedBorder, shouldHide },
-                    security: { useEncryption }
+                    security: { useEncryption }, // New security section
                 },
             };
             const prefsName = `p-${today}.json`;
@@ -936,6 +942,7 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
     ]);
 
     /* ---------- IMPORT ---------- */
+    // Updated handleImport function with backwards compatibility
     const handleImport = useCallback(async () => {
         try {
             const res = await DocumentPicker.getDocumentAsync({
@@ -972,18 +979,46 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                         continue;
                     }
 
-                    // Handle preferences
+                    // Handle preferences with backwards compatibility
                     if (parsed?.type === 'preferences' && parsed.preferences) {
                         const { theme, layout, security } = parsed.preferences;
-                        theme && Object.entries(theme).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
-                        layout && Object.entries(layout).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
-                        security && Object.entries(security).forEach(([k, v]) => v !== undefined && setters[k]?.(v));
-                        addMessage(`Prefs loaded from ${file.name}`, 'success');
+
+                        // Handle theme preferences (backwards compatible)
+                        if (theme && typeof theme === 'object') {
+                            Object.entries(theme).forEach(([k, v]) => {
+                                if (v !== undefined && setters[k]) {
+                                    setters[k](v);
+                                }
+                            });
+                        }
+
+                        // Handle layout preferences (backwards compatible)
+                        if (layout && typeof layout === 'object') {
+                            Object.entries(layout).forEach(([k, v]) => {
+                                if (v !== undefined && setters[k]) {
+                                    setters[k](v);
+                                }
+                            });
+                        }
+
+                        // Handle security preferences (new in v1.1.7, might not exist in old files)
+                        if (security && typeof security === 'object') {
+                            Object.entries(security).forEach(([k, v]) => {
+                                if (v !== undefined && setters[k]) {
+                                    setters[k](v);
+                                }
+                            });
+                        } else {
+                            // Old file without security section - use current defaults
+                            console.log('Old preferences file detected - security settings preserved');
+                        }
+
+                        addMessage(`Prefs loaded from ${file.name}${!security ? ' (legacy format)' : ''}`, 'success');
                         okPrefs = true;
                         continue;
                     }
 
-                    // Handle timers
+                    // Handle timers (unchanged)
                     const list = Array.isArray(parsed.timers)
                         ? parsed.timers
                         : Array.isArray(parsed)
@@ -1084,8 +1119,9 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                     title="Backup Encryption"
                     desc="Encrypt backup files for security"
                     onPress={() => {
-                        setUseEncryption(!useEncryption);
-                        if (!useEncryption) {
+                        const newVal = !useEncryption;
+                        setUseEncryption(newVal);
+                        if (newVal) {
                             addMessage('Backup encryption enabled - backups will be encrypted', 'success');
                         } else {
                             addMessage('Backup encryption disabled - backups will be plain text', 'info');
@@ -1097,9 +1133,10 @@ const TimerManagementCard = memo(({ animatedStyle }) => {
                 >
                     <Switch
                         value={!!useEncryption}
-                        onValueChange={(v) => {
-                            setUseEncryption(v);
-                            if (v) {
+                        onValueChange={() => {
+                            const newVal = !useEncryption;
+                            setUseEncryption(newVal);
+                            if (newVal) {
                                 addMessage('Backup encryption enabled - backups will be encrypted', 'success');
                             } else {
                                 addMessage('Backup encryption disabled - backups will be plain text', 'info');
