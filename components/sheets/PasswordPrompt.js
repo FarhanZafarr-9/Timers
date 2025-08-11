@@ -79,14 +79,16 @@ export default function PasswordPrompt({
 
     const showBottomSheet = () => {
         Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }),
             Animated.timing(opacity, {
                 toValue: 1,
-                duration: 300,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+                toValue: 0,
+                damping: 18,        // lower = more bounce
+                stiffness: 150,     // higher = snappier
+                mass: 0.9,          // adjust feel
                 useNativeDriver: true,
             }),
         ]).start();
@@ -94,14 +96,16 @@ export default function PasswordPrompt({
 
     const hideBottomSheet = () => {
         Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: screenHeight,
-                duration: 250,
-                useNativeDriver: true,
-            }),
             Animated.timing(opacity, {
                 toValue: 0,
-                duration: 250,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+                toValue: screenHeight,
+                damping: 20,
+                stiffness: 150,
+                mass: 1,
                 useNativeDriver: true,
             }),
         ]).start(() => {
@@ -110,6 +114,7 @@ export default function PasswordPrompt({
         });
     };
 
+
     const styles = StyleSheet.create({
         overlay: {
             flex: 1,
@@ -117,12 +122,12 @@ export default function PasswordPrompt({
             justifyContent: 'flex-end',
         },
         bottomSheet: {
-            backgroundColor: colors.cardLighter,
+            backgroundColor: colors.modalBg,
             borderTopLeftRadius: variables.radius.lg || 20,
             borderTopRightRadius: variables.radius.lg || 20,
             paddingBottom: 15,
             maxHeight: screenHeight * 0.85,
-            borderWidth: border,
+            borderWidth: 0.75,
             borderColor: colors.border,
             shadowColor: '#000',
             shadowOffset: {
@@ -178,10 +183,8 @@ export default function PasswordPrompt({
         inputRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            borderWidth: border,
             borderRadius: variables.radius.sm,
-            borderColor: colors.border,
-            backgroundColor: colors.settingBlock,
+            backgroundColor: colors.highlight + '10',
             paddingHorizontal: 12,
             minHeight: 48,
         },
@@ -298,15 +301,12 @@ export default function PasswordPrompt({
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: border,
         },
         saveButton: {
             backgroundColor: colors.highlight,
-            borderColor: colors.highlight,
         },
         cancelButton: {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
+            backgroundColor: colors.highlight + '10',
         },
         saveButtonText: {
             fontSize: 16,
@@ -385,6 +385,9 @@ export default function PasswordPrompt({
             return;
         }
 
+        setShowNew(false);
+        setShowOld(false);
+
         // Generate a new reset code whenever password is changed
         const newResetCode = generateResetCode();
         setResetCodeValue(newResetCode);
@@ -407,6 +410,8 @@ export default function PasswordPrompt({
         setEnteredResetCode('');
         setResetMode(mode === 'reset');
         setShowResetCode(false);
+        setShowNew(false);
+        setShowOld(false);
         onClose();
     };
 
@@ -416,6 +421,8 @@ export default function PasswordPrompt({
         setNewPassword('');
         setConfirmPassword('');
         setEnteredResetCode('');
+        setShowNew(false);
+        setShowOld(false);
         setResetMode(true);
     };
 
@@ -586,15 +593,15 @@ export default function PasswordPrompt({
                             )}
 
                             {error ? <Text style={styles.error}>{error}</Text> : null}
-                            <View style={styles.feedbackContainer}>
+                            {!showResetCode && <View style={styles.feedbackContainer}>
                                 {strength.feedback.map((message, index) => (
                                     <Text key={index} style={styles.feedbackText}>{message}</Text>
                                 ))}
-                            </View>
+                            </View>}
                         </ScrollView>
 
                         <View style={styles.actionButtons}>
-                            
+
 
                             <TouchableOpacity
                                 style={[styles.actionButton, styles.cancelButton]}

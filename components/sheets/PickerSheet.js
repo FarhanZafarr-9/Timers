@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
-    Modal,
     TouchableOpacity,
     View,
     Text,
@@ -11,8 +10,9 @@ import {
 } from 'react-native';
 import { Icons } from '../../assets/icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import BottomSheet from './BottomSheet';
 
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+const { height: screenHeight } = Dimensions.get('window');
 
 const PickerSheet = ({
     value,
@@ -34,42 +34,36 @@ const PickerSheet = ({
 }) => {
 
     const [visible, setVisible] = useState(false);
-    const [translateY] = useState(new Animated.Value(screenHeight));
-    const [opacity] = useState(new Animated.Value(0));
-    const { isBorder, headerMode, border } = useTheme();
+    const { border } = useTheme();
 
-    const showBottomSheet = () => {
-        setVisible(true);
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    };
+    const showBottomSheet = () => setVisible(true);
+    const hideBottomSheet = () => setVisible(false);
 
-    const hideBottomSheet = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: screenHeight,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
-            setVisible(false);
-        });
-    };
+    const calculateSnapPoints = useMemo(() => {
+        if (options.length === 0) return [0.3];
+        const rows = Math.ceil(options.length / pillsPerRow);
+        const pillHeight = 36 + 25;
+        const headerHeight = title ? 60 : 0;
+        const actionButtonsHeight = 60;
+        const handleHeight = 20;
+        const descHeight = (note || hideLabel) ? 60 : 0;
+        const selectedDescHeight = (options.find(opt => opt.value === value)?.description) ? 60 : 0;
+        const padding = 40;
+
+        const totalContentHeight =
+            headerHeight +
+            rows * pillHeight +
+            actionButtonsHeight +
+            handleHeight +
+            descHeight +
+            selectedDescHeight +
+            padding;
+
+        const minSnapPoint = Math.max(0.3, Math.min(0.5, totalContentHeight / screenHeight));
+        const maxSnapPoint = Math.max(0.6, Math.min(0.9, (totalContentHeight + 100) / screenHeight));
+
+        return [minSnapPoint, maxSnapPoint];
+    }, [options.length, pillsPerRow, title, note, hideLabel, value]);
 
     const styles = StyleSheet.create({
         trigger: {
@@ -88,60 +82,40 @@ const PickerSheet = ({
             fontSize: 16,
             color: colors.text,
         },
-        overlay: {
+        content: {
+            paddingHorizontal: 20,
+            paddingBottom: 20,
             flex: 1,
-            backgroundColor: (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90', // for modals
-            justifyContent: 'flex-end',
-        },
-        bottomSheet: {
-            backgroundColor: colors.modalBg,
-            borderTopLeftRadius: variables.radius.lg || 20,
-            borderTopRightRadius: variables.radius.lg || 20,
-            paddingBottom: 15,
-            borderWidth: border,
-            borderColor: colors.border,
-            maxHeight,
-            minHeight: 200,
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: -2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-            elevation: 10,
-        },
-        handle: {
-            width: 40,
-            height: 4,
-            backgroundColor: colors.border,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginTop: 12,
-            marginBottom: 8,
         },
         header: {
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderBottomWidth: border,
+            paddingBottom: 15,
+            borderBottomWidth: 1.5,
             borderBottomColor: colors.border,
+            marginBottom: 15,
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
         },
         headerTitle: {
             fontSize: 18,
-            fontWeight: '500',
+            fontWeight: '600',
             color: colors.text,
         },
-        closeButton: {
-            padding: 4,
+        clearButton: {
+            paddingVertical: 6,
+            paddingHorizontal: 18,
+            backgroundColor: colors.highlight + '08',
+            borderWidth: 0.57,
+            borderColor: colors.border,
+            borderRadius: variables.radius.lg,
+        },
+        clearButtonText: {
+            color: colors.text,
+            fontSize: 14,
+            fontWeight: '500',
         },
         pillsContainer: {
-            padding: 20,
-            marginBottom: 0,
-
-            marginVertical: 20
+            flex: 1,
         },
         pillsGrid: {
             flexDirection: 'row',
@@ -189,60 +163,46 @@ const PickerSheet = ({
             color: colors.text + '80',
             textAlign: 'center',
         },
-        actionButtons: {
-            flexDirection: 'row',
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: 8,
-            borderTopWidth: border,
-            borderTopColor: colors.border,
-            gap: '4%',
-        },
-        actionButton: {
-            width: '48%',
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        clearButton: {
-            backgroundColor: colors.card,
-            borderWidth: border,
-            borderColor: colors.border,
-        },
-        clearButtonText: {
-            color: colors.text,
-            fontSize: 16,
-            fontWeight: '500',
-        },
-        doneButton: {
-            backgroundColor: colors.primary || colors.highlight,
-        },
-        doneButtonText: {
-            color: colors.background,
-            fontSize: 16,
-            fontWeight: '600',
-        },
+        // New modern description styles
         descContainer: {
-            marginTop: 20,
-            marginHorizontal: 20,
-            paddingVertical: 10,
+            marginBottom: 15,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
             backgroundColor: colors.settingBlock,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexDirection: 'row',
             borderRadius: variables.radius.sm,
             borderWidth: border,
             borderColor: colors.border,
+            position: 'relative',
+            minHeight: 48,
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOpacity: 0.08,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 4,
+            elevation: 2,
         },
-        desc: {
+        descPill: {
+            position: 'absolute',
+            top: -12,
+            left: 12,
+            backgroundColor: colors.highlight,
+            paddingHorizontal: 10,
+            paddingVertical: 3,
+            borderRadius: 999,
+            borderWidth: border,
+            borderColor: colors.border,
+        },
+        descPillText: {
+            fontSize: 12,
+            fontWeight: '600',
+            color: colors.background,
+        },
+        descText: {
             fontSize: 14,
             fontWeight: '500',
             color: colors.textDesc,
-            marginHorizontal: 20,
-            lineHeight: 20,
-            flexWrap: 'wrap'
+            textAlignVertical: 'center',
+            height: 18
         },
     });
 
@@ -258,94 +218,97 @@ const PickerSheet = ({
         onChange(defaultValue);
     };
 
-    // Memoize the animation values for better performance
-    const animationValues = useMemo(() =>
-        options.reduce((acc, option) => {
-            acc[option.value] = new Animated.Value(1);
-            return acc;
-        }, {}), [options]);
+    const animationValues = useMemo(
+        () =>
+            options.reduce((acc, option) => {
+                acc[option.value] = new Animated.Value(1);
+                return acc;
+            }, {}),
+        [options]
+    );
 
-    // Optimized pill press handler with animation
-    const handlePillPressWithAnimation = useCallback((optionValue) => {
-        handlePillPress(optionValue);
-        const scaleValue = animationValues[optionValue];
-        if (scaleValue) {
-            scaleValue.setValue(1.08);
-            Animated.spring(scaleValue, { toValue: 1, friction: 4, tension: 150, useNativeDriver: true }).start();
-        }
-    }, [animationValues, handlePillPress]);
+    const handlePillPressWithAnimation = useCallback(
+        (optionValue) => {
+            handlePillPress(optionValue);
+            const scaleValue = animationValues[optionValue];
+            if (scaleValue) {
+                scaleValue.setValue(1.08);
+                Animated.spring(scaleValue, {
+                    toValue: 1,
+                    friction: 4,
+                    tension: 150,
+                    useNativeDriver: true,
+                }).start();
+            }
+        },
+        [animationValues, handlePillPress]
+    );
 
-    const renderPill = useCallback((option) => {
-        const isSelected = value === option.value;
-        const scaleValue = animationValues[option.value];
+    const renderPill = useCallback(
+        (option) => {
+            const isSelected = value === option.value;
+            const scaleValue = animationValues[option.value];
+            const pillWidth =
+                pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`;
 
-        // Calculate proper pill width based on pillsPerRow
-        const pillWidth = pillsPerRow === 1 ? '100%' : `${(100 - (pillsPerRow - 1) * 3) / pillsPerRow}%`;
-
-        return (
-            <Animated.View
-                key={option.value}
-                style={[
-                    {
+            return (
+                <Animated.View
+                    key={option.value}
+                    style={{
                         transform: [{ scale: scaleValue || 1 }],
                         flex: pillsPerRow === 1 ? 1 : 0,
                         width: pillWidth,
                         marginBottom: 25,
-                    }
-                ]}
-            >
-                <TouchableOpacity
-                    style={[
-                        styles.pill,
-                        isSelected && styles.selectedPill,
-                        {
-                            width: '100%',
-                            flex: 1,
-                        }
-                    ]}
-                    onPress={() => handlePillPressWithAnimation(option.value)}
-                    activeOpacity={0.8}
+                    }}
                 >
-                    {option.icon && (
-                        <View style={styles.pillIcon}>
-                            {React.cloneElement(option.icon, {
-                                color: isSelected ? colors.background : option.icon.props.color || colors.text,
-                                size: option.icon.props.size || 16,
-                            })}
-                        </View>
-                    )}
-                    {!hideLabel && (
-                        <Text
-                            style={[
-                                styles.pillText,
-                                isSelected && styles.selectedPillText,
-                            ]}
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
-                        >
-                            {option.label}
-                        </Text>
-                    )}
-
-                </TouchableOpacity>
-            </Animated.View>
-        );
-    }, [value, colors, styles, animationValues, handlePillPressWithAnimation, pillsPerRow]);
+                    <TouchableOpacity
+                        style={[styles.pill, isSelected && styles.selectedPill]}
+                        onPress={() => handlePillPressWithAnimation(option.value)}
+                        activeOpacity={0.8}
+                    >
+                        {option.icon && (
+                            <View style={styles.pillIcon}>
+                                {React.cloneElement(option.icon, {
+                                    color: isSelected
+                                        ? colors.background
+                                        : option.icon.props.color || colors.text,
+                                    size: option.icon.props.size || 16,
+                                })}
+                            </View>
+                        )}
+                        {!hideLabel && (
+                            <Text
+                                style={[
+                                    styles.pillText,
+                                    isSelected && styles.selectedPillText,
+                                ]}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                            >
+                                {option.label}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                </Animated.View>
+            );
+        },
+        [value, colors, styles, animationValues, handlePillPressWithAnimation, pillsPerRow]
+    );
 
     return (
         <>
             <TouchableOpacity
                 style={[styles.trigger, style]}
-                onPress={() => {
-                    if (!disabled) {
-                        showBottomSheet();
-                    }
-                }}
-                activeOpacity={0.7}
+                onPress={() => !disabled && showBottomSheet()}
+                activeOpacity={disabled ? 1 : 0.7}
             >
                 {selectedIcon ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {React.cloneElement(selectedIcon, { color: selectedIcon.props.color ? selectedIcon.props.color : colors.text })}
+                        {React.cloneElement(selectedIcon, {
+                            color: selectedIcon.props.color
+                                ? selectedIcon.props.color
+                                : colors.text,
+                        })}
                     </View>
                 ) : (
                     <Text style={[styles.triggerText, textStyle]}>{selectedLabel}</Text>
@@ -353,92 +316,68 @@ const PickerSheet = ({
                 <Icons.Ion name="chevron-down" size={14} color={iconColor} style={{ marginLeft: 8 }} />
             </TouchableOpacity>
 
-            <Modal
+            <BottomSheet
                 visible={visible}
-                transparent
-                animationType="none"
-                onRequestClose={hideBottomSheet}
-                statusBarTranslucent
+                onClose={hideBottomSheet}
+                snapPoints={calculateSnapPoints}
+                initialSnapIndex={0}
+                backdropOpacity={1}
+                enableBackdropDismiss={true}
+                enablePanDownToClose={true}
             >
-                <Animated.View style={[styles.overlay, { opacity }]}>
-                    <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={hideBottomSheet}
-                        activeOpacity={1}
-                    />
-                    <Animated.View
-                        style={[
-                            styles.bottomSheet,
-                            {
-                                transform: [{ translateY }],
-                            }
-                        ]}
-                    >
-                        <View style={styles.handle} />
 
-                        {title && (
-                            <View style={styles.header}>
-                                <Text style={styles.headerTitle}>{title}</Text>
-                                <TouchableOpacity
-                                    style={styles.closeButton}
-                                    onPress={hideBottomSheet}
-                                    activeOpacity={0.7}
-                                >
-                                    <Icons.Ion name="close" size={20} color={colors.text} />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                        {selectedOption && selectedOption.description && <View style={styles.descContainer}>
-                            <Text style={styles.desc}>
-                                Info :  {selectedOption.description}
-                            </Text>
-                        </View>}
-
-                        <ScrollView
-                            style={styles.pillsContainer}
-                            showsVerticalScrollIndicator={true}
-                            bounces={true}
+                {title && (
+                    <View style={styles.header}>
+                        <Text style={styles.headerTitle}>{title}</Text>
+                        <TouchableOpacity
+                            style={styles.clearButton}
+                            onPress={handleClear}
+                            activeOpacity={0.7}
                         >
-                            {options.length > 0 ? (
-                                <View style={styles.pillsGrid}>
-                                    {options.map(renderPill)}
-                                </View>
-                            ) : (
-                                <View style={styles.emptyState}>
-                                    <Text style={styles.emptyText}>No options available</Text>
-                                </View>
-                            )}
-                        </ScrollView>
+                            <Text style={styles.clearButtonText}>Clear</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
-                        {note || hideLabel && <View style={[styles.descContainer, { marginTop: 0, marginBottom: 20 }]}>
-                            <Text style={styles.desc}>
-                                {note ? `Note` : `Selected option`}
-                            </Text>
-                            <Text style={styles.desc}>
-                                {note ? note : selectedLabel}
-                            </Text>
-                        </View>}
-
-                        <View style={styles.actionButtons}>
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.clearButton]}
-                                onPress={handleClear}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.clearButtonText}>Clear</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.doneButton]}
-                                onPress={hideBottomSheet}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.doneButtonText}>Done</Text>
-                            </TouchableOpacity>
+                {selectedOption && selectedOption.description && !(note || hideLabel) && (
+                    <View style={styles.descContainer}>
+                        <View style={styles.descPill}>
+                            <Text style={styles.descPillText}>Info</Text>
                         </View>
-                    </Animated.View>
-                </Animated.View>
-            </Modal>
+                        <Text style={styles.descText}>{selectedOption.description}</Text>
+                    </View>
+                )}
+
+                {(note || hideLabel) && (
+                    <View style={styles.descContainer}>
+                        <View style={styles.descPill}>
+                            <Text style={styles.descPillText}>
+                                {note ? 'Note' : 'Selected option'}
+                            </Text>
+                        </View>
+                        <Text style={styles.descText}>
+                            {note ? note : selectedLabel}
+                        </Text>
+                    </View>
+                )}
+
+                <ScrollView
+                    style={styles.pillsContainer}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                >
+                    {options.length > 0 ? (
+                        <View style={styles.pillsGrid}>
+                            {options.map(renderPill)}
+                        </View>
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>No options available</Text>
+                        </View>
+                    )}
+                </ScrollView>
+            </BottomSheet>
         </>
     );
 };

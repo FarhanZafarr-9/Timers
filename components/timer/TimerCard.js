@@ -461,15 +461,26 @@ const TimerCard = ({
         );
     }), [colors.highlight, progressMode, screenWidth, timer]);
 
-    // Arrow Icon Component
-    const ArrowIcon = useMemo(() => memo(({ colors, showOverlay }) => (
-        <Icons.Material
-            name={showOverlay ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-            size={18}
-            color={colors.text}
-            style={{ opacity: 0.5 }}
-        />
-    )), []);
+    const EditIcon = useMemo(
+        () =>
+            memo(({ colors, setShowContextMenu }) => (
+                <TouchableOpacity
+                    onPress={() => setShowContextMenu(true)}
+                    onLongPress={() => setShowContextMenu(true)}
+                    activeOpacity={0.7}
+                    style={[styles.editPill]}
+                >
+                    <Icons.Material
+                        name="edit"
+                        size={18}
+                        color={colors.textDesc}
+                    />
+                </TouchableOpacity>
+            )),
+        []
+    );
+
+
 
     // Styles
     const styles = useMemo(() => createStyles(), [colors, variables, isBorder, searchText, privacyMode, selected, selectable, layoutMode, isLongName, isLongTitle, border]);
@@ -526,6 +537,15 @@ const TimerCard = ({
                 color: colors.textDesc,
                 fontSize: layoutMode === 'grid' && (privacyMode === 'mask' || privacyMode === 'emoji') ? 6 : (isLongName && isLongTitle) ? 10 : 12,
                 fontWeight: 'bold',
+            },
+            editPill: {
+                backgroundColor: colors.highlight + '08',
+                paddingVertical: 4,
+                paddingHorizontal: 6,
+                borderRadius: variables.radius.sm,
+                borderWidth: border,
+                borderColor: colors.border,
+                color: colors.textDesc,
             },
             chipContainer: {
                 flexDirection: 'row',
@@ -719,7 +739,7 @@ const TimerCard = ({
                                         {privacyTitleText}
                                     </Text>
                                 )}
-                                <View style={styles.priorityIndicator}>
+                                <View style={{ flexDirection: 'row' }}>
                                     {timer.personName && (
                                         privacyMode === 'off' ? (
                                             <HighlightText
@@ -737,14 +757,16 @@ const TimerCard = ({
                                             </Text>
                                         )
                                     )}
+                                    {buttons && <EditIcon colors={colors} setShowContextMenu={setShowContextMenu} />}
                                 </View>
+
                             </View>
 
                             <View style={staticStyles.midSection}>
                                 <Text style={styles.timerQuickInfo}>
                                     <TimeDisplay />
                                 </Text>
-                                <ArrowIcon colors={colors} showOverlay={showOverlay} />
+
                             </View>
                             <ProgressBar layoutMode="list" />
                         </View>

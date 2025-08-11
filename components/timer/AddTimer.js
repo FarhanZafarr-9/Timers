@@ -39,14 +39,17 @@ const DateTimeModal = React.memo(({    visible,
 
     const closeHandler = useCallback(() => {
         Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: Dimensions.get('window').height,
-                duration: 250,
+            Animated.spring(translateY, {
+                toValue: Dimensions.get('window').height, // slide down off-screen
+                damping: 20,         // matches BottomSheet feel
+                stiffness: 180,
+                mass: 1,
+                overshootClamping: false, // allows slight bounce
                 useNativeDriver: true,
             }),
             Animated.timing(opacity, {
-                toValue: 0,
-                duration: 250,
+                toValue: 0,          // fade out
+                duration: 180,
                 useNativeDriver: true,
             }),
         ]).start(() => {
@@ -59,14 +62,17 @@ const DateTimeModal = React.memo(({    visible,
         if (visible) {
             setIsVisible(true);
             Animated.parallel([
-                Animated.timing(translateY, {
-                    toValue: 0,
-                    duration: 300,
+                Animated.spring(translateY, {
+                    toValue: 0,      // fully visible
+                    damping: 18,     // softer bounce on open
+                    stiffness: 150,
+                    mass: 0.9,
+                    overshootClamping: false,
                     useNativeDriver: true,
                 }),
                 Animated.timing(opacity, {
-                    toValue: 1,
-                    duration: 300,
+                    toValue: 1,      // fade in
+                    duration: 200,
                     useNativeDriver: true,
                 }),
             ]).start();
@@ -74,6 +80,7 @@ const DateTimeModal = React.memo(({    visible,
             closeHandler();
         }
     }, [visible, translateY, opacity, closeHandler]);
+
 
     if (!isVisible) return null;
 

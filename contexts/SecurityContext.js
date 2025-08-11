@@ -14,6 +14,7 @@ const PRIVACY_MODE_KEY = 'privacyMode';
 const LOCKOUT_MODE_KEY = 'lockoutMode';
 const LAST_ACTIVE_TIME_KEY = 'lastActiveTime';
 const RESET_CODE_KEY = 'resetCode';
+const USE_ENCRYPTION_KEY = 'useEncryption';
 
 // Helper function to get timeout value by mode
 const getTimeoutByMode = (mode) => {
@@ -32,6 +33,7 @@ export const SecurityProvider = ({ children }) => {
     const [password, setPassword] = useState(undefined);
     const [lockoutMode, setLockoutMode] = useState(undefined);
     const [resetCode, setResetCode] = useState(null);
+    const [useEncryption, setUseEncryption] = useState(undefined);
 
     // New state for lockout functionality
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -67,6 +69,9 @@ export const SecurityProvider = ({ children }) => {
                 }
                 const storedResetCode = await AsyncStorage.getItem(RESET_CODE_KEY);
                 setResetCode(storedResetCode || null);
+
+                const storedUseEncryption = await AsyncStorage.getItem(USE_ENCRYPTION_KEY);
+                setUseEncryption(storedUseEncryption === null ? false : storedUseEncryption === 'true');
             } catch (e) {
                 setIsFingerprintEnabled(false);
                 setIsPasswordLockEnabled(false);
@@ -75,6 +80,7 @@ export const SecurityProvider = ({ children }) => {
                 setLockoutMode(lockoutOptions[0].value); // Default to "Never"
                 setLastActiveTime(null);
                 setResetCode(null);
+                setUseEncryption(false);
             }
 
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
@@ -221,6 +227,13 @@ export const SecurityProvider = ({ children }) => {
         }
     }, [resetCode]);
 
+    // Save useEncryption setting to storage when it changes
+    useEffect(() => {
+        if (useEncryption !== undefined) {
+            AsyncStorage.setItem(USE_ENCRYPTION_KEY, useEncryption ? 'true' : 'false');
+        }
+    }, [useEncryption]);
+
     // Toggle fingerprint authentication
     const toggleFingerprint = () => {
         if (isSensorAvailable) {
@@ -336,7 +349,9 @@ export const SecurityProvider = ({ children }) => {
                 lastActiveTime,
                 appState,
                 getResetCode,
-                setResetCodeValue
+                setResetCodeValue,
+                useEncryption,
+                setUseEncryption
             }}
         >
             {children}

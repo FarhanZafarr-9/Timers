@@ -27,6 +27,7 @@ import {
     calculateNextOccurrence,
     calculateProgress
 } from '../../utils/functions';
+import BottomSheet from '../sheets/BottomSheet';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -50,34 +51,17 @@ const TimerOverlay = forwardRef(({
 
     /* ---------- styles created inside component ---------- */
     const s = StyleSheet.create({
-        overlay: { flex: 1, justifyContent: 'flex-end' },
-        bottomSheet: {
-            backgroundColor: colors.modalBg,
-            borderTopLeftRadius: variables.radius.lg,
-            borderTopRightRadius: variables.radius.lg,
+        content: {
             paddingHorizontal: 20,
-            paddingTop: 20,
             paddingBottom: 20,
-            minHeight: 280,
-            maxHeight: screenHeight * 0.9,
-            borderWidth: border,
-            borderColor: colors.border
+            flex: 1,
         },
-        handle: {
-            width: 40,
-            height: 4,
-            borderRadius: 2,
-            alignSelf: 'center',
-            marginBottom: 20,
-            backgroundColor: colors.border
-        },
-        // Consolidated chip styles
         chipContainer: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: 6,
             marginVertical: 8,
-            minHeight: 32, // Fixed height to prevent layout shifts
+            minHeight: 32,
         },
         chip: {
             paddingVertical: 4,
@@ -121,10 +105,6 @@ const TimerOverlay = forwardRef(({
             borderColor: colors.border
         }
     });
-
-    /* ---------- refs / anims ---------- */
-    const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
 
     /* ---------- stable privacy strings (prevent jumbling) ---------- */
     const privacyTitleText = useMemo(
@@ -535,37 +515,6 @@ const TimerOverlay = forwardRef(({
         </ViewShot>
     ), [s, ref, titleTextStyle, privacyTitleText, dateTextStyle, privacyMode, staticTimerData.formattedDate, privacyDate, timer, personNameStyle, privacyNameText, colors, variables, border, privacyInterval, privacyRecurringText, staticTimerData.recurrenceCount, privacyCount, privacyPriority, DetailedProgressDisplay, TimeChipsDisplay]);
 
-    /* ---------- slide animation ---------- */
-    useEffect(() => {
-        if (visible) {
-            Animated.parallel([
-                Animated.timing(slideAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true
-                })
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(slideAnim, {
-                    toValue: screenHeight,
-                    duration: 250,
-                    useNativeDriver: true
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: 250,
-                    useNativeDriver: true
-                })
-            ]).start();
-        }
-    }, [visible, slideAnim, fadeAnim]);
-
     /* ---------- render ---------- */
     return (
         <>
@@ -574,138 +523,122 @@ const TimerOverlay = forwardRef(({
                 {CapturableContent}
             </View>
 
-            <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-                <TouchableWithoutFeedback onPress={onClose}>
-                    <Animated.View
-                        style={[
-                            s.overlay,
-                            {
-                                backgroundColor:
-                                    (headerMode === 'fixed' ? colors.cardLighter : colors.background) + '90',
-                                opacity: fadeAnim
-                            }
-                        ]}
-                    >
-                        <TouchableWithoutFeedback>
-                            <Animated.View
-                                style={[s.bottomSheet, { transform: [{ translateY: slideAnim }] }]}
-                            >
-                                <View style={s.handle} />
+            <BottomSheet
+                visible={visible}
+                onClose={onClose}
+                snapPoints={[0.30, 0.5]}
+                initialSnapIndex={0}
+                backdropOpacity={1}
+            >
+                {/* Title & Date */}
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 4,
+                        marginBottom: 6,
+                    }}
+                >
+                    <Text style={titleTextStyle}>
+                        {privacyTitleText}
+                    </Text>
+                    <Text style={dateTextStyle}>
+                        {privacyMode === 'off' ? staticTimerData.formattedDate : privacyDate}
+                    </Text>
+                </View>
 
-                                {/* Same content as capturable but without ViewShot wrapper */}
-                                {/* Title & Date */}
+                {/* Person & Status Badges */}
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 16,
+                        paddingHorizontal: 4
+                    }}
+                >
+                    {timer.personName && (
+                        <Text style={personNameStyle}>
+                            For: {privacyNameText}
+                        </Text>
+                    )}
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        {timer.isRecurring && timer.recurrenceInterval && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border }}>
+                                <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
+                                    {privacyInterval}
+                                </Text>
+                            </View>
+                        )}
+                        {timer.isRecurring && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border, gap: 4 }}>
+                                {privacyMode === 'off' && <Icons.Material name="autorenew" size={12} color={colors.textDesc} />}
+                                <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
+                                    {privacyRecurringText}
+                                </Text>
+                            </View>
+                        )}
+                        {timer.isRecurring && staticTimerData.recurrenceCount > 0 && (
+                            <View style={{ backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border }}>
+                                <Text style={{ fontSize: 11, fontWeight: '600', color: privacyMode === 'invisible' || privacyMode === 'ghost' ? colors.text + '00' : colors.textDesc }}>
+                                    {privacyCount}
+                                </Text>
+                            </View>
+                        )}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border, gap: 4 }}>
+                            {timer.priority && privacyMode === 'off' && (
                                 <View
                                     style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        paddingHorizontal: 4,
-                                        marginBottom: 6,
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 5,
+                                        backgroundColor:
+                                            timer.priority === 'high'
+                                                ? 'hsla(0, 84.20%, 60.20%, 0.30)'
+                                                : timer.priority === 'normal'
+                                                    ? 'hsla(134, 39.02%, 50.20%, 0.30)'
+                                                    : 'hsla(210, 100%, 50.20%, 0.30)',
+                                        borderColor:
+                                            timer.priority === 'high'
+                                                ? '#ef4444'
+                                                : timer.priority === 'normal'
+                                                    ? '#22c55e'
+                                                    : '#3b82f6',
+                                        borderWidth: border
                                     }}
-                                >
-                                    <Text style={titleTextStyle}>
-                                        {privacyTitleText}
-                                    </Text>
-                                    <Text style={dateTextStyle}>
-                                        {privacyMode === 'off' ? staticTimerData.formattedDate : privacyDate}
-                                    </Text>
-                                </View>
+                                />
+                            )}
+                            <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
+                                {privacyPriority}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
 
-                                {/* Person & Status Badges */}
-                                <View
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        marginBottom: 16,
-                                        paddingHorizontal: 4
-                                    }}
-                                >
-                                    {timer.personName && (
-                                        <Text style={personNameStyle}>
-                                            For: {privacyNameText}
-                                        </Text>
-                                    )}
-
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                        {timer.isRecurring && timer.recurrenceInterval && (
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border }}>
-                                                <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
-                                                    {privacyInterval}
-                                                </Text>
-                                            </View>
-                                        )}
-                                        {timer.isRecurring && (
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border, gap: 4 }}>
-                                                {privacyMode === 'off' && <Icons.Material name="autorenew" size={12} color={colors.textDesc} />}
-                                                <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
-                                                    {privacyRecurringText}
-                                                </Text>
-                                            </View>
-                                        )}
-                                        {timer.isRecurring && staticTimerData.recurrenceCount > 0 && (
-                                            <View style={{ backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border }}>
-                                                <Text style={{ fontSize: 11, fontWeight: '600', color: privacyMode === 'invisible' || privacyMode === 'ghost' ? colors.text + '00' : colors.textDesc }}>
-                                                    {privacyCount}
-                                                </Text>
-                                            </View>
-                                        )}
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.settingBlock, paddingHorizontal: 8, paddingVertical: 4, borderRadius: variables.radius.sm, borderWidth: border, borderColor: colors.border, gap: 4 }}>
-                                            {timer.priority && privacyMode === 'off' && (
-                                                <View
-                                                    style={{
-                                                        width: 10,
-                                                        height: 10,
-                                                        borderRadius: 5,
-                                                        backgroundColor:
-                                                            timer.priority === 'high'
-                                                                ? 'hsla(0, 84.20%, 60.20%, 0.30)'
-                                                                : timer.priority === 'normal'
-                                                                    ? 'hsla(134, 39.02%, 50.20%, 0.30)'
-                                                                    : 'hsla(210, 100%, 50.20%, 0.30)',
-                                                        borderColor:
-                                                            timer.priority === 'high'
-                                                                ? '#ef4444'
-                                                                : timer.priority === 'normal'
-                                                                    ? '#22c55e'
-                                                                    : '#3b82f6',
-                                                        borderWidth: border
-                                                    }}
-                                                />
-                                            )}
-                                            <Text style={{ color: privacyMode === 'invisible' ? colors.text + '00' : colors.textDesc, fontSize: 12, fontWeight: '500' }}>
-                                                {privacyPriority}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Time Section */}
-                                <View
-                                    style={{
-                                        backgroundColor: colors.settingBlock,
-                                        padding: 16,
-                                        borderRadius: variables.radius.md,
-                                        marginBottom: 16,
-                                        borderWidth: border,
-                                        borderColor: colors.border
-                                    }}
-                                >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Text style={{ color: colors.textDesc, fontSize: 12, marginBottom: 4, height: 20 }}>
-                                            {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
-                                        </Text>
-                                        <DetailedProgressDisplay />
-                                    </View>
-                                    <View style={{ color: colors.text, fontSize: 16, minHeight: 40, fontWeight: '600', paddingVertical: 4 }}>
-                                        <TimeChipsDisplay />
-                                    </View>
-                                </View>
-                            </Animated.View>
-                        </TouchableWithoutFeedback>
-                    </Animated.View>
-                </TouchableWithoutFeedback>
-            </Modal>
+                {/* Time Section */}
+                <View
+                    style={{
+                        backgroundColor: colors.settingBlock,
+                        padding: 16,
+                        borderRadius: variables.radius.md,
+                        marginBottom: 16,
+                        borderWidth: border,
+                        borderColor: colors.border
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={{ color: colors.textDesc, fontSize: 12, marginBottom: 4, height: 20 }}>
+                            {timer.isCountdown ? 'Time Remaining' : 'Time Elapsed'}
+                        </Text>
+                        <DetailedProgressDisplay />
+                    </View>
+                    <View style={{ color: colors.text, fontSize: 16, minHeight: 40, fontWeight: '600', paddingVertical: 4 }}>
+                        <TimeChipsDisplay />
+                    </View>
+                </View>
+            </BottomSheet>
         </>
     );
 });
