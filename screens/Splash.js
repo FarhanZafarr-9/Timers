@@ -4,24 +4,12 @@ import { View, Image, StyleSheet, Animated, Dimensions, Text } from 'react-nativ
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 const Splash = ({ variables, colors, visible = true, onHide }) => {
-    const logoSlide = useRef(new Animated.Value(-300)).current;
-    const creditSlide = useRef(new Animated.Value(200)).current;
+    // Start at 0 for static initial position
+    const logoSlide = useRef(new Animated.Value(0)).current;
+    const creditSlide = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if (visible) {
-            Animated.stagger(150, [
-                Animated.spring(logoSlide, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    friction: 7,
-                }),
-                Animated.spring(creditSlide, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    friction: 8,
-                }),
-            ]).start();
-        } else {
+        if (!visible) {
             Animated.parallel([
                 Animated.timing(logoSlide, {
                     toValue: -300,
@@ -95,8 +83,6 @@ const Splash = ({ variables, colors, visible = true, onHide }) => {
                 />
                 <Text style={styles.credits}> by Parzival.</Text>
             </Animated.View>
-
-
         </View>
     );
 };
