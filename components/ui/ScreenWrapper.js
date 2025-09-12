@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
     View,
     StyleSheet,
-    SafeAreaView,
     TouchableWithoutFeedback,
     Keyboard,
     ScrollView,
@@ -82,7 +81,7 @@ const ScreenWrapper = React.memo(({
     }, []);
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
             <TouchableWithoutFeedback
                 onPress={handleDismissKeyboard}
                 accessible={false}
@@ -117,7 +116,7 @@ const ScreenWrapper = React.memo(({
                     </ScrollView>
                 </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
-        </SafeAreaView>
+        </View>
     );
 });
 
